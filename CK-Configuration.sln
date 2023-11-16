@@ -1,0 +1,71 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{153F9DA2-C837-4841-975B-DC3B8DBB7BDE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DE1BB982-3E93-4A01-B036-77BE75C0B360}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		appveyor.yml = appveyor.yml
+		Directory.Build.props = Directory.Build.props
+		NuGet.config = NuGet.config
+		README.md = README.md
+		RepositoryInfo.xml = RepositoryInfo.xml
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Configuration.Tests", "Tests\CK.Configuration.Tests\CK.Configuration.Tests.csproj", "{43949DF5-02D0-4613-AA6C-AB957C274F51}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ConfigurationPlugins", "ConfigurationPlugins", "{29BB64E7-6D42-454C-881E-650CBA048A42}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsumerA.Strategy", "Tests\ConfigurationPlugins\ConsumerA.Strategy\ConsumerA.Strategy.csproj", "{000A615A-BC23-41AD-8268-EF433BC8BB37}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Configuration", "CK.Configuration\CK.Configuration.csproj", "{E175E426-9713-4E9E-8E7E-EE01B6D4EB4D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StrategyPlugin", "Tests\ConfigurationPlugins\StrategyPlugin\StrategyPlugin.csproj", "{19F6C3A6-6996-47D6-90FE-327185DF371A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsumerB.Plugins", "Tests\ConfigurationPlugins\ConsumerB.Plugins\ConsumerB.Plugins.csproj", "{D1A2B4FE-85EF-47ED-A673-C474E99D8F95}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{43949DF5-02D0-4613-AA6C-AB957C274F51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43949DF5-02D0-4613-AA6C-AB957C274F51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43949DF5-02D0-4613-AA6C-AB957C274F51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43949DF5-02D0-4613-AA6C-AB957C274F51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{000A615A-BC23-41AD-8268-EF433BC8BB37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{000A615A-BC23-41AD-8268-EF433BC8BB37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{000A615A-BC23-41AD-8268-EF433BC8BB37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{000A615A-BC23-41AD-8268-EF433BC8BB37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E175E426-9713-4E9E-8E7E-EE01B6D4EB4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E175E426-9713-4E9E-8E7E-EE01B6D4EB4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E175E426-9713-4E9E-8E7E-EE01B6D4EB4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E175E426-9713-4E9E-8E7E-EE01B6D4EB4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19F6C3A6-6996-47D6-90FE-327185DF371A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19F6C3A6-6996-47D6-90FE-327185DF371A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19F6C3A6-6996-47D6-90FE-327185DF371A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19F6C3A6-6996-47D6-90FE-327185DF371A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1A2B4FE-85EF-47ED-A673-C474E99D8F95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1A2B4FE-85EF-47ED-A673-C474E99D8F95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1A2B4FE-85EF-47ED-A673-C474E99D8F95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1A2B4FE-85EF-47ED-A673-C474E99D8F95}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{43949DF5-02D0-4613-AA6C-AB957C274F51} = {153F9DA2-C837-4841-975B-DC3B8DBB7BDE}
+		{29BB64E7-6D42-454C-881E-650CBA048A42} = {153F9DA2-C837-4841-975B-DC3B8DBB7BDE}
+		{000A615A-BC23-41AD-8268-EF433BC8BB37} = {29BB64E7-6D42-454C-881E-650CBA048A42}
+		{19F6C3A6-6996-47D6-90FE-327185DF371A} = {29BB64E7-6D42-454C-881E-650CBA048A42}
+		{D1A2B4FE-85EF-47ED-A673-C474E99D8F95} = {29BB64E7-6D42-454C-881E-650CBA048A42}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {49681B72-5F5A-4B15-A128-76571585F57D}
+	EndGlobalSection
+EndGlobal
