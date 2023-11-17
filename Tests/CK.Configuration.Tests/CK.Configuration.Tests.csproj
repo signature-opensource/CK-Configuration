@@ -1,23 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
     <LangVersion>11</LangVersion>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="CK.Testing.Monitoring" Version="8.1.0" />
+    <PackageReference Include="CK.Testing.Monitoring" Version="8.1.1--0005-develop" />
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\ConfigurationPlugins\ConsumerA.Strategy\ConsumerA.Strategy.csproj" />
     <ProjectReference Include="..\ConfigurationPlugins\ConsumerB.Plugins\ConsumerB.Plugins.csproj" />
     <ProjectReference Include="..\ConfigurationPlugins\StrategyPlugin\StrategyPlugin.csproj" />
   </ItemGroup>
-
 </Project>
