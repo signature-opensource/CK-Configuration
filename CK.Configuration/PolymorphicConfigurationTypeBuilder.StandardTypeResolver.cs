@@ -49,7 +49,6 @@ namespace CK.Core
             internal protected override object? Create( IActivityMonitor monitor, ImmutableConfigurationSection configuration )
             {
                 return DoCreate( monitor, configuration, _compositeBaseType != null );
-
             }
 
             object? DoCreate( IActivityMonitor monitor, ImmutableConfigurationSection configuration, bool allowDefaultComposite )
@@ -60,29 +59,32 @@ namespace CK.Core
                     if( allowDefaultComposite )
                     {
                         Throw.DebugAssert( _compositeBaseType != null );
-                        // For root (default) composite, we lookup the "Items" field or fallback on
-                        // the configuration itself.
+                        // When allowDefaultComposite (root Create call), if there's no "Items" field
+                        // we consider the configuration itself to be the composite items.
+                        // This allows array (or even keyed objects) to be handled. This trick is safe
+                        // since we check that the configuration has children and in such case, children
+                        // configurations must be valid definitions.
                         var itemsField = configuration.TryGetSection( _compositeItemsFieldName );
-                        var composite = itemsField ?? configuration;
+                        if( itemsField == null )
+                        {
+                            if( !configuration.HasChildren )
+                            {
+                                monitor.Error( $"Configuration '{configuration.Path}' must have children to be considered a default '{_compositeBaseType:C}'." );
+                                return null;
+                            }
+                            itemsField = configuration;
+                        }
                         try
                         {
-                            var items = CreateCompositeItems( monitor, composite ).ToArray();
-                            return DoCreateComposite( monitor, configuration, _compositeBaseType, items );
+                            return DoCreateComposite( monitor, configuration, _compositeBaseType, itemsField );
                         }
                         catch( Exception ex )
                         {
-                            monitor.Error( $"While instantiating '{_compositeBaseType:C}' from '{composite.Path}'.", ex );
+                            monitor.Error( $"While instantiating '{_compositeBaseType:C}' from '{configuration.Path}'.", ex );
                             return null;
                         }
                     }
-                    if( _compositeBaseType == null )
-                    {
-                        monitor.Error( $"Missing required '{configuration.Path}:{_typeFieldName}' type name." );
-                    }
-                    else
-                    {
-                        monitor.Error( $"Missing required '{configuration.Path}:{_typeFieldName}' type name (and default composite is not allowed here since we are in a Composite)." );
-                    }
+                    monitor.Error( $"Missing required '{configuration.Path}:{_typeFieldName}' type name." );
                     return null;
                 }
                 var type = Builder.CurrentAssemblyConfiguration.TryResolveType( monitor,
@@ -105,17 +107,7 @@ namespace CK.Core
                 {
                     if( _compositeBaseType != null && _compositeBaseType.IsAssignableFrom( type ) )
                     {
-                        // Typed composite: we expect the "Items" field but if it is not here, we create
-                        // an empty composite but emit a warning: a composite should have at least one item.
-                        // If a "composite" with sub components must be done, it must use the 
-                        // builder to instantiate its sub components.
-                        var itemsField = configuration.TryGetSection( _compositeItemsFieldName );
-                        if( itemsField == null )
-                        {
-                            monitor.Warn( $"Missing '{configuration.Path}:{_compositeItemsFieldName}'. Instantiating an empty '{type:C}' composite." );
-                        }
-                        var items = itemsField == null ? Array.Empty<object>() : CreateCompositeItems( monitor, itemsField ).ToArray();
-                        return DoCreateComposite( monitor, configuration, type, items );
+                        return DoCreateComposite( monitor, configuration, type, null );
                     }
                     return Activator.CreateInstance( type, monitor, Builder, configuration );
                 }
@@ -126,21 +118,27 @@ namespace CK.Core
                 }
             }
 
-            object? DoCreateComposite( IActivityMonitor monitor, ImmutableConfigurationSection configuration, Type type, object[] items )
+            object? DoCreateComposite( IActivityMonitor monitor, ImmutableConfigurationSection configuration, Type type, ImmutableConfigurationSection? itemsField )
             {
-                var a = Array.CreateInstance( BaseType, items.Length );
-                Array.Copy( items, a, items.Length );
-                return Activator.CreateInstance( type, monitor, Builder, configuration, a );
+                itemsField ??= configuration.TryGetSection( _compositeItemsFieldName );
+                if( itemsField == null )
+                {
+                    monitor.Error( $"Missing composite required items '{configuration.Path}:{_compositeItemsFieldName}'." );
+                    return null;
+                }
+                // We must use a correctly typed array for reflection binding.
+                var children = itemsField.GetChildren();
+                var a = Array.CreateInstance( BaseType, children.Count );
+                bool success = true;
+                for( int i = 0; i < children.Count; i++ )
+                {
+                    var o = DoCreate( monitor, children[i], false );
+                    if( o == null ) success = false;
+                    a.SetValue( o, i );
+                }
+                return success ? Activator.CreateInstance( type, monitor, Builder, configuration, a ) : null;
             }
 
-            IEnumerable<object> CreateCompositeItems( IActivityMonitor monitor, ImmutableConfigurationSection configuration )
-            {
-                foreach( var c in configuration.GetChildren() )
-                {
-                    var o = DoCreate( monitor, c, false );
-                    if( o != null ) yield return o;
-                }
-            }
         }
     }
 }

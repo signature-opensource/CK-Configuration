@@ -32,15 +32,15 @@ namespace Plugin.Strategy
         protected internal override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
                                                                                      IConfigurationSection configuration )
         {
-            if( configuration.HasParentPath( _configuration.Path ) )
+            if( configuration.HasExactParentPath( _configuration.Path ) )
             {
                 var builder = new PolymorphicConfigurationTypeBuilder( _assemblies );
                 ExtensibleStrategyConfiguration.Configure( builder );
                 // Anchors the new configuration under this one.
                 var config = new ImmutableConfigurationSection( configuration, _configuration );
-                builder.TryCreate<ExtensibleStrategyConfiguration>( monitor, config, out var newC );
-                // We choose here to keep the placeholder on error or if the configuration leads to 
-                // no strategy. Of course, other approaches can be followed here.
+                var newC = builder.Create<ExtensibleStrategyConfiguration>( monitor, config );
+                // We choose here to keep the placeholder on error (by returning this).
+                // Returning newC here removes the placeholder.
                 if( newC != null ) return newC;
             }
             return this;

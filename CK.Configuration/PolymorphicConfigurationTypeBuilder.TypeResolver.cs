@@ -47,7 +47,7 @@ namespace CK.Core
             /// </summary>
             /// <param name="monitor">The monitor that must be used to signal errors and warnings.</param>
             /// <param name="configuration">The configuration to analyze.</param>
-            /// <returns>The resulting instance. May be null without errors (this is upt to the implementation).</returns>
+            /// <returns>The resulting instanceor null on errors.</returns>
             internal protected abstract object? Create( IActivityMonitor monitor, ImmutableConfigurationSection configuration );
         }
     }

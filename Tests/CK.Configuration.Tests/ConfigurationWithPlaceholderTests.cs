@@ -52,7 +52,7 @@ namespace CK.Configuration.Tests
             var builder = new PolymorphicConfigurationTypeBuilder();
             ExtensibleStrategyConfiguration.Configure( builder );
             builder.PushAssemblyConfiguration( TestHelper.Monitor, config );
-            builder.TryCreate<ExtensibleStrategyConfiguration>( TestHelper.Monitor, config, out var sC ).Should().BeTrue();
+            var sC = builder.Create<ExtensibleStrategyConfiguration>( TestHelper.Monitor, config );
             sC = CheckNotNullAndRun( sC, 3 );
 
             var setFirst = new MutableConfigurationSection( "Root:Strategies:0", "<Dynamic>" );

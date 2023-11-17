@@ -1,6 +1,8 @@
 # CK.Configuration
 
-Provides extensions and helpers to CK.Core [Mutable and ImmutableConfigurationSection](https://github.com/Invenietis/CK-Core/tree/develop/CK.Core/Configuration).
+Provides extensions and helpers to manipulate .NET configuration sections.
+
+
 
 ## AssemblyConfiguration
 Handles "DefaultAssembly" and "Assemblies" sections. These configurations can appear

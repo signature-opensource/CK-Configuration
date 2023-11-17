@@ -11,6 +11,9 @@ namespace CK.Core
     /// <summary>
     /// Helper that can create configured instances for one or more family types.
     /// <para>
+    /// Caution: this is a stateful object, concurrency is not supported.
+    /// </para>
+    /// <para>
     /// This can be specialized, typically to offer more context while instatiating objects.
     /// </para>
     /// </summary>
@@ -39,6 +42,12 @@ namespace CK.Core
         /// </para>
         /// </summary>
         public IReadOnlyList<TypeResolver> Resolvers => _resolvers;
+
+        /// <summary>
+        /// Removes a registered resolver.
+        /// </summary>
+        /// <param name="index"></param>
+        public void RemoveResoverAt( int index ) => _resolvers.RemoveAt( index );
 
         /// <summary>
         /// Gets the current assembly configuration.
@@ -70,53 +79,31 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Typed version of the <see cref="TryCreate(IActivityMonitor, Type, IConfigurationSection, out object?, bool)"/> method.
+        /// Typed version of the <see cref="Create(IActivityMonitor, Type, IConfigurationSection)"/> method.
         /// </summary>
         /// <typeparam name="T">Type of the expected instance.</typeparam>
         /// <param name="monitor">The monitor that will be used to signal errors and warnings.</param>
         /// <param name="configuration">The configuration to process.</param>
-        /// <param name="result">The resolved instance or null on error or if the configuration should not give birth to an instance.</param>
-        /// <param name="required">False to allow the configuration to be "null" or empty.</param>
-        /// <returns>True on success, false on error.</returns>
-        public bool TryCreate<T>( IActivityMonitor monitor, IConfigurationSection configuration, out T? result, bool required = true )
+        /// <returns>The configured object or null on error.</returns>
+        public T? Create<T>( IActivityMonitor monitor, IConfigurationSection configuration )
         {
-            if( TryCreate( monitor, typeof(T), configuration, out var r, required ) )
-            {
-                result = (T?)r;
-                return true;
-            }
-            result = default;
-            return false;
+            return (T?)Create( monitor, typeof( T ), configuration );
         }
 
         /// <summary>
-        /// Tries to instantiate an object of type <paramref name="type"/> from the <see cref="Resolvers"/> and the <paramref name="configuration"/>.
-        /// <para>
-        /// Error management relies on the <paramref name="monitor"/>. Use <see cref="ActivityMonitorExtension.OnError(IActivityMonitor, Action)"/>
-        /// for instance to track any error.
-        /// </para>
+        /// Instantiate an object of type <paramref name="type"/> based on the <see cref="Resolvers"/> and the <paramref name="configuration"/>.
         /// </summary>
         /// <param name="monitor">The monitor that will be used to signal errors and warnings.</param>
         /// <param name="type">The expected resulting instance type.</param>
         /// <param name="configuration">The configuration to process.</param>
-        /// <param name="result">The resolved instance or null on error or if the configuration should not give birth to an instance.</param>
-        /// <param name="required">False to allow the configuration to be "null" or empty.</param>
-        /// <returns>True on success, false on error.</returns>
-        public virtual bool TryCreate( IActivityMonitor monitor,
+        /// <returns>The configured object or null on error.</returns>
+        public virtual object? Create( IActivityMonitor monitor,
                                        Type type,
-                                       IConfigurationSection configuration,
-                                       out object? result,
-                                       bool required = true )
+                                       IConfigurationSection configuration )
         {
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckNotNullArgument( type );
             Throw.CheckNotNullArgument( configuration );
-            result = null;
-            if( !configuration.Exists() || configuration.Value == "null" )
-            {
-                if( required ) monitor.Error( $"Required configuration '{configuration.Path}' (must be a '{type:C}')." );
-                return false;
-            }
             var resolver = _resolvers.FirstOrDefault( r => r.BaseType.IsAssignableFrom( type ) );
             if( resolver == null )
             {
@@ -131,22 +118,24 @@ namespace CK.Core
             PushAssemblyConfiguration( monitor, config );
             try
             {
-                var o = resolver.Create( monitor, config );
-                if( o != null && !resolver.BaseType.IsAssignableFrom( o.GetType() ) )
+                var result = resolver.Create( monitor, config );
+                if( result == null )
                 {
-                    monitor.Error( $"Resolver created a '{o.GetType():C}' instance. Expected a '{resolver.BaseType:C}' instance." );
+                    // Ensures that an error has been emitted.
+                    if( success ) monitor.Error( $"Resolver returned a null '{resolver.BaseType:C}' instance." );
                 }
-                if( success )
+                else if( !resolver.BaseType.IsAssignableFrom( result.GetType() ) )
                 {
-                    result = o;
-                    return true;
+                    monitor.Error( $"Resolver created a '{result.GetType():C}' instance. Expected a '{resolver.BaseType:C}' instance." );
+                    result = null;
                 }
-                return false;
+                Throw.DebugAssert( success == (result != null) );
+                return result;
             }
-            catch ( Exception ex )
+            catch( Exception ex )
             {
                 monitor.Error( $"While creating '{type:C}'.", ex );
-                return false;
+                return null;
             }
             finally
             {
