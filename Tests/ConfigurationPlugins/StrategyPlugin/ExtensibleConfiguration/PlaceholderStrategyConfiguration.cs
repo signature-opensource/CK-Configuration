@@ -19,7 +19,7 @@ namespace Plugin.Strategy
                                                  PolymorphicConfigurationTypeBuilder builder,
                                                  ImmutableConfigurationSection configuration )
         {
-            _assemblies = builder.CurrentAssemblyConfiguration;
+            _assemblies = builder.AssemblyConfiguration;
             _configuration = configuration;
         }
 

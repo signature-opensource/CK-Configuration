@@ -11,6 +11,12 @@ namespace CK.Core
         /// Other type resolver than the standard one (see <see cref="PolymorphicConfigurationTypeBuilderExtensions.AddStandardTypeResolver{TBuilder}(TBuilder, Type, string, bool, string?, Type?, string, string, string)"/>)
         /// can be created, but the standard one should cover all needs.
         /// </para>
+        /// <para>
+        /// Adding a resolver to <see cref="Resolvers"/> is done by the TypeResolver constructor.
+        /// When <see cref="PolymorphicConfigurationTypeBuilder.IsCreating"/> is true, the new resolver only applies until the current call
+        /// to <see cref="PolymorphicConfigurationTypeBuilder.Create(IActivityMonitor, Type, Microsoft.Extensions.Configuration.IConfigurationSection)"/>
+        /// ends.
+        /// </para>
         /// </summary>
         public abstract class TypeResolver
         {

@@ -87,15 +87,15 @@ namespace CK.Core
                     monitor.Error( $"Missing required '{configuration.Path}:{_typeFieldName}' type name." );
                     return null;
                 }
-                var type = Builder.CurrentAssemblyConfiguration.TryResolveType( monitor,
-                                                                                typeName,
-                                                                                _typeNamespace,
-                                                                                BaseType.Assembly,
-                                                                                _allowOtherNamespace,
-                                                                                _familyTypeNameSuffix,
-                                                                                _typeNameSuffix,
-                                                                                null,
-                                                                                () => $" (Configuration '{configuration.Path}:{_typeFieldName}'.)" );
+                var type = Builder.AssemblyConfiguration.TryResolveType( monitor,
+                                                                         typeName,
+                                                                         _typeNamespace,
+                                                                         BaseType.Assembly,
+                                                                         _allowOtherNamespace,
+                                                                         _familyTypeNameSuffix,
+                                                                         _typeNameSuffix,
+                                                                         null,
+                                                                         () => $" (Configuration '{configuration.Path}:{_typeFieldName}'.)" );
                 if( type == null ) return null;
                 if( !BaseType.IsAssignableFrom( type ) )
                 {

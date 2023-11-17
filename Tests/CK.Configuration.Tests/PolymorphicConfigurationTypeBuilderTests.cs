@@ -31,7 +31,7 @@ namespace CK.Configuration.Tests
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
             IStrategyConfiguration.ConfigureWithoutComposite( builder );
-            builder.PushAssemblyConfiguration( TestHelper.Monitor, config );
+            builder.AssemblyConfiguration = AssemblyConfiguration.Create( TestHelper.Monitor, config ) ?? AssemblyConfiguration.Empty;
             var s1C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S1" ) );
             var s2C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S2" ) );
             var s3C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S3" ) );
@@ -78,7 +78,7 @@ namespace CK.Configuration.Tests
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
             IStrategyConfiguration.ConfigureWithoutComposite( builder );
-            builder.PushAssemblyConfiguration( TestHelper.Monitor, config );
+            builder.AssemblyConfiguration = AssemblyConfiguration.Create( TestHelper.Monitor, config ) ?? AssemblyConfiguration.Empty;
             var s1C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S1" ) );
             var s2C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S2" ) );
             var s3C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S3" ) );
@@ -135,7 +135,7 @@ namespace CK.Configuration.Tests
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
             IStrategyConfiguration.ConfigureWithoutComposite( builder );
-            builder.PushAssemblyConfiguration( TestHelper.Monitor, config );
+            builder.AssemblyConfiguration = AssemblyConfiguration.Create( TestHelper.Monitor, config ) ?? AssemblyConfiguration.Empty;
             var s1C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S1" ) );
             var s2C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S2" ) );
             var s3C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S3" ) );
@@ -188,7 +188,6 @@ namespace CK.Configuration.Tests
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
             IStrategyConfiguration.Configure( builder );
-            builder.PushAssemblyConfiguration( TestHelper.Monitor, config );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
             var s = sC.CreateStrategy( TestHelper.Monitor );
@@ -241,7 +240,6 @@ namespace CK.Configuration.Tests
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
             IStrategyConfiguration.Configure( builder );
-            builder.PushAssemblyConfiguration( TestHelper.Monitor, config );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
             var s = sC.CreateStrategy( TestHelper.Monitor );
@@ -320,7 +318,7 @@ namespace CK.Configuration.Tests
                 var config = ImmutableConfigurationSection.CreateFromJson( "Root", """{ "Strategies": [{}] }""" );
                 var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
                 sC.Should().BeNull();
-                logs.Should().Contain( "Pouf" );
+                logs.Should().Contain( "Missing required 'Root:Strategies:0:Type' type name." );
             }
         }
 

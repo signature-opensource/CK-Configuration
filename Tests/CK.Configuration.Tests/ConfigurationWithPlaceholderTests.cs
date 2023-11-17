@@ -51,7 +51,6 @@ namespace CK.Configuration.Tests
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
             ExtensibleStrategyConfiguration.Configure( builder );
-            builder.PushAssemblyConfiguration( TestHelper.Monitor, config );
             var sC = builder.Create<ExtensibleStrategyConfiguration>( TestHelper.Monitor, config );
             sC = CheckNotNullAndRun( sC, 3 );
 

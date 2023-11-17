@@ -19,8 +19,9 @@ namespace CK.Core
     /// </summary>
     public partial class PolymorphicConfigurationTypeBuilder
     {
-        readonly Stack<AssemblyConfiguration> _assemblyConfigurations;
         readonly List<TypeResolver> _resolvers;
+        AssemblyConfiguration _assemblyConfiguration;
+        int _createDepth;
 
         /// <summary>
         /// Initializes a new <see cref="PolymorphicConfigurationTypeBuilder"/>.
@@ -28,9 +29,8 @@ namespace CK.Core
         /// <param name="initialAssemblyConfiguration">Optional root assembly configuration to use.</param>
         public PolymorphicConfigurationTypeBuilder( AssemblyConfiguration? initialAssemblyConfiguration = null )
         {
-            _assemblyConfigurations = new Stack<AssemblyConfiguration>();
-            _assemblyConfigurations.Push( initialAssemblyConfiguration ?? AssemblyConfiguration.Empty );
             _resolvers = new List<TypeResolver>();
+            _assemblyConfiguration = initialAssemblyConfiguration ?? AssemblyConfiguration.Empty;
         }
 
         /// <summary>
@@ -44,39 +44,25 @@ namespace CK.Core
         public IReadOnlyList<TypeResolver> Resolvers => _resolvers;
 
         /// <summary>
-        /// Removes a registered resolver.
+        /// Gets or sets the assembly configuration.
+        /// <para>
+        /// This is automatically restored to the initial value by <see cref="Create(IActivityMonitor, Type, IConfigurationSection)"/>.
+        /// </para>
         /// </summary>
-        /// <param name="index"></param>
-        public void RemoveResoverAt( int index ) => _resolvers.RemoveAt( index );
-
-        /// <summary>
-        /// Gets the current assembly configuration.
-        /// </summary>
-        public AssemblyConfiguration CurrentAssemblyConfiguration => _assemblyConfigurations.Peek();
-
-        /// <summary>
-        /// This can be called when entering a section that can define "Assemblies" and "DefaultAssembly" configurations.
-        /// <see cref="PopAssemblyConfiguration"/> must be called to restore the <see cref="CurrentAssemblyConfiguration"/>.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="section">The entered section.</param>
-        /// <returns>The new <see cref="CurrentAssemblyConfiguration"/>.</returns>
-        public AssemblyConfiguration PushAssemblyConfiguration( IActivityMonitor monitor, ImmutableConfigurationSection section )
+        public AssemblyConfiguration AssemblyConfiguration
         {
-            var c = CurrentAssemblyConfiguration;
-            var a = c.Apply( monitor, section ) ?? c;
-            _assemblyConfigurations.Push( a );
-            return a;
+            get => _assemblyConfiguration;
+            set
+            {
+                Throw.CheckNotNullArgument( value );
+                _assemblyConfiguration = value;
+            }
         }
 
         /// <summary>
-        /// Restores the <see cref="CurrentAssemblyConfiguration"/> before the last
-        /// call to <see cref="PushAssemblyConfiguration(IActivityMonitor, ImmutableConfigurationSection)"/>.
+        /// Gets whether at least one <see cref="Create(IActivityMonitor, Type, IConfigurationSection)"/> has been called.
         /// </summary>
-        public void PopAssemblyConfiguration()
-        {
-            _assemblyConfigurations.Pop();
-        }
+        public bool IsCreating => _createDepth > 0;
 
         /// <summary>
         /// Typed version of the <see cref="Create(IActivityMonitor, Type, IConfigurationSection)"/> method.
@@ -92,6 +78,10 @@ namespace CK.Core
 
         /// <summary>
         /// Instantiate an object of type <paramref name="type"/> based on the <see cref="Resolvers"/> and the <paramref name="configuration"/>.
+        /// <para>
+        /// Note that <see cref="AssemblyConfiguration"/> and <see cref="Resolvers"/> are restored to their initial values once the call ends:
+        /// these can be altered before any reentrant calls without side effects.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that will be used to signal errors and warnings.</param>
         /// <param name="type">The expected resulting instance type.</param>
@@ -113,9 +103,12 @@ namespace CK.Core
             {
                 config = new ImmutableConfigurationSection( configuration );
             }
+            var initialAssembly = _assemblyConfiguration;
+            var initialResolverCount = _resolvers.Count;
+            ++_createDepth;
             bool success = true;
             using var detector = monitor.OnError( () => success = false );
-            PushAssemblyConfiguration( monitor, config );
+            _assemblyConfiguration = _assemblyConfiguration.Apply( monitor, config ) ?? _assemblyConfiguration;
             try
             {
                 var result = resolver.Create( monitor, config );
@@ -139,7 +132,9 @@ namespace CK.Core
             }
             finally
             {
-                PopAssemblyConfiguration();
+                --_createDepth;
+                _assemblyConfiguration = initialAssembly;
+                _resolvers.RemoveRange( initialResolverCount, _resolvers.Count - initialResolverCount );
             }
         }
     }
