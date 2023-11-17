@@ -7,6 +7,10 @@ namespace CK.Core
     {
         /// <summary>
         /// A resolver can create an instance of a <see cref="BaseType"/> from a <see cref="ImmutableConfigurationSection"/>.
+        /// <para>
+        /// Other type resolver than the standard one (see <see cref="PolymorphicConfigurationTypeBuilderExtensions.AddStandardTypeResolver{TBuilder}(TBuilder, Type, string, bool, string?, Type?, string, string, string)"/>)
+        /// can be created, but the standard one should cover all needs.
+        /// </para>
         /// </summary>
         public abstract class TypeResolver
         {
@@ -39,7 +43,7 @@ namespace CK.Core
 
             /// <summary>
             /// Attempts to create an instance from a configuration using any possible strategies
-            /// to resolve its type and activating it.
+            /// to resolve its type and activating an instance.
             /// </summary>
             /// <param name="monitor">The monitor that must be used to signal errors and warnings.</param>
             /// <param name="configuration">The configuration to analyze.</param>

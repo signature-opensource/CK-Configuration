@@ -18,7 +18,7 @@ namespace CK.Core
         /// <returns>True if the path is this section's parent path.</returns>
         public static bool HasParentPath( this IConfigurationSection section, ReadOnlySpan<char> path )
         {
-            return path.Length == section.Path.Length - section.Key.Length - 1
+            return path.Length == section.Path.Length - (section.Key.Length > 0 ? section.Key.Length + 1 : 0)
                    && section.Path.AsSpan( 0, path.Length ).Equals( path, StringComparison.OrdinalIgnoreCase );
         }
 
@@ -29,7 +29,9 @@ namespace CK.Core
         /// <returns>This section's parent path.</returns>
         public static ReadOnlySpan<char> GetParentPath( this IConfigurationSection section )
         {
-            return section.Path.AsSpan( 0, section.Path.Length - section.Key.Length - 1 );
+            return section.Key.Length > 0
+                    ? section.Path.AsSpan( 0, section.Path.Length - section.Key.Length - 1 )
+                    : section.Path.AsSpan();
         }
 
         /// <summary>

@@ -2,21 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace CK.Core
 {
     public partial class PolymorphicConfigurationTypeBuilder
     {
-        /// <summary>
-        /// Standard type resolver implementation that optionnaly supports composite types.
-        /// <para>
-        /// Use <see cref="AddStandardTypeResolver(Type, string, string, bool, string?, Type?, string, string)"/>
-        /// to create and add a resolver.
-        /// </para>
-        /// </summary>
-        public sealed class StandardTypeResolver : TypeResolver
+        internal sealed class StandardTypeResolver<TBuilder> : TypeResolver where TBuilder : PolymorphicConfigurationTypeBuilder
         {
-            readonly string _fieldName;
+            readonly string _typeFieldName;
             readonly string _typeNamespace;
             readonly bool _allowOtherNamespace;
             readonly string? _familyTypeNameSuffix;
@@ -24,24 +18,24 @@ namespace CK.Core
             readonly Type? _compositeBaseType;
             readonly string _compositeItemsFieldName;
 
-            internal StandardTypeResolver( PolymorphicConfigurationTypeBuilder builder,
+            internal StandardTypeResolver( TBuilder builder,
                                            Type baseType,
-                                           string fieldName,
                                            string typeNamespace,
-                                           bool allowOtherNamespace = false,
-                                           string? familyTypeNameSuffix = null,
-                                           Type? compositeBaseType = null,
-                                           string compositeItemsFieldName = "Items",
-                                           string typeNameSuffix = "Configuration" )
+                                           bool allowOtherNamespace,
+                                           string? familyTypeNameSuffix,
+                                           Type? compositeBaseType,
+                                           string compositeItemsFieldName,
+                                           string typeFieldName,
+                                           string typeNameSuffix )
                 : base( builder, baseType )
             {
                 Throw.CheckNotNullArgument( builder );
                 Throw.CheckNotNullArgument( baseType );
-                Throw.CheckNotNullOrWhiteSpaceArgument( fieldName );
+                Throw.CheckNotNullOrWhiteSpaceArgument( typeFieldName );
                 Throw.CheckNotNullOrWhiteSpaceArgument( typeNamespace );
                 Throw.CheckArgument( compositeBaseType == null || (compositeBaseType.IsClass && !compositeBaseType.IsAbstract && baseType.IsAssignableFrom( compositeBaseType )) );
                 Throw.CheckNotNullOrWhiteSpaceArgument( compositeItemsFieldName );
-                _fieldName = fieldName;
+                _typeFieldName = typeFieldName;
                 _typeNamespace = typeNamespace;
                 _allowOtherNamespace = allowOtherNamespace;
                 _familyTypeNameSuffix = familyTypeNameSuffix;
@@ -50,15 +44,17 @@ namespace CK.Core
                 _typeNameSuffix = typeNameSuffix;
             }
 
-            protected internal override object? Create( IActivityMonitor monitor, ImmutableConfigurationSection configuration )
+            new TBuilder Builder => Unsafe.As<TBuilder>( base.Builder );
+
+            internal protected override object? Create( IActivityMonitor monitor, ImmutableConfigurationSection configuration )
             {
                 return DoCreate( monitor, configuration, _compositeBaseType != null );
 
             }
 
-            private object? DoCreate( IActivityMonitor monitor, ImmutableConfigurationSection configuration, bool allowDefaultComposite )
+            object? DoCreate( IActivityMonitor monitor, ImmutableConfigurationSection configuration, bool allowDefaultComposite )
             {
-                var typeName = configuration[_fieldName];
+                var typeName = configuration[_typeFieldName];
                 if( typeName == null )
                 {
                     if( allowDefaultComposite )
@@ -81,11 +77,11 @@ namespace CK.Core
                     }
                     if( _compositeBaseType == null )
                     {
-                        monitor.Error( $"Missing required '{configuration.Path}:{_fieldName}' type name." );
+                        monitor.Error( $"Missing required '{configuration.Path}:{_typeFieldName}' type name." );
                     }
                     else
                     {
-                        monitor.Error( $"Missing required '{configuration.Path}:{_fieldName}' type name (and default composite is not allowed here since we are in a Composite)." );
+                        monitor.Error( $"Missing required '{configuration.Path}:{_typeFieldName}' type name (and default composite is not allowed here since we are in a Composite)." );
                     }
                     return null;
                 }
@@ -97,7 +93,7 @@ namespace CK.Core
                                                                                 _familyTypeNameSuffix,
                                                                                 _typeNameSuffix,
                                                                                 null,
-                                                                                () => $" (Configuration '{configuration.Path}:{_fieldName}'.)" );
+                                                                                () => $" (Configuration '{configuration.Path}:{_typeFieldName}'.)" );
                 if( type == null ) return null;
                 if( !BaseType.IsAssignableFrom( type ) )
                 {
@@ -125,7 +121,7 @@ namespace CK.Core
                 }
                 catch( Exception ex )
                 {
-                    monitor.Error( $"While instantiating '{type:C}'. (Configuration '{configuration.Path}:{_fieldName} = {typeName}'.)", ex );
+                    monitor.Error( $"While instantiating '{type:C}'. (Configuration '{configuration.Path}:{_typeFieldName} = {typeName}'.)", ex );
                     return null;
                 }
             }

@@ -34,7 +34,6 @@ namespace StrategyPlugin
         public static void ConfigureWithoutComposite( PolymorphicConfigurationTypeBuilder builder )
         {
             builder.AddStandardTypeResolver( baseType: typeof( IStrategyConfiguration ),
-                                             fieldName: "Type",
                                              typeNamespace: "Plugin.Strategy",
                                              allowOtherNamespace: false,
                                              familyTypeNameSuffix: "Strategy" );
@@ -47,7 +46,6 @@ namespace StrategyPlugin
         public static void Configure( PolymorphicConfigurationTypeBuilder builder )
         {
             builder.AddStandardTypeResolver( baseType: typeof( IStrategyConfiguration ),
-                                             fieldName: "Type",
                                              typeNamespace: "Plugin.Strategy",
                                              allowOtherNamespace: false,
                                              familyTypeNameSuffix: "Strategy",

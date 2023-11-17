@@ -14,7 +14,7 @@ Assemblies can be aliased:
   "DefaultAssembly": "MyPlugins",
   "Assemblies": [
     "Acme.Corp.Strategies",
-    { Assembly": "Too.Long.To.Repeat.Plugin.Assembly", "Alias": "A" },
+    { "Assembly": "Too.Long.To.Repeat.Plugin.Assembly", "Alias": "A" },
     "Universal.StdPlugins",
   ]
 }
@@ -26,7 +26,7 @@ Assemblies and aliases can also be expressed as:
   "Assemblies": {
     "Acme.Corp.Strategies": "A",
     "Too.Long.To.Repeat.Plugin.Assembly": "B" },
-    "Universal.StdPlugins": "C",
+    "Universal.StdPlugins": "C"
   }
 }
 ```

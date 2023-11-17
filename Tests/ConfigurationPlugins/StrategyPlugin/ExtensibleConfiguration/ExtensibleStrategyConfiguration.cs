@@ -56,7 +56,6 @@ namespace StrategyPlugin
         public static void Configure( PolymorphicConfigurationTypeBuilder builder )
         {
             builder.AddStandardTypeResolver( baseType: typeof( ExtensibleStrategyConfiguration ),
-                                             fieldName: "Type",
                                              typeNamespace: "Plugin.Strategy",
                                              allowOtherNamespace: false,
                                              familyTypeNameSuffix: "Strategy",
