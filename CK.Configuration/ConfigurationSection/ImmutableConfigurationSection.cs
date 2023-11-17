@@ -45,9 +45,7 @@ namespace CK.Core
         public ImmutableConfigurationSection( IConfigurationSection section, ImmutableConfigurationSection? lookupParent = null )
         {
             Debug.Assert( ConfigurationPath.KeyDelimiter == ":" );
-            if( lookupParent != null
-                && (lookupParent.Path.Length != section.Path.Length - section.Key.Length - 1
-                    || !section.Path.AsSpan( 0, lookupParent.Path.Length ).Equals( lookupParent.Path, StringComparison.OrdinalIgnoreCase ) ) )
+            if( lookupParent != null && !section.GetParentPath().Equals( lookupParent.Path, StringComparison.OrdinalIgnoreCase ) )
             {
                 Throw.ArgumentException( nameof(lookupParent), $"Expected section path to be '{lookupParent.Path}:{section.Key}', got '{section.Path}'." );
             }

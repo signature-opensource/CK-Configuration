@@ -32,7 +32,7 @@ namespace Plugin.Strategy
         protected internal override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
                                                                                      IConfigurationSection configuration )
         {
-            if( configuration.HasExactParentPath( _configuration.Path ) )
+            if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
             {
                 var builder = new PolymorphicConfigurationTypeBuilder( _assemblies );
                 ExtensibleStrategyConfiguration.Configure( builder );

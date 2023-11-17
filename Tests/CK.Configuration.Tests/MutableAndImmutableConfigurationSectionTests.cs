@@ -3,12 +3,11 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 using System;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 
-namespace CK.Core.Tests
+namespace CK.Configuration.Tests
 {
     [TestFixture]
     public class MutableAndImmutableConfigurationSectionTests

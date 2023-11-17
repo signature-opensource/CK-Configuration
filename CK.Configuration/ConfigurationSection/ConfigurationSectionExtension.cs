@@ -102,15 +102,17 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Gets whether the <paramref name="path"/> is this section's parent path.
+        /// Gets whether the <paramref name="path"/> is a child path (at any depth).
         /// </summary>
         /// <param name="section">This section.</param>
-        /// <param name="path">The path that may be this section's parent path.</param>
-        /// <returns>True if the path is this section's parent path.</returns>
-        public static bool HasExactParentPath( this IConfigurationSection section, ReadOnlySpan<char> path )
+        /// <param name="path">The path that may be a child path.</param>
+        /// <returns>True if the path is a child path.</returns>
+        public static bool IsChildPath( this IConfigurationSection section, ReadOnlySpan<char> path )
         {
-            return path.Length == section.Path.Length - (section.Key.Length > 0 ? section.Key.Length + 1 : 0)
-                   && section.Path.AsSpan( 0, path.Length ).Equals( path, StringComparison.OrdinalIgnoreCase );
+            string sPath = section.Path;
+            return path.Length > sPath.Length + 1
+                   && path[sPath.Length] == ':'
+                   && path.Slice( 0, sPath.Length ).Equals( sPath, StringComparison.OrdinalIgnoreCase );
         }
 
         /// <summary>
