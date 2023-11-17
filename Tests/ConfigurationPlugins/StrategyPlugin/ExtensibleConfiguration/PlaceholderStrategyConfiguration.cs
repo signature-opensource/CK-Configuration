@@ -5,7 +5,7 @@ using StrategyPlugin;
 namespace Plugin.Strategy
 {
     /// <summary>
-    /// Confiration object that is here to be replaced by a real configuration.
+    /// Configuration object that is here to be replaced by a real configuration.
     /// <para>
     /// This must be in the "plugin" namespace.
     /// </para>
