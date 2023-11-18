@@ -139,18 +139,38 @@ namespace CK.Core
         public string? TryLookupValue( string path ) => TryLookupSection( path )?.Value;
 
         /// <summary>
-        /// Tries to find a section in this section or in the parent section.
+        /// Tries to find a value in this section or in the parent section.
+        /// If a section with the key is found above but has no value (because it has children),
+        /// this returns null. Use <see cref="TryLookupSection(string)"/> to lookup for a section.
+        /// </summary>
+        /// <param name="path">The configuration key or a path to a subordinated key.</param>
+        /// <param name="distance">Outputs the distance from this section to the section that carries the entry.</param>
+        /// <returns>The non null value if found.</returns>
+        public string? TryLookupValue( string path, out int distance ) => TryLookupSection( path, out distance )?.Value;
+
+        /// <summary>
+        /// Tries to find a section in this section or in a parent section.
         /// </summary>
         /// <param name="path">The configuration key or a path to a subordinated key.</param>
         /// <returns>The non null section if found.</returns>
-        public ImmutableConfigurationSection? TryLookupSection( string path )
+        public ImmutableConfigurationSection? TryLookupSection( string path ) => TryLookupSection( path, out var _ );
+
+        /// <summary>
+        /// Tries to find a section in this section or in a parent section.
+        /// </summary>
+        /// <param name="path">The configuration key or a path to a subordinated key.</param>
+        /// <param name="distance">Outputs the distance from this section to the returned section.</param>
+        /// <returns>The non null section if found.</returns>
+        public ImmutableConfigurationSection? TryLookupSection( string path, out int distance )
         {
             MutableConfigurationSection.CheckPathArgument( path );
             ImmutableConfigurationSection? result;
+            distance = 0;
             var s = this;
             do
             {
                 if( (result = s.TryGetSection( path )) != null ) break;
+                ++distance;
             }
             while( (s = s._lookupParent) != null );
             return result;
