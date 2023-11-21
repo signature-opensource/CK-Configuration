@@ -17,12 +17,15 @@ namespace CK.Core
             readonly string _typeNameSuffix;
             readonly Type? _compositeBaseType;
             readonly string _compositeItemsFieldName;
+            readonly Func<IActivityMonitor, string, ImmutableConfigurationSection, object?>? _tryCreateFromTypeName;
+
 
             internal StandardTypeResolver( TBuilder builder,
                                            Type baseType,
                                            string typeNamespace,
                                            bool allowOtherNamespace,
                                            string? familyTypeNameSuffix,
+                                           Func<IActivityMonitor, string, ImmutableConfigurationSection, object?>? tryCreateFromTypeName,
                                            Type? compositeBaseType,
                                            string compositeItemsFieldName,
                                            string typeFieldName,
@@ -39,6 +42,7 @@ namespace CK.Core
                 _typeNamespace = typeNamespace;
                 _allowOtherNamespace = allowOtherNamespace;
                 _familyTypeNameSuffix = familyTypeNameSuffix;
+                _tryCreateFromTypeName = tryCreateFromTypeName;
                 _compositeBaseType = compositeBaseType;
                 _compositeItemsFieldName = compositeItemsFieldName;
                 _typeNameSuffix = typeNameSuffix;
@@ -53,7 +57,57 @@ namespace CK.Core
 
             object? DoCreate( IActivityMonitor monitor, ImmutableConfigurationSection configuration, bool allowDefaultComposite )
             {
+                // First, check if the configuration is a value and if it is the case, we have no other choice
+                // to use the optional tryCreateFromTypeName. 
+                if( configuration.Value != null )
+                {
+                    // We ensure that, even if tryCreateFromTypeName has been called, if we have a null result, at least
+                    // one error has been logged.
+                    object? result = null;
+                    bool errorEmitted = false;
+                    if( _tryCreateFromTypeName != null )
+                    {
+                        using( monitor.OnError( () => errorEmitted = true ) )
+                        {
+                            result = TryCreateFromTypeName( monitor, configuration.Value, configuration );
+                        }
+                    }
+                    if( result == null && !errorEmitted )
+                    {
+                        monitor.Error( $"Unable to create a '{BaseType:C}' from '{configuration.Path} = {configuration.Value}'." );
+                    }
+                    return result;
+                }
+                // Else, lookup the "Type" field.
                 var typeName = configuration[_typeFieldName];
+                // If it exists and the optional tryCreateFromTypeName exists then give it a try.
+                if( typeName != null && _tryCreateFromTypeName != null )
+                {
+                    object? result = null;
+                    bool success = true;
+                    if( _tryCreateFromTypeName != null )
+                    {
+                        using( monitor.OnError( () => success = false ) )
+                        {
+                            result = TryCreateFromTypeName( monitor, typeName, configuration );
+                        }
+                        // If an error has been raised, forgets the result (even if it is not null).
+                        if( !success )
+                        {
+                            if( result != null )
+                            {
+                                monitor.Warn( ActivityMonitor.Tags.ToBeInvestigated, $"The tryCreateFromTypeName function returned a '{result.GetType()}' but emits an error. " +
+                                                                                     $"This is invalid: the returned result is discarded." );
+                            }
+                            return null;
+                        }
+                        // If the result has been created, we're done.
+                        if( result != null ) return result;
+                    }
+                }
+                // When no "Type" field is specified and we are on a root call, we consider the configuration
+                // to be the default composite (if the family has one). Either the "Items" field is specified
+                // or we fallback on the configuration object itself.
                 if( typeName == null )
                 {
                     if( allowDefaultComposite )
@@ -99,8 +153,9 @@ namespace CK.Core
                 if( type == null ) return null;
                 if( !BaseType.IsAssignableFrom( type ) )
                 {
-                    monitor.Error( $"The '{typeName}' type name resolved to '{type:N}' but this type is not compatible with '{BaseType:N}'. " +
-                                   $" (Configuration '{configuration.Path}:{_compositeItemsFieldName}'.)" );
+                    monitor.Error( ActivityMonitor.Tags.ToBeInvestigated,
+                                   $"The '{typeName}' type name resolved to '{type:N}' but this type is not compatible with '{BaseType:N}'. " +
+                                   $" (Configuration '{configuration.Path}:{_typeFieldName}'.)" );
                     return null;
                 }
                 try
@@ -116,6 +171,22 @@ namespace CK.Core
                     monitor.Error( $"While instantiating '{type:C}'. (Configuration '{configuration.Path}:{_typeFieldName} = {typeName}'.)", ex );
                     return null;
                 }
+            }
+
+            object? TryCreateFromTypeName( IActivityMonitor monitor, string typeName, ImmutableConfigurationSection configuration )
+            {
+                Throw.DebugAssert( _tryCreateFromTypeName != null );
+                object? result = _tryCreateFromTypeName( monitor, typeName, configuration );
+                if( result != null && !BaseType.IsAssignableFrom( result.GetType() ) )
+                {
+                    monitor.Error( ActivityMonitor.Tags.ToBeInvestigated,
+                                   $"The '{typeName}' type name resolved to '{result.GetType():N}' but this type is not compatible with '{BaseType:N}'. " +
+                                   $" (Configuration '{(configuration.Value != null
+                                                        ? configuration.Path
+                                                        : $"{configuration.Path}:{_typeFieldName}")}'.)" );
+                    return null;
+                }
+                return result;
             }
 
             object? DoCreateComposite( IActivityMonitor monitor, ImmutableConfigurationSection configuration, Type type, ImmutableConfigurationSection? itemsField )

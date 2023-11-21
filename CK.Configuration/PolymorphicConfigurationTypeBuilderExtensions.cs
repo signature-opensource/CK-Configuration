@@ -25,11 +25,22 @@ namespace CK.Core
         /// True to allow type names in other namespaces than <paramref name="typeNamespace"/>.
         /// </param>
         /// <param name="familyTypeNameSuffix">
-        /// Optional type suffix that will be appended to the type name read from <paramref name="typeFieldName"/>
+        /// Type suffix that will be appended to the type name read from <paramref name="typeFieldName"/>
         /// if it doesn't already end with it.
         /// <para>
         /// Example: with "Strategy", a "Simple" type name will be "SimpleStrategyConfiguration"
         /// (the default <paramref name="typeNameSuffix"/> being "Configuration").
+        /// </para>
+        /// </param>
+        /// <param name="tryCreateFromTypeName">
+        /// Optional factory that can create a configured object only from its type name. This enables
+        /// shortcuts to be implemented.
+        /// <para>
+        /// This factory must either:
+        /// <list type="bullet">
+        /// <item>Returns null AND emit an error or a fatal log into the monitor.</item>
+        /// <item>OR returns a non null object AND NOT emit any error.</item>
+        /// </list>
         /// </para>
         /// </param>
         /// <param name="compositeBaseType">Optional specialized type that is the default composite.</param>
@@ -43,6 +54,7 @@ namespace CK.Core
                                                               string typeNamespace,
                                                               bool allowOtherNamespace = false,
                                                               string? familyTypeNameSuffix = null,
+                                                              Func<IActivityMonitor, string, ImmutableConfigurationSection, object?>? tryCreateFromTypeName = null,
                                                               Type? compositeBaseType = null,
                                                               string compositeItemsFieldName = "Items",
                                                               string typeFieldName = "Type",
@@ -55,6 +67,7 @@ namespace CK.Core
                 typeNamespace,
                 allowOtherNamespace,
                 familyTypeNameSuffix,
+                tryCreateFromTypeName,
                 compositeBaseType,
                 compositeItemsFieldName,
                 typeFieldName,

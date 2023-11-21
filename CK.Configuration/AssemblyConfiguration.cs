@@ -93,7 +93,7 @@ namespace CK.Core
         /// True to allow type names in other namespaces than <paramref name="typeNamespace"/>.
         /// </param>
         /// <param name="familyTypeNameSuffix">
-        /// Optional type suffix that will be appended to the <paramref name="typeName"/> if it doesn't
+        /// Type suffix that will be appended to the <paramref name="typeName"/> if it doesn't
         /// already end with it.
         /// <para>
         /// Example: with "Strategy", a "Simple" type name will be "SimpleStrategyConfiguration"
@@ -126,6 +126,8 @@ namespace CK.Core
                 monitor.Error( $"{errorPrefix?.Invoke()}Specified type name is invalid ('{typeName}').{errorSuffix?.Invoke()}" );
                 return null;
             }
+
+            #region Resolving assembly
             Assembly? assembly = null;
             int idxComma = tName.IndexOf( ',' );
             bool isDefaultAssembly = idxComma < 0;
@@ -162,6 +164,8 @@ namespace CK.Core
                 assembly = LoadAssembly( monitor, assemblyName, errorPrefix, errorSuffix );
                 if( assembly == null ) return null;
             }
+            #endregion
+
             Throw.DebugAssert( "assembly == null ==> isDefaultAssembly (and there is no default but we have a fallbackDefaultAssembly).",
                                assembly != null || isDefaultAssembly );
 

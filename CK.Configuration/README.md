@@ -1,10 +1,9 @@
-# CK-Configuration
+# CK.Configuration
 
-Contains [CK.Configuration](CK.Configuration/README.md) with `MutableConfigurationSection`,
-`ImmutableConfigurationSection`, `AssemblyConfiguration` and `PolymorphicConfigurationTypeBuilder`.
+Provides extensions and helpers to manipulate .NET configuration sections.
 
-This solution also contains [CK.Object.Filter](CK.Object.Filter/README.md), a concrete
-application of the `PolymorphicConfigurationTypeBuilder`, that handles configured object predicates.
+First, please read [MutableConfigurationSection and ImmutableConfigurationSection](ConfigurationSection/README.md)
+that provide the basic mechanisms.
 
 ## AssemblyConfiguration
 Handles "DefaultAssembly" and "Assemblies" sections. These configurations can appear
@@ -38,21 +37,24 @@ Assemblies and aliases can also be expressed as:
 Assembly names have no version, culture, or token. Only the simple name is considered and this
 is by design.
 
-## Strategies and polymorphic configurations
+The `AssemblyConfiguration.TryResolveType` is the method that does the actual job of "finding a plugin".
+
+## PolymorphicConfigurationTypeBuilder
 
 The [strategy design pattern](https://en.wikipedia.org/wiki/Strategy_pattern) encapsulates
 variability behind an abstraction. Mixed with the [composite design pattern](https://en.wikipedia.org/wiki/Composite_pattern),
 strategies are powerful tools.
 
-This library provides a small framework that support strategies implemented in external assemblies
-(plugins) and instantiating them from a configuration layer.
+This library provides a small framework that helps implementing a configuration layer that describes
+"configured objects" (possibly implemented in external assemblies - plugins).
 
-Configuration objects are immutable and are the factories of usable objetcs, typically instantiated
+Configured objects are immutable and are the factories of actual objetcs that are typically instantiated
 in a "unit of work", a DI Scope.
 
-The [`PolymorphicConfigurationTypeBuilder`](CK.Configuration/PolymorphicConfigurationTypeBuilderTests.cs)
-offers a simple way to instantiate a family of configured objects.
+The [`PolymorphicConfigurationTypeBuilder`](CK.Configuration/PolymorphicConfigurationTypeBuilder.cs)
+offers a simple and extensible way to instantiate one or more family of "configured objects".
 
 A sample is available in [Tests/ConfigurationPlugins](Tests/ConfigurationPlugins) that demonstrate
 a simple strategy, its composite, and 2 sets of configuration objects.
 
+The [CK.Object.Filter](../CK.Object.Filter/README.md) is another concrete example.
