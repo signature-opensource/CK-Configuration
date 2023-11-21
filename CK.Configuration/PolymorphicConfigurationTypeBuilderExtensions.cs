@@ -54,7 +54,7 @@ namespace CK.Core
                                                               string typeNamespace,
                                                               bool allowOtherNamespace = false,
                                                               string? familyTypeNameSuffix = null,
-                                                              Func<IActivityMonitor, string, ImmutableConfigurationSection, object?>? tryCreateFromTypeName = null,
+                                                              Func<IActivityMonitor, string, TBuilder, ImmutableConfigurationSection, object?>? tryCreateFromTypeName = null,
                                                               Type? compositeBaseType = null,
                                                               string compositeItemsFieldName = "Items",
                                                               string typeFieldName = "Type",

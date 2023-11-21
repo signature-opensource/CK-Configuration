@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.AccessControl;
 
 namespace CK.Core
 {
@@ -70,14 +71,66 @@ namespace CK.Core
         /// <typeparam name="T">Type of the expected instance.</typeparam>
         /// <param name="monitor">The monitor that will be used to signal errors and warnings.</param>
         /// <param name="configuration">The configuration to process.</param>
-        /// <returns>The configured object or null on error.</returns>
+        /// <returns>The configured object or null if any error occurred.</returns>
         public T? Create<T>( IActivityMonitor monitor, IConfigurationSection configuration )
         {
             return (T?)Create( monitor, typeof( T ), configuration );
         }
 
         /// <summary>
-        /// Instantiate an object of type <paramref name="type"/> based on the <see cref="Resolvers"/> and the <paramref name="configuration"/>.
+        /// Typed version of the <see cref="CreateItems(IActivityMonitor, Type, ImmutableConfigurationSection)"/> method.
+        /// </summary>
+        /// <typeparam name="T">Base type of the expected instances.</typeparam>
+        /// <param name="monitor">The monitor that will be used to signal errors and warnings.</param>
+        /// <param name="configuration">The composite configuration.</param>
+        /// <param name="requiresItemsFieldName">
+        /// True to requires the "Items" (or <paramref name="alternateItemsFieldName"/>) field name.
+        /// By default even if no "Items" appears in the <paramref name="configuration"/>, an empty list is returned.
+        /// </param>
+        /// <param name="alternateItemsFieldName">
+        /// Optional "Items" field names with the subordinated items. When let to null or when not found, the default composite "Items" field name
+        /// used by this resolver must be used.
+        /// </param>
+        /// <returns>The resulting list or null if any error occurred.</returns>
+        public IReadOnlyList<T>? CreateItems<T>( IActivityMonitor monitor,
+                                                 ImmutableConfigurationSection configuration,
+                                                 bool requiresItemsFieldName = false,
+                                                 string? alternateItemsFieldName = null )
+        {
+            Throw.CheckNotNullArgument( configuration );
+            TypeResolver resolver = FindRequiredResolver( monitor, typeof(T) );
+            return (IReadOnlyList<T>?)resolver.CreateItems( monitor, configuration, requiresItemsFieldName, alternateItemsFieldName );
+        }
+
+        /// <summary>
+        /// Attempts to instantiate items of the composite type based on the <see cref="Resolvers"/> and
+        /// the <paramref name="configuration"/> configuration.
+        /// </summary>
+        /// <param name="monitor">The monitor that must be used to signal errors and warnings.</param>
+        /// <param name="baseType">The items base type.</param>
+        /// <param name="configuration">The items configuration.</param>
+        /// <param name="requiresItemsFieldName">
+        /// True to requires the "Items" (or <paramref name="alternateItemsFieldName"/>) field name.
+        /// By default even if no "Items" appears in the <paramref name="configuration"/>, an empty list is returned.
+        /// </param>
+        /// <param name="alternateItemsFieldName">
+        /// Optional "Items" field names with the subordinated items. When let to null or when not found, the default composite "Items" field name
+        /// used by this resolver must be used.
+        /// </param>
+        /// <returns>The resulting list or null if any error occurred.</returns>
+        public virtual IReadOnlyList<object>? CreateItems( IActivityMonitor monitor,
+                                                           Type baseType,
+                                                           ImmutableConfigurationSection configuration,
+                                                           bool requiresItemsFieldName = false,
+                                                           string? alternateItemsFieldName = null )
+        {
+            Throw.CheckNotNullArgument( configuration );
+            TypeResolver resolver = FindRequiredResolver( monitor, baseType );
+            return (IReadOnlyList<object>?)resolver.CreateItems( monitor, configuration, requiresItemsFieldName, alternateItemsFieldName );
+        }
+
+        /// <summary>
+        /// Attempts to instantiate an object of type <paramref name="type"/> based on the <see cref="Resolvers"/> and the <paramref name="configuration"/>.
         /// <para>
         /// Note that <see cref="AssemblyConfiguration"/> and <see cref="Resolvers"/> are restored to their initial values once the call ends:
         /// these can be altered before any reentrant calls without side effects.
@@ -91,14 +144,8 @@ namespace CK.Core
                                        Type type,
                                        IConfigurationSection configuration )
         {
-            Throw.CheckNotNullArgument( monitor );
-            Throw.CheckNotNullArgument( type );
             Throw.CheckNotNullArgument( configuration );
-            var resolver = _resolvers.FirstOrDefault( r => r.BaseType.IsAssignableFrom( type ) );
-            if( resolver == null )
-            {
-                Throw.ArgumentException( nameof( type ), $"Unable to find a resolver for '{type:C}' ({_resolvers.Count} resolvers)." );
-            }
+            TypeResolver resolver = FindRequiredResolver( monitor, type );
             if( configuration is not ImmutableConfigurationSection config )
             {
                 config = new ImmutableConfigurationSection( configuration );
@@ -108,7 +155,6 @@ namespace CK.Core
             ++_createDepth;
             bool success = true;
             using var detector = monitor.OnError( () => success = false );
-            _assemblyConfiguration = _assemblyConfiguration.Apply( monitor, config ) ?? _assemblyConfiguration;
             try
             {
                 var result = resolver.Create( monitor, config );
@@ -136,6 +182,19 @@ namespace CK.Core
                 _assemblyConfiguration = initialAssembly;
                 _resolvers.RemoveRange( initialResolverCount, _resolvers.Count - initialResolverCount );
             }
+        }
+
+        private TypeResolver FindRequiredResolver( IActivityMonitor monitor, Type type )
+        {
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( type );
+            var resolver = _resolvers.FirstOrDefault( r => r.BaseType.IsAssignableFrom( type ) );
+            if( resolver == null )
+            {
+                Throw.ArgumentException( nameof( type ), $"Unable to find a resolver for '{type:C}' ({_resolvers.Count} resolvers)." );
+            }
+
+            return resolver;
         }
     }
 }

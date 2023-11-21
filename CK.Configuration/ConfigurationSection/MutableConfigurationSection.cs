@@ -293,7 +293,11 @@ namespace CK.Core
         /// <returns>This section.</returns>
         public MutableConfigurationSection AddJson( string configuration, bool checkPropertyNameUnicity = true )
         {
-            var r = new Utf8JsonReader( Encoding.UTF8.GetBytes( configuration ), new JsonReaderOptions() { AllowTrailingCommas = true } );
+            var r = new Utf8JsonReader( Encoding.UTF8.GetBytes( configuration ), new JsonReaderOptions()
+            {
+                CommentHandling = JsonCommentHandling.Skip,
+                AllowTrailingCommas = true
+            } );
             return AddJson( ref r, IUtf8JsonReaderContext.Empty, checkPropertyNameUnicity );
         }
 

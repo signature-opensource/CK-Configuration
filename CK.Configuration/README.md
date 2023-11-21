@@ -52,7 +52,7 @@ Configured objects are immutable and are the factories of actual objetcs that ar
 in a "unit of work", a DI Scope.
 
 The [`PolymorphicConfigurationTypeBuilder`](CK.Configuration/PolymorphicConfigurationTypeBuilder.cs)
-offers a simple and extensible way to instantiate one or more family of "configured objects".
+offers a simple and extensible way to instantiate one (or more) family of "configured objects".
 
 A sample is available in [Tests/ConfigurationPlugins](Tests/ConfigurationPlugins) that demonstrate
 a simple strategy, its composite, and 2 sets of configuration objects.
