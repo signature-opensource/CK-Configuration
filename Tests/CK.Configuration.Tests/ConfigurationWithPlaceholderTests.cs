@@ -2,7 +2,6 @@ using CK.Core;
 using FluentAssertions;
 using NUnit.Framework;
 using StrategyPlugin;
-using System.Diagnostics.CodeAnalysis;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Configuration.Tests
@@ -50,7 +49,7 @@ namespace CK.Configuration.Tests
                 }
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
-            ExtensibleStrategyConfiguration.Configure( builder );
+            ExtensibleStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<ExtensibleStrategyConfiguration>( TestHelper.Monitor, config );
             sC = CheckNotNullAndRun( sC, 3 );
 

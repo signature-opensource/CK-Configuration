@@ -267,7 +267,7 @@ namespace CK.Core
             return sPath.Length > 0
                    && !sPath.Contains( "::".AsSpan(), StringComparison.Ordinal )
                    && sPath[0] != ':'
-                   && sPath[sPath.Length - 1] != ':';
+                   && sPath[^1] != ':';
         }
 
         /// <summary>

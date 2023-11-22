@@ -187,7 +187,7 @@ namespace CK.Configuration.Tests
                 }
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.Configure( builder );
+            IStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
             var s = sC.CreateStrategy( TestHelper.Monitor );
@@ -239,7 +239,7 @@ namespace CK.Configuration.Tests
                 }
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.Configure( builder );
+            IStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
             var s = sC.CreateStrategy( TestHelper.Monitor );
@@ -282,7 +282,7 @@ namespace CK.Configuration.Tests
                 }
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.Configure( builder );
+            IStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
             var s = sC.CreateStrategy( TestHelper.Monitor );
@@ -295,7 +295,7 @@ namespace CK.Configuration.Tests
         public void unsuccessful_Create_returns_null()
         {
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.Configure( builder );
+            IStrategyConfiguration.AddResolver( builder );
 
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {

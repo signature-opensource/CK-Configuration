@@ -34,8 +34,8 @@ namespace CK.Object.Filter
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A configured object filter.</returns>
-        public abstract Func<object, bool> CreatePredicate( IActivityMonitor monitor, IServiceProvider services );
+        /// <returns>A configured object filter or null for an empty predicate.</returns>
+        public abstract Func<object, bool>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services );
 
         /// <summary>
         /// Creates a <see cref="ObjectFilterHook"/> with this configuration and a predicate obtained by
@@ -48,10 +48,11 @@ namespace CK.Object.Filter
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="hook">The evaluation hook.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A configured filter hook bound to the evaluation hook.</returns>
-        public virtual ObjectFilterHook CreateHook( IActivityMonitor monitor, EvaluationHook hook, IServiceProvider services )
+        /// <returns>A configured filter hook bound to the evaluation hook or null for an empty filter.</returns>
+        public virtual ObjectFilterHook? CreateHook( IActivityMonitor monitor, EvaluationHook hook, IServiceProvider services )
         {
-            return new ObjectFilterHook( hook, this, CreatePredicate( monitor, services ) );
+            var p = CreatePredicate( monitor, services );
+            return p != null ? new ObjectFilterHook( hook, this, p ) : null;
         }
 
         /// <summary>
@@ -59,8 +60,8 @@ namespace CK.Object.Filter
         /// <see cref="CreatePredicate(IActivityMonitor, IServiceProvider)"/> is called with an empty <see cref="IServiceProvider"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <returns>A configured object filter.</returns>
-        public Func<object, bool> CreatePredicate( IActivityMonitor monitor ) => CreatePredicate( monitor, EmptyServiceProvider.Instance );
+        /// <returns>A configured object filter or null for an empty predicate.</returns>
+        public Func<object, bool>? CreatePredicate( IActivityMonitor monitor ) => CreatePredicate( monitor, EmptyServiceProvider.Instance );
 
         internal sealed class EmptyServiceProvider : IServiceProvider
         {
@@ -75,8 +76,8 @@ namespace CK.Object.Filter
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="hook">The evaluation hook.</param>
-        /// <returns>A configured filter hook bound to the evaluation hook.</returns>
-        public ObjectFilterHook CreateHook( IActivityMonitor monitor, EvaluationHook hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
+        /// <returns>A configured filter hook bound to the evaluation hook or null for an empty filter.</returns>
+        public ObjectFilterHook? CreateHook( IActivityMonitor monitor, EvaluationHook hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Adds a <see cref="PolymorphicConfigurationTypeBuilder.TypeResolver"/> for synchronous <see cref="ObjectFilterConfiguration"/>.
@@ -118,8 +119,6 @@ namespace CK.Object.Filter
                 var items = builder.CreateItems<ObjectFilterConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedKeys( monitor, configuration );
-                if( items.Count == 0 ) return new AlwaysTrueFilterConfiguration( monitor, builder, configuration );
-                if( items.Count == 1 ) return items[0];
                 return new GroupFilterConfiguration( monitor, 0, builder, configuration, items );
             }
             if( typeName.Equals( "Any", StringComparison.OrdinalIgnoreCase ) )
@@ -127,8 +126,6 @@ namespace CK.Object.Filter
                 var items = builder.CreateItems<ObjectFilterConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedKeys( monitor, configuration );
-                if( items.Count == 0 ) return new AlwaysFalseFilterConfiguration( monitor, builder, configuration );
-                if( items.Count == 1 ) return items[0];
                 return items != null ? new GroupFilterConfiguration( monitor, 1, builder, configuration, items ) : null;
             }
             return null;

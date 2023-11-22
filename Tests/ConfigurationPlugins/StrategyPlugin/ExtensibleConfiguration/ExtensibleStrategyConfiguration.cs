@@ -6,7 +6,7 @@ namespace StrategyPlugin
     /// <summary>
     /// While the <see cref="IStrategyConfiguration"/> is an interface, this one is
     /// an abstract class (it could also be an interface).
-    /// An extensible configuration handles <see cref="PlaceholderStrategyConfiguration"/> configuration replacements.
+    /// An extensible configuration handles <see cref="ExtensibleStrategyConfiguration"/> configuration replacements.
     /// <para>
     /// This one doesn't capture and expose its <see cref="ImmutableConfigurationSection"/> by default: it is up to
     /// the concrete configurations to do this as needed.
@@ -31,7 +31,8 @@ namespace StrategyPlugin
                 result = SetPlaceholder( monitor, configuration );
                 if( result == this )
                 {
-                    monitor.Error( $"Unable to set placeholder: '{configuration.GetParentPath()}' doesn't exist or is not a placeholder." );
+                    monitor.Error( $"Unable to set placeholder: '{configuration.GetParentPath()}' " +
+                                    $"doesn't exist or is not a placeholder." );
                 }
             }
             if( !success ) result = null;
@@ -53,7 +54,7 @@ namespace StrategyPlugin
         /// Configures a builder to handle this type family.
         /// </summary>
         /// <param name="builder">A builder to configure.</param>
-        public static void Configure( PolymorphicConfigurationTypeBuilder builder )
+        public static void AddResolver( PolymorphicConfigurationTypeBuilder builder )
         {
             builder.AddStandardTypeResolver( baseType: typeof( ExtensibleStrategyConfiguration ),
                                              typeNamespace: "Plugin.Strategy",

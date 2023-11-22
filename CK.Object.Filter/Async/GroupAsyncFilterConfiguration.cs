@@ -22,11 +22,11 @@ namespace CK.Object.Filter
         /// <param name="monitor">The monitor that must be used to signal errors and warnings.</param>
         /// <param name="builder">The builder. Can be used to instantiate other children as needed.</param>
         /// <param name="configuration">The configuration for this object.</param>
-        /// <param name="strategies">The subordinated items.</param>
+        /// <param name="filters">The subordinated items.</param>
         public GroupAsyncFilterConfiguration( IActivityMonitor monitor,
-                                                    PolymorphicConfigurationTypeBuilder builder,
-                                                    ImmutableConfigurationSection configuration,
-                                                    IReadOnlyList<ObjectAsyncFilterConfiguration> filters )
+                                              PolymorphicConfigurationTypeBuilder builder,
+                                              ImmutableConfigurationSection configuration,
+                                              IReadOnlyList<ObjectAsyncFilterConfiguration> filters )
             : base( configuration )
         {
             _filters = filters;
@@ -35,12 +35,10 @@ namespace CK.Object.Filter
 
         internal GroupAsyncFilterConfiguration( IActivityMonitor monitor,
                                                 int knownAtLeast,
-                                                PolymorphicConfigurationTypeBuilder builder,
                                                 ImmutableConfigurationSection configuration,
                                                 IReadOnlyList<ObjectAsyncFilterConfiguration> filters )
             : base( configuration )
         {
-            Throw.DebugAssert( knownAtLeast >= 0 && knownAtLeast < filters.Count );
             _filters = filters;
             _atLeast = knownAtLeast;
         }
@@ -65,19 +63,25 @@ namespace CK.Object.Filter
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="hook">The evaluation hook.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A configured filter hook for this group bound to the evaluation hook.</returns>
-        public override ObjectAsyncFilterHook CreateHook( IActivityMonitor monitor, EvaluationHook hook, IServiceProvider services )
+        /// <returns>A configured filter for this group bound to the evaluation hook or null for an empty filter.</returns>
+        public override ObjectAsyncFilterHook? CreateHook( IActivityMonitor monitor, EvaluationHook hook, IServiceProvider services )
         {
-            var items = _filters.Select( c => c.CreateHook( monitor, hook, services ) )
-                                .ToImmutableArray()!;
+            ImmutableArray<ObjectAsyncFilterHook> items = _filters.Select( c => c.CreateHook( monitor, hook, services ) )
+                                                                  .Where( s => s != null )
+                                                                  .ToImmutableArray()!;
+            if( items.Length == 0 ) return null;
+            if( items.Length == 1 ) return items[1];
             return new GroupAsyncFilterHook( hook, this, items );
         }
 
         /// <inheritdoc />
-        public override Func<object,ValueTask<bool>> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object,ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
         {
-            var items = _filters.Select( c => c.CreatePredicate( monitor, services ) )
-                                .ToImmutableArray(); ;
+            ImmutableArray<Func<object, ValueTask<bool>>> items = _filters.Select( c => c.CreatePredicate( monitor, services ) )
+                                                                          .Where( s => s != null )        
+                                                                          .ToImmutableArray()!;
+            if( items.Length == 0 ) return null;
+            if( items.Length == 1 ) return items[1];
             return _atLeast switch
             {
                 0 => o => AllAsync( items, o ),

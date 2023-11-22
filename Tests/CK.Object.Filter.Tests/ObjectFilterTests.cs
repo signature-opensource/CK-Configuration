@@ -38,6 +38,7 @@ namespace CK.Object.Filter.Tests
             var fC = builder.Create<ObjectFilterConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
             Throw.DebugAssert( fC != null );
             var f = fC.CreatePredicate( TestHelper.Monitor );
+            Throw.DebugAssert( f != null );
             f( this ).Should().Be( always );
         }
 
@@ -49,12 +50,16 @@ namespace CK.Object.Filter.Tests
             config["Condition"] = t;
             var builder = new PolymorphicConfigurationTypeBuilder();
             ObjectFilterConfiguration.AddResolver( builder );
+            ObjectAsyncFilterConfiguration.AddResolver( builder );
 
             var fC = builder.Create<ObjectFilterConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
             Throw.DebugAssert( fC != null );
-            var f = fC.CreatePredicate( TestHelper.Monitor );
-            // "All" on empty Filters defaults to true, "Any" defaults to false.
-            f( this ).Should().Be( t == "All" );
+
+            fC.Should().BeAssignableTo<GroupFilterConfiguration>();
+            ((GroupFilterConfiguration)fC).Filters.Should().BeEmpty();
+            ((GroupFilterConfiguration)fC).All.Should().Be( t == "All" );
+            ((GroupFilterConfiguration)fC).Any.Should().Be( t == "Any" );
+            ((GroupFilterConfiguration)fC).AtLeast.Should().Be( t == "All" ? 0 : 1 );
         }
 
         [Test]
@@ -76,6 +81,7 @@ namespace CK.Object.Filter.Tests
             ((GroupFilterConfiguration)fC).Filters[0].Should().BeAssignableTo<AlwaysTrueFilterConfiguration>();
 
             var f = fC.CreatePredicate( TestHelper.Monitor );
+            Throw.DebugAssert( f != null );
             f( this ).Should().BeTrue();
         }
 
@@ -121,7 +127,7 @@ namespace CK.Object.Filter.Tests
                             ]
                         },
                         {
-                            // "Group" with AtLeast.
+                            // The "Group" with "AtLeast" enables a "n among m" condition.
                             "Type": "Group",
                             "AtLeast": 2,
                             "Assemblies": {"CK.Object.Filter.Tests": "P"},
@@ -157,6 +163,7 @@ namespace CK.Object.Filter.Tests
             Throw.DebugAssert( fC != null );
 
             var f = fC.CreatePredicate( TestHelper.Monitor );
+            Throw.DebugAssert( f != null );
             f( 0 ).Should().Be( false );
             f( "Ax" ).Should().Be( false );
             f( "Axy" ).Should().Be( true );
@@ -175,6 +182,7 @@ namespace CK.Object.Filter.Tests
             Throw.DebugAssert( fC != null );
 
             var f = fC.CreatePredicate( TestHelper.Monitor );
+            Throw.DebugAssert( f != null );
             (await f( 0 )).Should().Be( false );
             (await f( "Ax" )).Should().Be( false );
             (await f( "Axy" )).Should().Be( true );
@@ -195,6 +203,7 @@ namespace CK.Object.Filter.Tests
             var hook = new MonitoredEvaluationHook( TestHelper.Monitor );
 
             var f = fC.CreateHook( TestHelper.Monitor, hook );
+            Throw.DebugAssert( f != null );
             f.Evaluate( 0 ).Should().Be( false );
             f.Evaluate( "Ax" ).Should().Be( false );
             f.Evaluate( "Axy" ).Should().Be( true );
@@ -215,6 +224,7 @@ namespace CK.Object.Filter.Tests
             var hook = new MonitoredEvaluationHook( TestHelper.Monitor );
 
             var f = fC.CreateHook( TestHelper.Monitor, hook );
+            Throw.DebugAssert( f != null );
             (await f.EvaluateAsync( 0 )).Should().Be( false );
             (await f.EvaluateAsync( "Ax" )).Should().Be( false );
             (await f.EvaluateAsync( "Axy" )).Should().Be( true );

@@ -12,7 +12,7 @@ other `IConfigurationSection`.
 We use `path` instead of `key` parameter name to remind you that a relative path
 is always available in the conffiguration API to address sub sections.
 
-## The non existing section issue an the "default configuration".
+## The non existing section issue and the "default configuration".
 A configuration section may not `Exists()`: it has no value nor children.
 This is weird but this is how it has been designed. We respect this behavior:
 `ImmutableConfigurationSection` captures such "non existing" sections.

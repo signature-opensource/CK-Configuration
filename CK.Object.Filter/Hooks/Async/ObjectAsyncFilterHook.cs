@@ -42,12 +42,6 @@ namespace CK.Object.Filter
         /// <inheritdoc />
         public IObjectFilterConfiguration Configuration => _configuration;
 
-        /// <inheritdoc />
-        public event Action<IObjectFilterHook, object>? Before;
-
-        /// <inheritdoc />
-        public event Action<IObjectFilterHook, object, bool>? After;
-
         /// <summary>
         /// Evaluates the predicate.
         /// </summary>
@@ -55,8 +49,23 @@ namespace CK.Object.Filter
         /// <returns>The predicate result.</returns>
         public virtual async ValueTask<bool> EvaluateAsync( object o )
         {
-            _hook.OnBeforeEvaluate( this, o );
-            return _hook.OnAfterEvaluate(this, o, await DoEvaluateAsync( o ).ConfigureAwait( false ) );
+            if( !_hook.OnBeforeEvaluate( this, o ) )
+            {
+                return false;
+            }
+            bool r = false;
+            try
+            {
+                r = await DoEvaluateAsync( o ).ConfigureAwait( false );
+            }
+            catch( Exception ex )
+            {
+                if( _hook.OnEvaluationError( this, o, ex ) )
+                {
+                    throw;
+                }
+            }
+            return _hook.OnAfterEvaluate( this, o, r );
         }
 
         protected virtual ValueTask<bool> DoEvaluateAsync( object o ) => _predicate( o );

@@ -12,6 +12,10 @@ namespace CK.Object.Filter
     {
         readonly T _sync;
 
+        /// <summary>
+        /// Initializes a new adapter.
+        /// </summary>
+        /// <param name="sync">The synchronous filter.</param>
         public AsyncFilterAdapterConfiguration( T sync )
             : base( sync.Configuration )
         {
@@ -24,11 +28,11 @@ namespace CK.Object.Filter
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A configured predicate.</returns>
-        public override Func<object, ValueTask<bool>> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        /// <returns>A configured predicate or null for an empty predicate.</returns>
+        public override Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
         {
-            Func<object, bool> p = _sync.CreatePredicate( monitor );
-            return o => ValueTask.FromResult( p( o ) );
+            Func<object, bool>? p = _sync.CreatePredicate( monitor, services );
+            return p != null ? o => ValueTask.FromResult( p( o ) ) : null;
         }
     }
 }
