@@ -38,18 +38,20 @@ namespace CK.Object.Filter
         public abstract Func<object, bool> CreatePredicate( IActivityMonitor monitor, IServiceProvider services );
 
         /// <summary>
-        /// Creates a default <see cref="ObjectFilterHook"/> with this configuration and a predicate obtained by
+        /// Creates a <see cref="ObjectFilterHook"/> with this configuration and a predicate obtained by
         /// calling <see cref="CreatePredicate(IActivityMonitor, IServiceProvider)"/>.
         /// <para>
-        /// This should be overridden if this filter relies on other filters in order to expose all the filters.
+        /// This should be overridden if this filter relies on other filters in order to hook all the filters.
+        /// Failing to do so will hide some predicates to the evaluation hook.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
+        /// <param name="hook">The evaluation hook.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A configured filter.</returns>
-        public virtual ObjectFilterHook CreateHook( IActivityMonitor monitor, IServiceProvider services )
+        /// <returns>A configured filter hook bound to the evaluation hook.</returns>
+        public virtual ObjectFilterHook CreateHook( IActivityMonitor monitor, EvaluationHook hook, IServiceProvider services )
         {
-            return new ObjectFilterHook( this, CreatePredicate( monitor, services ) );
+            return new ObjectFilterHook( hook, this, CreatePredicate( monitor, services ) );
         }
 
         /// <summary>
@@ -68,12 +70,13 @@ namespace CK.Object.Filter
 
         /// <summary>
         /// Creates an <see cref="ObjectFilterHook"/> that doesn't require any external service to do its job.
-        /// <see cref="CreateHook(IActivityMonitor, IServiceProvider)"/> is called with an empty <see cref="IServiceProvider"/>.
+        /// <see cref="CreateHook(IActivityMonitor, EvaluationHook, IServiceProvider)"/> is called with an
+        /// empty <see cref="IServiceProvider"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <returns>A configured filter.</returns>
-        public ObjectFilterHook CreateHook( IActivityMonitor monitor ) => CreateHook( monitor, EmptyServiceProvider.Instance );
-
+        /// <param name="hook">The evaluation hook.</param>
+        /// <returns>A configured filter hook bound to the evaluation hook.</returns>
+        public ObjectFilterHook CreateHook( IActivityMonitor monitor, EvaluationHook hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Adds a <see cref="PolymorphicConfigurationTypeBuilder.TypeResolver"/> for synchronous <see cref="ObjectFilterConfiguration"/>.

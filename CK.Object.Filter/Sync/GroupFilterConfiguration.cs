@@ -91,13 +91,14 @@ namespace CK.Object.Filter
         /// Overridden to return a <see cref="GroupFilterHook"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
+        /// <param name="hook">The evaluation hook.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A configured filter for thsi group.</returns>
-        public override ObjectFilterHook CreateHook( IActivityMonitor monitor, IServiceProvider services )
+        /// <returns>A configured hook for this group bound to the <paramref name="hook"/>.</returns>
+        public override ObjectFilterHook CreateHook( IActivityMonitor monitor, EvaluationHook hook, IServiceProvider services )
         {
-            var items = _filters.Select( c => c.CreateHook( monitor, services ) )
+            var items = _filters.Select( c => c.CreateHook( monitor, hook, services ) )
                                 .ToImmutableArray()!;
-            return new GroupFilterHook( this, items );
+            return new GroupFilterHook( hook, this, items );
         }
 
         /// <inheritdoc />
@@ -131,7 +132,6 @@ namespace CK.Object.Filter
             return _filters.Select( c => c.CreatePredicate( monitor, services ) )
                            .ToImmutableArray();
         }
-
     }
 
 }

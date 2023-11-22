@@ -27,7 +27,7 @@ namespace CK.Object.Filter
                                                     PolymorphicConfigurationTypeBuilder builder,
                                                     ImmutableConfigurationSection configuration,
                                                     IReadOnlyList<ObjectAsyncFilterConfiguration> filters )
-            : base( monitor, builder, configuration )
+            : base( configuration )
         {
             _filters = filters;
             _atLeast = GroupFilterConfiguration.ReadCount( monitor, configuration, filters.Count );
@@ -38,7 +38,7 @@ namespace CK.Object.Filter
                                                 PolymorphicConfigurationTypeBuilder builder,
                                                 ImmutableConfigurationSection configuration,
                                                 IReadOnlyList<ObjectAsyncFilterConfiguration> filters )
-            : base( monitor, builder, configuration )
+            : base( configuration )
         {
             Throw.DebugAssert( knownAtLeast >= 0 && knownAtLeast < filters.Count );
             _filters = filters;
@@ -63,13 +63,14 @@ namespace CK.Object.Filter
         /// Overridden to return a <see cref="GroupAsyncFilterHook"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
+        /// <param name="hook">The evaluation hook.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A configured filter for thsi group.</returns>
-        public override ObjectAsyncFilterHook CreateHook( IActivityMonitor monitor, IServiceProvider services )
+        /// <returns>A configured filter hook for this group bound to the evaluation hook.</returns>
+        public override ObjectAsyncFilterHook CreateHook( IActivityMonitor monitor, EvaluationHook hook, IServiceProvider services )
         {
-            var items = _filters.Select( c => c.CreateHook( monitor, services ) )
+            var items = _filters.Select( c => c.CreateHook( monitor, hook, services ) )
                                 .ToImmutableArray()!;
-            return new GroupAsyncFilterHook( this, items );
+            return new GroupAsyncFilterHook( hook, this, items );
         }
 
         /// <inheritdoc />

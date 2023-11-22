@@ -12,7 +12,7 @@ namespace CK.Object.Filter
         public AlwaysFalseAsyncFilterConfiguration( IActivityMonitor monitor,
                                                     PolymorphicConfigurationTypeBuilder builder,
                                                     ImmutableConfigurationSection configuration )
-            : base( monitor, builder, configuration )
+            : base( configuration )
         {
         }
 

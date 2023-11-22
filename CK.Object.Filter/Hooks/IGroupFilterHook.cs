@@ -12,4 +12,5 @@ namespace CK.Object.Filter
         /// </summary>
         ImmutableArray<IObjectFilterHook> Items { get; }
     }
+
 }

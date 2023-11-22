@@ -1,7 +1,5 @@
 using CK.Core;
-using System;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -17,10 +15,11 @@ namespace CK.Object.Filter
         /// <summary>
         /// Initializes a new wrapper without specific behavior.
         /// </summary>
+        /// <param name="hook">The evaluation hook.</param>
         /// <param name="configuration">The filter configuration.</param>
         /// <param name="items">The subordinated predicates.</param>
-        public GroupAsyncFilterHook( IGroupFilterConfiguration configuration, ImmutableArray<ObjectAsyncFilterHook> items )
-            : base( configuration )
+        public GroupAsyncFilterHook( EvaluationHook hook, IGroupFilterConfiguration configuration, ImmutableArray<ObjectAsyncFilterHook> items )
+            : base( hook, configuration )
         {
             Throw.CheckNotNullArgument( items );
             _items = items;
@@ -35,9 +34,8 @@ namespace CK.Object.Filter
         public ImmutableArray<ObjectAsyncFilterHook> Items => _items;
 
         /// <inheritdoc />
-        public override async ValueTask<bool> EvaluateAsync( object o )
+        protected override async ValueTask<bool> DoEvaluateAsync( object o )
         {
-            RaiseBefore( o );
             var atLeast = Configuration.AtLeast;
             var r = atLeast switch
             {
@@ -45,7 +43,6 @@ namespace CK.Object.Filter
                 1 => await AnyAsync( _items, o ).ConfigureAwait( false ),
                 _ => await AtLeastAsync( _items, o, atLeast ).ConfigureAwait( false )
             };
-            RaiseAfter( o, r );
             return r;
         }
 

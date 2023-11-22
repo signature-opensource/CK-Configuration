@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 using System.Collections;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Object.Filter.Tests
@@ -78,11 +79,10 @@ namespace CK.Object.Filter.Tests
             f( this ).Should().BeTrue();
         }
 
-        [Test]
-        public void complex_json_tree()
+        static MutableConfigurationSection GetComplexConfiguration()
         {
-            var config = new MutableConfigurationSection( "Root" );
-            config.AddJson( """
+            var complexJson = new MutableConfigurationSection( "Root" );
+            complexJson.AddJson( """
                 {
                     // No type resolved to "All" ("And" connector).
                     "Filters": [
@@ -143,6 +143,13 @@ namespace CK.Object.Filter.Tests
                     ]
                 }
                 """ );
+            return complexJson;
+        }
+
+        [Test]
+        public void complex_configuration_tree()
+        {
+            MutableConfigurationSection config = GetComplexConfiguration();
             var builder = new PolymorphicConfigurationTypeBuilder();
             ObjectFilterConfiguration.AddResolver( builder );
 
@@ -156,5 +163,65 @@ namespace CK.Object.Filter.Tests
             f( "Bzy" ).Should().Be( true );
             f( "Bzy but too long" ).Should().Be( false );
         }
+
+        [Test]
+        public async Task complex_configuration_tree_Async()
+        {
+            MutableConfigurationSection config = GetComplexConfiguration();
+            var builder = new PolymorphicConfigurationTypeBuilder();
+            ObjectAsyncFilterConfiguration.AddResolver( builder );
+
+            var fC = builder.Create<ObjectAsyncFilterConfiguration>( TestHelper.Monitor, config );
+            Throw.DebugAssert( fC != null );
+
+            var f = fC.CreatePredicate( TestHelper.Monitor );
+            (await f( 0 )).Should().Be( false );
+            (await f( "Ax" )).Should().Be( false );
+            (await f( "Axy" )).Should().Be( true );
+            (await f( "Bzy" )).Should().Be( true );
+            (await f( "Bzy but too long" )).Should().Be( false );
+        }
+
+        [Test]
+        public void complex_configuration_tree_with_EvaluationHook()
+        {
+            MutableConfigurationSection config = GetComplexConfiguration();
+            var builder = new PolymorphicConfigurationTypeBuilder();
+            ObjectFilterConfiguration.AddResolver( builder );
+
+            var fC = builder.Create<ObjectFilterConfiguration>( TestHelper.Monitor, config );
+            Throw.DebugAssert( fC != null );
+
+            var hook = new MonitoredEvaluationHook( TestHelper.Monitor );
+
+            var f = fC.CreateHook( TestHelper.Monitor, hook );
+            f.Evaluate( 0 ).Should().Be( false );
+            f.Evaluate( "Ax" ).Should().Be( false );
+            f.Evaluate( "Axy" ).Should().Be( true );
+            f.Evaluate( "Bzy" ).Should().Be( true );
+            f.Evaluate( "Bzy but too long" ).Should().Be( false );
+        }
+
+        [Test]
+        public async Task complex_configuration_tree_with_EvaluationHook_Async()
+        {
+            MutableConfigurationSection config = GetComplexConfiguration();
+            var builder = new PolymorphicConfigurationTypeBuilder();
+            ObjectAsyncFilterConfiguration.AddResolver( builder );
+
+            var fC = builder.Create<ObjectAsyncFilterConfiguration>( TestHelper.Monitor, config );
+            Throw.DebugAssert( fC != null );
+
+            var hook = new MonitoredEvaluationHook( TestHelper.Monitor );
+
+            var f = fC.CreateHook( TestHelper.Monitor, hook );
+            (await f.EvaluateAsync( 0 )).Should().Be( false );
+            (await f.EvaluateAsync( "Ax" )).Should().Be( false );
+            (await f.EvaluateAsync( "Axy" )).Should().Be( true );
+            (await f.EvaluateAsync( "Bzy" )).Should().Be( true );
+            (await f.EvaluateAsync( "Bzy but too long" )).Should().Be( false );
+        }
+
+
     }
 }
