@@ -43,7 +43,7 @@ namespace StrategyPlugin
         /// Configures a builder to handle this type family (with composite).
         /// </summary>
         /// <param name="builder">A builder to configure.</param>
-        public static void Configure( PolymorphicConfigurationTypeBuilder builder )
+        public static void AddResolver( PolymorphicConfigurationTypeBuilder builder )
         {
             builder.AddStandardTypeResolver( baseType: typeof( IStrategyConfiguration ),
                                              typeNamespace: "Plugin.Strategy",

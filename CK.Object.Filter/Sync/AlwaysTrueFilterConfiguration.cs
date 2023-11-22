@@ -19,5 +19,6 @@ namespace CK.Object.Filter
         {
             return static _ => true;
         }
+
     }
 }

@@ -1,5 +1,4 @@
 using CK.Core;
-using System;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -17,9 +16,10 @@ namespace CK.Object.Filter
         /// Initializes a new wrapper without specific behavior.
         /// </summary>
         /// <param name="configuration">The filter configuration.</param>
+        /// <param name="hook">The evaluation hook.</param>
         /// <param name="items">The subordinated predicates.</param>
-        public GroupFilterHook( IGroupFilterConfiguration configuration, ImmutableArray<ObjectFilterHook> items )
-            : base( configuration )
+        public GroupFilterHook( EvaluationHook hook, IGroupFilterConfiguration configuration, ImmutableArray<ObjectFilterHook> items )
+            : base( hook, configuration )
         {
             Throw.CheckNotNullArgument( items );
             _items = items;
@@ -33,20 +33,7 @@ namespace CK.Object.Filter
         /// <inheritdoc cref="IGroupFilterHook.Items" />
         public ImmutableArray<ObjectFilterHook> Items => _items;
 
-        /// <summary>
-        /// Overridden to evaluate the object on all the <see cref="Items"/>.
-        /// </summary>
-        /// <param name="o">The object.</param>
-        /// <returns>The group result.</returns>
-        public override bool Evaluate( object o )
-        {
-            RaiseBefore( o );
-            var r = DoEvaluate( o );
-            RaiseAfter( o, r );
-            return r;
-        }
-
-        private bool DoEvaluate( object o )
+        protected override bool DoEvaluate( object o )
         {
             var atLeast = Configuration.AtLeast;
             switch( atLeast )

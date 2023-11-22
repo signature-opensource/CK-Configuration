@@ -24,9 +24,9 @@ namespace CK.Object.Filter
         /// <param name="configuration">The configuration for this object.</param>
         /// <param name="filters">The subordinated items.</param>
         public GroupFilterConfiguration( IActivityMonitor monitor,
-                                               PolymorphicConfigurationTypeBuilder builder,
-                                               ImmutableConfigurationSection configuration,
-                                               IReadOnlyList<ObjectFilterConfiguration> filters )
+                                         PolymorphicConfigurationTypeBuilder builder,
+                                         ImmutableConfigurationSection configuration,
+                                         IReadOnlyList<ObjectFilterConfiguration> filters )
             : base( monitor, builder, configuration )
         {
             _filters = filters;
@@ -34,13 +34,12 @@ namespace CK.Object.Filter
         }
 
         internal GroupFilterConfiguration( IActivityMonitor monitor,
-                                                 int knownAtLeast,
-                                                 PolymorphicConfigurationTypeBuilder builder,
-                                                 ImmutableConfigurationSection configuration,
-                                                 IReadOnlyList<ObjectFilterConfiguration> filters )
+                                           int knownAtLeast,
+                                           PolymorphicConfigurationTypeBuilder builder,
+                                           ImmutableConfigurationSection configuration,
+                                           IReadOnlyList<ObjectFilterConfiguration> filters )
             : base( monitor, builder, configuration )
         {
-            Throw.DebugAssert( knownAtLeast >= 0 && knownAtLeast < filters.Count );
             _filters = filters;
             _atLeast = knownAtLeast;
         }
@@ -91,19 +90,27 @@ namespace CK.Object.Filter
         /// Overridden to return a <see cref="GroupFilterHook"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
+        /// <param name="hook">The evaluation hook.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A configured filter for thsi group.</returns>
-        public override ObjectFilterHook CreateHook( IActivityMonitor monitor, IServiceProvider services )
+        /// <returns>A configured filter for this group bound to the evaluation hook or null for an empty filter.</returns>
+        public override ObjectFilterHook? CreateHook( IActivityMonitor monitor, EvaluationHook hook, IServiceProvider services )
         {
-            var items = _filters.Select( c => c.CreateHook( monitor, services ) )
-                                .ToImmutableArray()!;
-            return new GroupFilterHook( this, items );
+            ImmutableArray<ObjectFilterHook> items = _filters.Select( c => c.CreateHook( monitor, hook, services ) )
+                                                             .Where( s => s != null )
+                                                             .ToImmutableArray()!;
+            if( items.Length == 0 ) return null;
+            if( items.Length == 1 ) return items[1];
+            return new GroupFilterHook( hook, this, items );
         }
 
         /// <inheritdoc />
-        public override Func<object, bool> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, bool>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
         {
-            var items = CreateFilters( monitor, services );
+            ImmutableArray<Func<object, bool>> items = _filters.Select( c => c.CreatePredicate( monitor, services ) )
+                                                               .Where( f => f != null )
+                                                               .ToImmutableArray()!;
+            if( items.Length == 0 ) return null;
+            if( items.Length == 1 ) return items[1];
             return _atLeast switch
             {
                 0 => o => items.All( f => f( o ) ),
@@ -124,14 +131,6 @@ namespace CK.Object.Filter
             }
             return false;
         }
-
-
-        ImmutableArray<Func<object, bool>> CreateFilters( IActivityMonitor monitor, IServiceProvider services )
-        {
-            return _filters.Select( c => c.CreatePredicate( monitor, services ) )
-                           .ToImmutableArray();
-        }
-
     }
 
 }

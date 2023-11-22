@@ -10,7 +10,7 @@ namespace Plugin.Strategy
     /// This must be in the "plugin" namespace.
     /// </para>
     /// </summary>
-    public class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
+    public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
     {
         readonly AssemblyConfiguration _assemblies;
         readonly ImmutableConfigurationSection _configuration;
@@ -35,12 +35,14 @@ namespace Plugin.Strategy
             if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
             {
                 var builder = new PolymorphicConfigurationTypeBuilder( _assemblies );
-                ExtensibleStrategyConfiguration.Configure( builder );
-                // Anchors the new configuration under this one.
-                var config = new ImmutableConfigurationSection( configuration, _configuration );
+                ExtensibleStrategyConfiguration.AddResolver( builder );
+                if( configuration is not ImmutableConfigurationSection config )
+                {
+                    config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
+                }
                 var newC = builder.Create<ExtensibleStrategyConfiguration>( monitor, config );
                 // We choose here to keep the placeholder on error (by returning this).
-                // Returning newC here removes the placeholder.
+                // Returning a null newC here would remove the placeholder.
                 if( newC != null ) return newC;
             }
             return this;

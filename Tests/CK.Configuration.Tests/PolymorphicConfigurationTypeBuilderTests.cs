@@ -187,7 +187,7 @@ namespace CK.Configuration.Tests
                 }
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.Configure( builder );
+            IStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
             var s = sC.CreateStrategy( TestHelper.Monitor );
@@ -239,7 +239,7 @@ namespace CK.Configuration.Tests
                 }
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.Configure( builder );
+            IStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
             var s = sC.CreateStrategy( TestHelper.Monitor );
@@ -282,7 +282,7 @@ namespace CK.Configuration.Tests
                 }
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.Configure( builder );
+            IStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
             var s = sC.CreateStrategy( TestHelper.Monitor );
@@ -295,7 +295,7 @@ namespace CK.Configuration.Tests
         public void unsuccessful_Create_returns_null()
         {
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.Configure( builder );
+            IStrategyConfiguration.AddResolver( builder );
 
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
@@ -310,7 +310,7 @@ namespace CK.Configuration.Tests
                 var config = ImmutableConfigurationSection.CreateFromJson( "Root", """{ "SomeField": "Val" }""" );
                 var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
                 sC.Should().BeNull();
-                logs.Should().Contain( "Missing required 'Root:SomeField:Type' type name." );
+                logs.Should().Contain( "Unable to create a 'IStrategyConfiguration' from 'Root:SomeField = Val'." );
             }
 
             using( TestHelper.Monitor.CollectTexts( out var logs ) )

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 
 namespace CK.Object.Filter
 {
-
     /// <summary>
     /// Generalizes <see cref="GroupFilterConfiguration"/> and <see cref="GroupAsyncFilterConfiguration"/>.
     /// </summary>

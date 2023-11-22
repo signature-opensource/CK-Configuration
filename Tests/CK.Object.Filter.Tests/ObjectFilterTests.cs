@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 using System.Collections;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Object.Filter.Tests
@@ -37,6 +38,7 @@ namespace CK.Object.Filter.Tests
             var fC = builder.Create<ObjectFilterConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
             Throw.DebugAssert( fC != null );
             var f = fC.CreatePredicate( TestHelper.Monitor );
+            Throw.DebugAssert( f != null );
             f( this ).Should().Be( always );
         }
 
@@ -48,12 +50,16 @@ namespace CK.Object.Filter.Tests
             config["Condition"] = t;
             var builder = new PolymorphicConfigurationTypeBuilder();
             ObjectFilterConfiguration.AddResolver( builder );
+            ObjectAsyncFilterConfiguration.AddResolver( builder );
 
             var fC = builder.Create<ObjectFilterConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
             Throw.DebugAssert( fC != null );
-            var f = fC.CreatePredicate( TestHelper.Monitor );
-            // "All" on empty Filters defaults to true, "Any" defaults to false.
-            f( this ).Should().Be( t == "All" );
+
+            fC.Should().BeAssignableTo<GroupFilterConfiguration>();
+            ((GroupFilterConfiguration)fC).Filters.Should().BeEmpty();
+            ((GroupFilterConfiguration)fC).All.Should().Be( t == "All" );
+            ((GroupFilterConfiguration)fC).Any.Should().Be( t == "Any" );
+            ((GroupFilterConfiguration)fC).AtLeast.Should().Be( t == "All" ? 0 : 1 );
         }
 
         [Test]
@@ -75,14 +81,14 @@ namespace CK.Object.Filter.Tests
             ((GroupFilterConfiguration)fC).Filters[0].Should().BeAssignableTo<AlwaysTrueFilterConfiguration>();
 
             var f = fC.CreatePredicate( TestHelper.Monitor );
+            Throw.DebugAssert( f != null );
             f( this ).Should().BeTrue();
         }
 
-        [Test]
-        public void complex_json_tree()
+        static MutableConfigurationSection GetComplexConfiguration()
         {
-            var config = new MutableConfigurationSection( "Root" );
-            config.AddJson( """
+            var complexJson = new MutableConfigurationSection( "Root" );
+            complexJson.AddJson( """
                 {
                     // No type resolved to "All" ("And" connector).
                     "Filters": [
@@ -121,7 +127,7 @@ namespace CK.Object.Filter.Tests
                             ]
                         },
                         {
-                            // "Group" with AtLeast.
+                            // The "Group" with "AtLeast" enables a "n among m" condition.
                             "Type": "Group",
                             "AtLeast": 2,
                             "Assemblies": {"CK.Object.Filter.Tests": "P"},
@@ -143,6 +149,13 @@ namespace CK.Object.Filter.Tests
                     ]
                 }
                 """ );
+            return complexJson;
+        }
+
+        [Test]
+        public void complex_configuration_tree()
+        {
+            MutableConfigurationSection config = GetComplexConfiguration();
             var builder = new PolymorphicConfigurationTypeBuilder();
             ObjectFilterConfiguration.AddResolver( builder );
 
@@ -150,11 +163,75 @@ namespace CK.Object.Filter.Tests
             Throw.DebugAssert( fC != null );
 
             var f = fC.CreatePredicate( TestHelper.Monitor );
+            Throw.DebugAssert( f != null );
             f( 0 ).Should().Be( false );
             f( "Ax" ).Should().Be( false );
             f( "Axy" ).Should().Be( true );
             f( "Bzy" ).Should().Be( true );
             f( "Bzy but too long" ).Should().Be( false );
         }
+
+        [Test]
+        public async Task complex_configuration_tree_Async()
+        {
+            MutableConfigurationSection config = GetComplexConfiguration();
+            var builder = new PolymorphicConfigurationTypeBuilder();
+            ObjectAsyncFilterConfiguration.AddResolver( builder );
+
+            var fC = builder.Create<ObjectAsyncFilterConfiguration>( TestHelper.Monitor, config );
+            Throw.DebugAssert( fC != null );
+
+            var f = fC.CreatePredicate( TestHelper.Monitor );
+            Throw.DebugAssert( f != null );
+            (await f( 0 )).Should().Be( false );
+            (await f( "Ax" )).Should().Be( false );
+            (await f( "Axy" )).Should().Be( true );
+            (await f( "Bzy" )).Should().Be( true );
+            (await f( "Bzy but too long" )).Should().Be( false );
+        }
+
+        [Test]
+        public void complex_configuration_tree_with_EvaluationHook()
+        {
+            MutableConfigurationSection config = GetComplexConfiguration();
+            var builder = new PolymorphicConfigurationTypeBuilder();
+            ObjectFilterConfiguration.AddResolver( builder );
+
+            var fC = builder.Create<ObjectFilterConfiguration>( TestHelper.Monitor, config );
+            Throw.DebugAssert( fC != null );
+
+            var hook = new MonitoredEvaluationHook( TestHelper.Monitor );
+
+            var f = fC.CreateHook( TestHelper.Monitor, hook );
+            Throw.DebugAssert( f != null );
+            f.Evaluate( 0 ).Should().Be( false );
+            f.Evaluate( "Ax" ).Should().Be( false );
+            f.Evaluate( "Axy" ).Should().Be( true );
+            f.Evaluate( "Bzy" ).Should().Be( true );
+            f.Evaluate( "Bzy but too long" ).Should().Be( false );
+        }
+
+        [Test]
+        public async Task complex_configuration_tree_with_EvaluationHook_Async()
+        {
+            MutableConfigurationSection config = GetComplexConfiguration();
+            var builder = new PolymorphicConfigurationTypeBuilder();
+            ObjectAsyncFilterConfiguration.AddResolver( builder );
+
+            var fC = builder.Create<ObjectAsyncFilterConfiguration>( TestHelper.Monitor, config );
+            Throw.DebugAssert( fC != null );
+
+            var hook = new MonitoredEvaluationHook( TestHelper.Monitor );
+
+            var f = fC.CreateHook( TestHelper.Monitor, hook );
+            Throw.DebugAssert( f != null );
+            (await f.EvaluateAsync( 0 )).Should().Be( false );
+            (await f.EvaluateAsync( "Ax" )).Should().Be( false );
+            (await f.EvaluateAsync( "Axy" )).Should().Be( true );
+            (await f.EvaluateAsync( "Bzy" )).Should().Be( true );
+            (await f.EvaluateAsync( "Bzy but too long" )).Should().Be( false );
+        }
+
+
     }
 }
