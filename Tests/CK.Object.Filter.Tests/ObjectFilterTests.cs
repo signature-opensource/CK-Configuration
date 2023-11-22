@@ -52,37 +52,66 @@ namespace CK.Object.Filter.Tests
             ObjectFilterConfiguration.AddResolver( builder );
             ObjectAsyncFilterConfiguration.AddResolver( builder );
 
-            var fC = builder.Create<ObjectFilterConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
-            Throw.DebugAssert( fC != null );
+            {
+                var fC = builder.Create<ObjectFilterConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
+                Throw.DebugAssert( fC != null );
 
-            fC.Should().BeAssignableTo<GroupFilterConfiguration>();
-            ((GroupFilterConfiguration)fC).Filters.Should().BeEmpty();
-            ((GroupFilterConfiguration)fC).All.Should().Be( t == "All" );
-            ((GroupFilterConfiguration)fC).Any.Should().Be( t == "Any" );
-            ((GroupFilterConfiguration)fC).AtLeast.Should().Be( t == "All" ? 0 : 1 );
+                fC.Should().BeAssignableTo<GroupFilterConfiguration>();
+                ((GroupFilterConfiguration)fC).Filters.Should().BeEmpty();
+                ((GroupFilterConfiguration)fC).All.Should().Be( t == "All" );
+                ((GroupFilterConfiguration)fC).Any.Should().Be( t == "Any" );
+                ((GroupFilterConfiguration)fC).AtLeast.Should().Be( t == "All" ? 0 : 1 );
+            }
+            {
+                var fC = builder.Create<ObjectAsyncFilterConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
+                Throw.DebugAssert( fC != null );
+
+                fC.Should().BeAssignableTo<GroupAsyncFilterConfiguration>();
+                ((GroupAsyncFilterConfiguration)fC).Filters.Should().BeEmpty();
+                ((GroupAsyncFilterConfiguration)fC).All.Should().Be( t == "All" );
+                ((GroupAsyncFilterConfiguration)fC).Any.Should().Be( t == "Any" );
+                ((GroupAsyncFilterConfiguration)fC).AtLeast.Should().Be( t == "All" ? 0 : 1 );
+            }
         }
 
         [Test]
-        public void default_group_is_All()
+        public async Task default_group_is_All_Async()
         {
             var config = new MutableConfigurationSection( "Root" );
             config["Conditions:0:Type"] = "true";
             var builder = new PolymorphicConfigurationTypeBuilder();
             // Relaces default "Filters" by "Conditions".
             ObjectFilterConfiguration.AddResolver( builder, compositeItemsFieldName: "Conditions" );
+            ObjectAsyncFilterConfiguration.AddResolver( builder, compositeItemsFieldName: "Conditions" );
 
-            var fC = builder.Create<ObjectFilterConfiguration>( TestHelper.Monitor, config );
-            Throw.DebugAssert( fC != null );
-            fC.Should().BeAssignableTo<GroupFilterConfiguration>();
-            ((GroupFilterConfiguration)fC).Filters.Should().HaveCount( 1 );
-            ((GroupFilterConfiguration)fC).All.Should().BeTrue();
-            ((GroupFilterConfiguration)fC).Any.Should().BeFalse();
-            ((GroupFilterConfiguration)fC).AtLeast.Should().Be( 0 );
-            ((GroupFilterConfiguration)fC).Filters[0].Should().BeAssignableTo<AlwaysTrueFilterConfiguration>();
+            {
+                var fC = builder.Create<ObjectFilterConfiguration>( TestHelper.Monitor, config );
+                Throw.DebugAssert( fC != null );
+                fC.Should().BeAssignableTo<GroupFilterConfiguration>();
+                ((GroupFilterConfiguration)fC).Filters.Should().HaveCount( 1 );
+                ((GroupFilterConfiguration)fC).All.Should().BeTrue();
+                ((GroupFilterConfiguration)fC).Any.Should().BeFalse();
+                ((GroupFilterConfiguration)fC).AtLeast.Should().Be( 0 );
+                ((GroupFilterConfiguration)fC).Filters[0].Should().BeAssignableTo<AlwaysTrueFilterConfiguration>();
 
-            var f = fC.CreatePredicate( TestHelper.Monitor );
-            Throw.DebugAssert( f != null );
-            f( this ).Should().BeTrue();
+                var f = fC.CreatePredicate( TestHelper.Monitor );
+                Throw.DebugAssert( f != null );
+                f( this ).Should().BeTrue();
+            }
+            {
+                var fC = builder.Create<ObjectAsyncFilterConfiguration>( TestHelper.Monitor, config );
+                Throw.DebugAssert( fC != null );
+                fC.Should().BeAssignableTo<GroupAsyncFilterConfiguration>();
+                ((GroupAsyncFilterConfiguration)fC).Filters.Should().HaveCount( 1 );
+                ((GroupAsyncFilterConfiguration)fC).All.Should().BeTrue();
+                ((GroupAsyncFilterConfiguration)fC).Any.Should().BeFalse();
+                ((GroupAsyncFilterConfiguration)fC).AtLeast.Should().Be( 0 );
+                ((GroupAsyncFilterConfiguration)fC).Filters[0].Should().BeAssignableTo<AlwaysTrueAsyncFilterConfiguration>();
+
+                var f = fC.CreatePredicate( TestHelper.Monitor );
+                Throw.DebugAssert( f != null );
+                (await f( this )).Should().BeTrue();
+            }
         }
 
         static MutableConfigurationSection GetComplexConfiguration()

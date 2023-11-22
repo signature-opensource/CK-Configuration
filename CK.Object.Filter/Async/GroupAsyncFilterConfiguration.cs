@@ -70,7 +70,7 @@ namespace CK.Object.Filter
                                                                   .Where( s => s != null )
                                                                   .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
-            if( items.Length == 1 ) return items[1];
+            if( items.Length == 1 ) return items[0];
             return new GroupAsyncFilterHook( hook, this, items );
         }
 
@@ -81,7 +81,7 @@ namespace CK.Object.Filter
                                                                           .Where( s => s != null )        
                                                                           .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
-            if( items.Length == 1 ) return items[1];
+            if( items.Length == 1 ) return items[0];
             return _atLeast switch
             {
                 0 => o => AllAsync( items, o ),
