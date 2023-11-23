@@ -30,9 +30,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsumerB.Plugins", "Tests\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{90CF3FC6-59ED-4D7C-B813-2BE587CA7C09}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Object.Filter", "CK.Object.Filter\CK.Object.Filter.csproj", "{11349AFB-0564-4039-BBB8-8139183A375D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Object.Predicate", "CK.Object.Predicate\CK.Object.Predicate.csproj", "{11349AFB-0564-4039-BBB8-8139183A375D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Object.Filter.Tests", "Tests\CK.Object.Filter.Tests\CK.Object.Filter.Tests.csproj", "{CD58AACB-0015-46FC-BEC7-2D8A75B16484}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Object.Predicate.Tests", "Tests\CK.Object.Predicate.Tests\CK.Object.Predicate.Tests.csproj", "{CD58AACB-0015-46FC-BEC7-2D8A75B16484}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

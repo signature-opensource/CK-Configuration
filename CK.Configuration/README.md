@@ -58,7 +58,7 @@ A sample is available in [Tests/ConfigurationPlugins](Tests/ConfigurationPlugins
 a simple strategy, its composite, and 2 sets of configuration objects, one of them being "extensible":
 placeholders can be defined and "patched" with "dynamic configurations".
 
-The [CK.Object.Filter](../CK.Object.Filter/README.md) is another concrete example.
+The [CK.Object.Predicate](../CK.Object.Predicate/README.md) is another concrete example.
 
 ## Configuration "patching": the substituable placeholder
 Configurations are immutable by design for safety and security. But sometimes, islands of
