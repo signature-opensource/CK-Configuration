@@ -1,4 +1,5 @@
 using CK.Core;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Security;
 
@@ -7,21 +8,19 @@ namespace CK.Object.Predicate
     /// <summary>
     /// Configuration base class for synchronous predicates.
     /// </summary>
-    public abstract class ObjectPredicateConfiguration : IObjectPredicateConfiguration
+    public abstract partial class ObjectPredicateConfiguration : IObjectPredicateConfiguration
     {
         readonly ImmutableConfigurationSection _configuration;
 
         /// <summary>
-        /// Captures the configuration section. The monitor and builder are unused
-        /// at this level but this is the standard signature that all configuration
-        /// must support.
+        /// Captures the configuration section.
+        /// <para>
+        /// The required signature constructor for specialized class is
+        /// <c>( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )</c>.
+        /// </para>
         /// </summary>
-        /// <param name="monitor">The monitor that signals errors or warnings.</param>
-        /// <param name="builder">The builder.</param>
         /// <param name="configuration">The configuration serction.</param>
-        protected ObjectPredicateConfiguration( IActivityMonitor monitor,
-                                                PolymorphicConfigurationTypeBuilder builder,
-                                                ImmutableConfigurationSection configuration )
+        protected ObjectPredicateConfiguration( ImmutableConfigurationSection configuration )
         {
             _configuration = configuration;
         }
@@ -119,14 +118,14 @@ namespace CK.Object.Predicate
                 var items = builder.CreateItems<ObjectPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedKeys( monitor, configuration );
-                return new GroupPredicateConfiguration( monitor, 0, builder, configuration, items );
+                return new GroupPredicateConfiguration( 0, configuration, items );
             }
             if( typeName.Equals( "Any", StringComparison.OrdinalIgnoreCase ) )
             {
                 var items = builder.CreateItems<ObjectPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedKeys( monitor, configuration );
-                return items != null ? new GroupPredicateConfiguration( monitor, 1, builder, configuration, items ) : null;
+                return items != null ? new GroupPredicateConfiguration( 1, configuration, items ) : null;
             }
             return null;
         }

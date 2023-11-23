@@ -56,16 +56,16 @@ namespace CK.Configuration.Tests
             var setFirst = new MutableConfigurationSection( "Root:Strategies:0", "<Dynamic>" );
             setFirst["Type"] = "ESimple";
 
-            sC.TrySetPlaceholder( TestHelper.Monitor, setFirst, out var sC2 ).Should().BeTrue();
+            var sC2 = sC.TrySetPlaceholder( TestHelper.Monitor, setFirst, out var _ );
             sC2 = CheckNotNullAndRun( sC2, 4 );
 
             var setInComposite = new MutableConfigurationSection( "Root:Strategies:3:Strategies:1", "<Dynamic>" );
             setInComposite["Type"] = "ESimple";
-            sC2.TrySetPlaceholder( TestHelper.Monitor, setInComposite, out var sC3 ).Should().BeTrue();
+            var sC3 = sC2.TrySetPlaceholder( TestHelper.Monitor, setInComposite, out var _ );
             CheckNotNullAndRun( sC3, 5 );
 
             // From sC.
-            sC.TrySetPlaceholder( TestHelper.Monitor, setInComposite, out var sC2bis ).Should().BeTrue();
+            var sC2bis = sC.TrySetPlaceholder( TestHelper.Monitor, setInComposite, out var _ );
             CheckNotNullAndRun( sC2bis, 4 );
 
             static ExtensibleStrategyConfiguration CheckNotNullAndRun( ExtensibleStrategyConfiguration? sC, int expected )

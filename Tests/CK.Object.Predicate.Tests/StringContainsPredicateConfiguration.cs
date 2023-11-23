@@ -8,7 +8,7 @@ namespace CK.Object.Predicate
         readonly string _content;
 
         public StringContainsPredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
-            : base( monitor, builder, configuration )
+            : base( configuration )
         {
             var c = configuration["Content"];
             if( c == null )

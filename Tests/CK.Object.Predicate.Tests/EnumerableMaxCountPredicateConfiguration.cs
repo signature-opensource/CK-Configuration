@@ -12,7 +12,7 @@ namespace CK.Object.Predicate
         readonly int _maxCount;
 
         public EnumerableMaxCountPredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
-            : base( monitor, builder, configuration )
+            : base( configuration )
         {
             var c = configuration.TryGetIntValue( monitor, "MaxCount" );
             if( !c.HasValue )

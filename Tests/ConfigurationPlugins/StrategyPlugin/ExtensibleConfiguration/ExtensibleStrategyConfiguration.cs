@@ -21,22 +21,49 @@ namespace StrategyPlugin
         /// <inheritdoc cref="IStrategyConfiguration.CreateStrategy(IActivityMonitor)"/>
         public abstract IStrategy? CreateStrategy( IActivityMonitor monitor );
 
-        public bool TrySetPlaceholder( IActivityMonitor monitor,
-                                       IConfigurationSection configuration,
-                                       out ExtensibleStrategyConfiguration? result )
+        /// <summary>
+        /// Tries to replace a <see cref="Plugin.Strategy.PlaceholderStrategyConfiguration"/>.
+        /// <para>
+        /// The <paramref name="configuration"/>.Path must be a direct child of the placeholder to replace.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="configuration">The configuration that should replace a placeholder.</param>
+        /// <returns>A new configuration or null if an error occurred or the placeholder was not found.</returns>
+        public ExtensibleStrategyConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
+                                                                   IConfigurationSection configuration )
         {
-            bool success = true;
-            using( monitor.OnError( () => success = false ) )
+            return TrySetPlaceholder( monitor, configuration, out var _ );
+        }
+
+        /// <summary>
+        /// Tries to replace a <see cref="Plugin.Strategy.PlaceholderStrategyConfiguration"/>.
+        /// <para>
+        /// The <paramref name="configuration"/>.Path must be a direct child of the placeholder to replace.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="configuration">The configuration that should replace a placeholder.</param>
+        /// <param name="builderError">True if an error occurred while building the configuration, false if the placeholder was not found.</param>
+        /// <returns>A new configuration or null if a <paramref name="builderError"/> occurred or the placeholder was not found.</returns>
+        public ExtensibleStrategyConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
+                                                                   IConfigurationSection configuration,
+                                                                   out bool builderError )
+        {
+            builderError = false;
+            ExtensibleStrategyConfiguration? result = null;
+            var buildError = false;
+            using( monitor.OnError( () => buildError = true ) )
             {
                 result = SetPlaceholder( monitor, configuration );
-                if( result == this )
-                {
-                    monitor.Error( $"Unable to set placeholder: '{configuration.GetParentPath()}' " +
-                                    $"doesn't exist or is not a placeholder." );
-                }
             }
-            if( !success ) result = null;
-            return success;
+            if( !buildError && result == this )
+            {
+                monitor.Error( $"Unable to set placeholder: '{configuration.GetParentPath()}' " +
+                               $"doesn't exist or is not a placeholder." );
+                return null;
+            }
+            return (builderError = buildError) ? null : result;
         }
 
         /// <summary>
@@ -44,8 +71,8 @@ namespace StrategyPlugin
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">Configuration of the replaced placeholder.</param>
-        /// <returns>This, a new configuration, or null to remove this.</returns>
-        protected internal virtual ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
+        /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
+        public virtual ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
         {
             return this;
         }

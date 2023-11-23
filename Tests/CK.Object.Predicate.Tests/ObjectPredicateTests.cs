@@ -7,6 +7,8 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Object.Predicate.Tests
 {
+
+
     [TestFixture]
     public class ObjectPredicateTests
     {
@@ -27,18 +29,28 @@ namespace CK.Object.Predicate.Tests
 
         [TestCase( true )]
         [TestCase( false )]
-        public void type_can_be_true_or_false( bool always )
+        public async Task type_can_be_true_or_false_Async( bool always )
         {
             var config = new MutableConfigurationSection( "Root" );
             config["Condition"] = always.ToString();
             var builder = new PolymorphicConfigurationTypeBuilder();
             ObjectPredicateConfiguration.AddResolver( builder );
+            ObjectAsyncPredicateConfiguration.AddResolver( builder );
 
-            var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
-            Throw.DebugAssert( fC != null );
-            var f = fC.CreatePredicate( TestHelper.Monitor );
-            Throw.DebugAssert( f != null );
-            f( this ).Should().Be( always );
+            {
+                var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
+                Throw.DebugAssert( fC != null );
+                var f = fC.CreatePredicate( TestHelper.Monitor );
+                Throw.DebugAssert( f != null );
+                f( this ).Should().Be( always );
+            }
+            {
+                var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
+                Throw.DebugAssert( fC != null );
+                var f = fC.CreatePredicate( TestHelper.Monitor );
+                Throw.DebugAssert( f != null );
+                (await f( this )).Should().Be( always );
+            }
         }
 
         [TestCase( "All" )]
@@ -259,7 +271,5 @@ namespace CK.Object.Predicate.Tests
             (await f.EvaluateAsync( "Bzy" )).Should().Be( true );
             (await f.EvaluateAsync( "Bzy but too long" )).Should().Be( false );
         }
-
-
     }
 }

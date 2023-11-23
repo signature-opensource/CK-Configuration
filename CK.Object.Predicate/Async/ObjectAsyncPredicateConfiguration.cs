@@ -9,12 +9,16 @@ namespace CK.Object.Predicate
     /// <summary>
     /// Configuration base class for asynchronous predicates.
     /// </summary>
-    public abstract class ObjectAsyncPredicateConfiguration : IObjectPredicateConfiguration
+    public abstract partial class ObjectAsyncPredicateConfiguration : IObjectPredicateConfiguration
     {
         readonly ImmutableConfigurationSection _configuration;
 
         /// <summary>
         /// Captures the configuration section.
+        /// <para>
+        /// The required signature constructor for specialized class is
+        /// <c>( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )</c>.
+        /// </para>
         /// </summary>
         /// <param name="configuration">The configuration serction.</param>
         protected ObjectAsyncPredicateConfiguration( ImmutableConfigurationSection configuration )
@@ -110,14 +114,14 @@ namespace CK.Object.Predicate
                 var predicates = builder.CreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
                 if( predicates == null ) return null;
                 WarnUnusedKeys( monitor, configuration );
-                return new GroupAsyncPredicateConfiguration( monitor, 0, configuration, predicates );
+                return new GroupAsyncPredicateConfiguration( 0, configuration, predicates );
             }
             if( typeName.Equals( "Any", StringComparison.OrdinalIgnoreCase ) )
             {
                 var predicates = builder.CreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
                 if( predicates == null ) return null;
                 WarnUnusedKeys( monitor, configuration );
-                return predicates != null ? new GroupAsyncPredicateConfiguration( monitor, 1, configuration, predicates ) : null;
+                return predicates != null ? new GroupAsyncPredicateConfiguration( 1, configuration, predicates ) : null;
             }
             return null;
         }

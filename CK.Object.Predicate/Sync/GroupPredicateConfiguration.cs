@@ -1,4 +1,5 @@
 using CK.Core;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -20,26 +21,25 @@ namespace CK.Object.Predicate
         /// Required constructor.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors and warnings.</param>
-        /// <param name="builder">The builder. Can be used to instantiate other children as needed.</param>
+        /// <param name="builder">The builder. (Unused but required by the builder).</param>
         /// <param name="configuration">The configuration for this object.</param>
         /// <param name="predicates">The subordinated items.</param>
         public GroupPredicateConfiguration( IActivityMonitor monitor,
                                             PolymorphicConfigurationTypeBuilder builder,
                                             ImmutableConfigurationSection configuration,
                                             IReadOnlyList<ObjectPredicateConfiguration> predicates )
-            : base( monitor, builder, configuration )
+            : base( configuration )
         {
             _predicates = predicates;
             _atLeast = ReadAtLeast( monitor, configuration, predicates.Count );
         }
 
-        internal GroupPredicateConfiguration( IActivityMonitor monitor,
-                                              int knownAtLeast,
-                                              PolymorphicConfigurationTypeBuilder builder,
+        internal GroupPredicateConfiguration( int knownAtLeast,
                                               ImmutableConfigurationSection configuration,
                                               IReadOnlyList<ObjectPredicateConfiguration> predicates )
-            : base( monitor, builder, configuration )
+            : base( configuration )
         {
+            Throw.DebugAssert( knownAtLeast >= 0 && (predicates.Count < 2 || knownAtLeast < predicates.Count) );
             _predicates = predicates;
             _atLeast = knownAtLeast;
         }
@@ -111,20 +111,61 @@ namespace CK.Object.Predicate
                 1 => o => items.Any( f => f( o ) ),
                 _ => o => AtLeastMatch( items, o, _atLeast )
             };
+
+            static bool AtLeastMatch( ImmutableArray<Func<object, bool>> predicates, object o, int atLeast )
+            {
+                int c = 0;
+                foreach( var f in predicates )
+                {
+                    if( f( o ) )
+                    {
+                        if( ++c == atLeast ) return true;
+                    }
+                }
+                return false;
+            }
         }
 
-        static bool AtLeastMatch( ImmutableArray<Func<object, bool>> predicates, object o, int atLeast )
+        /// <summary>
+        /// Composite mutator.
+        /// <para>
+        /// Errors are emitted in the monitor. On error, this instance is returned. 
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor to use to signal errors.</param>
+        /// <param name="configuration">Configuration of the replaced placeholder.</param>
+        /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
+        public override ObjectPredicateConfiguration SetPlaceholder( IActivityMonitor monitor,
+                                                                     IConfigurationSection configuration )
         {
-            int c = 0;
-            foreach( var f in predicates )
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( configuration );
+
+            // Bails out early if we are not concerned.
+            if( !Configuration.IsChildPath( configuration.Path ) )
             {
-                if( f( o ) )
-                {
-                    if( ++c == atLeast ) return true;
-                }
+                return this;
             }
-            return false;
+            ImmutableArray<ObjectPredicateConfiguration>.Builder? newItems = null;
+            for( int i = 0; i < _predicates.Count; i++ )
+            {
+                var item = _predicates[i];
+                var r = item.SetPlaceholder( monitor, configuration );
+                if( r != item )
+                {
+                    if( newItems == null )
+                    {
+                        newItems = ImmutableArray.CreateBuilder<ObjectPredicateConfiguration>( _predicates.Count );
+                        newItems.AddRange( _predicates.Take( i ) );
+                    }
+                }
+                newItems?.Add( r );
+            }
+            return newItems != null
+                    ? new GroupPredicateConfiguration( _atLeast, Configuration, newItems.ToImmutableArray() )
+                    : this;
         }
+
     }
 
 }

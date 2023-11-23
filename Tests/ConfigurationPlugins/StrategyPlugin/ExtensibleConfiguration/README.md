@@ -14,20 +14,27 @@ To support placeholders and configuration extension, a family must:
   /// </summary>
   /// <param name="monitor">The monitor to use to signal errors.</param>
   /// <param name="configuration">Configuration of the replaced placeholder.</param>
-  /// <returns>This, a new configuration, or null to remove this.</returns>
-  public virtual ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
+  /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
+  public virtual ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
   {
       return this;
   }
 ```
-  Here the mutator can return `null`. This is actually not required: this is the standard way to handle
-  removal of an item but in our case, we only want to replace a placeholder by an existing section.
-  We won't use this null return but we keep the code with this feature.
-
 - Define a Placeholder type. Here the [PlaceholderStrategyConfiguration](PlaceholderStrategyConfiguration.cs)
 does the job:
   - It captures its own configuration AND the Assemblies configuration that applies where it is.
   - It is "empty": it always generate null strategies.
+  - It overrides the `SetPlaceholder` to:
+    - Check if the proposed new section is anchored in itself: the section parent configuration
+    path must be exactly the placeholder's path (the section name - the key - doesn't matter,
+    we often use `<Dynamic>` for the section name).
+    If the section is a "child", then:
+    - It creates a new `PolymorphicConfigurationTypeBuilder` that will use the captured assemblies.
+    - It adds the type resolver for its family to the builder.
+    - It ensures that the section is an immutable one or creates it (anchored at the right position).
+    - It creates the configured object from the section.
+    - If it fails (`Create` returns null), it does nothing (by returning itsef the placeholder is kept
+      unchanged).
 ``` csharp
 public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
 {
@@ -42,46 +49,42 @@ public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfigu
         _configuration = configuration;
     }
 
-    /// <summary>
-    /// A placeholder obviously generates no strategy.
-    /// </summary>
     public override IStrategy? CreateStrategy( IActivityMonitor monitor ) => null;
-```
 
-  - It overrides the `SetPlaceholder` to:
-    - Check if the proposed new section is anchored in itself: the section parent configuration
-    path must be exactly the placeholder's path (the section name - the key - doesn't matter,
-    we'll use `<Dynamic>` for it).
-    If the section is a "child", then:
-    - It creates a new `PolymorphicConfigurationTypeBuilder` that will use the captured assemblies.
-    - It adds the type resolver for its family to the builder.
-    - It ensures that the section is an immutable one or creates it (anchored at the right position).
-    - It creates the configured object from the section.
-    - If it fails (`Create` returns null), it does nothing: by returning itsef the placeholder is kept
-      here. (This where we may remove it by returning null but this makes no sense here.)
-    - Otherwise, it simply returns the new configured object that will replace it.
-``` csharp
-public override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
-                                                                 IConfigurationSection configuration )
-{
-    if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
+    public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor,
+                                                                    IConfigurationSection configuration )
     {
-        var builder = new PolymorphicConfigurationTypeBuilder( _assemblies );
-        ExtensibleStrategyConfiguration.AddResolver( builder );
-        if( configuration is not ImmutableConfigurationSection config )
+        if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
         {
-            config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
+            var builder = new PolymorphicConfigurationTypeBuilder( _assemblies );
+            ExtensibleStrategyConfiguration.AddResolver( builder );
+            if( configuration is not ImmutableConfigurationSection config )
+            {
+                config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
+            }
+            var newC = builder.Create<ExtensibleStrategyConfiguration>( monitor, config );
+            if( newC != null ) return newC;
         }
-        var newC = builder.Create<ExtensibleStrategyConfiguration>( monitor, config );
-        if( newC != null ) return newC;
+        return this;
     }
-    return this;
 }
 ```
-- Finaly, the `SetPlaceholder` mutator for the composite must be implemented.
-  This implementation is correct (alloc-free if nothing changed). It handles removal
-  (null return from `item.SetPlaceholder( monitor, configuration )`) but as we said
-  this is not required.
+- Finally, the composite must handle the mutation.
+  - A mutation constructor is often useful:
+```csharp
+  /// <summary>
+  /// Private mutation constructor.
+  /// </summary>
+  /// <param name="source">The original composite.</param>
+  /// <param name="newItems">The new items.</param>
+  ExtensibleCompositeStrategyConfiguration( ExtensibleCompositeStrategyConfiguration source,
+                                            ImmutableArray<ExtensibleStrategyConfiguration> newItems )
+  {
+      _path = source._path;
+      _items = newItems;
+  }
+``` 
+  - This composite `SetPlaceholder` is correct (alloc-free if nothing changed).
 ```csharp
 public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor,
                                                                 IConfigurationSection configuration )
@@ -99,7 +102,7 @@ public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor
                 newItems.AddRange( _items.Take( i ) );
             }
         }
-        if( r != null && newItems != null ) newItems.Add( r );
+        newItems?.Add( r );
     }
     return newItems != null
             ? new ExtensibleCompositeStrategyConfiguration( this, newItems.ToImmutableArray() )
@@ -109,25 +112,54 @@ public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor
 And that's it.
 
 Recall that errors are managed by the monitor during the `Create`. To handle this once for all, a helper method
-like the one below can be on the root type that also signals an error if the section failed to find its target
-placeholder:
+`TrySetPlaceholder` can be on the root type that handles builder errors and optionnaly signals if the section
+failed to find its target placeholder.
+
 ```csharp
-public bool TrySetPlaceholder( IActivityMonitor monitor,
-                                IConfigurationSection configuration,
-                                out ExtensibleStrategyConfiguration? result )
+
+/// <summary>
+/// Tries to replace a placeholder.
+/// <para>
+/// The <paramref name="configuration"/>.Path must be a direct child of the placeholder to replace.
+/// </para>
+/// </summary>
+/// <param name="monitor">The monitor to use.</param>
+/// <param name="configuration">The configuration that should replace a placeholder.</param>
+/// <returns>A new configuration or null if an error occurred or the placeholder was not found.</returns>
+public ExtensibleStrategyConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
+                                                          IConfigurationSection configuration )
 {
-    bool success = true;
-    using( monitor.OnError( () => success = false ) )
+  return TrySetPlaceholder( monitor, configuration, out var _ );
+}
+
+/// <summary>
+/// Tries to replace a placeholder.
+/// <para>
+/// The <paramref name="configuration"/>.Path must be a direct child of the placeholder to replace.
+/// </para>
+/// </summary>
+/// <param name="monitor">The monitor to use.</param>
+/// <param name="configuration">The configuration that should replace a placeholder.</param>
+/// <param name="builderError">True if an error occurred while building the configuration, false if the placeholder was not found.</param>
+/// <returns>A new configuration or null if a <paramref name="builderError"/> occurred or the placeholder was not found.</returns>
+public ExtensibleStrategyConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
+                                                           IConfigurationSection configuration,
+                                                           out bool builderError )
+{
+    builderError = false;
+    ExtensibleStrategyConfiguration? result = null;
+    var buildError = false;
+    using( monitor.OnError( () => buildError = true ) )
     {
         result = SetPlaceholder( monitor, configuration );
-        if( result == this )
-        {
-            monitor.Error( $"Unable to set placeholder: '{configuration.GetParentPath()}' " +
-                            $"doesn't exist or is not a placeholder." );
-        }
     }
-    if( !success ) result = null;
-    return success;
+    if( !buildError && result == this )
+    {
+        monitor.Error( $"Unable to set placeholder: '{configuration.GetParentPath()}' " +
+                        $"doesn't exist or is not a placeholder." );
+        return null;
+    }
+    return (builderError = buildError) ? null : result;
 }
 ```    
 
@@ -164,9 +196,9 @@ s.DoSomething( TestHelper.Monitor, 0 ).Should().Be( 1, "There is only one ESimpl
 // Inject another one in the placeholder:
 var setFirst = new MutableConfigurationSection( "Root:Strategies:0", "<Dynamic>" );
 setFirst["Type"] = "ESimple";
-sC.TrySetPlaceholder( TestHelper.Monitor, setFirst, out var sC2 ).Should().BeTrue();
-
+var sC2 = sC.TrySetPlaceholder( TestHelper.Monitor, setFirst );
 Throw.DebugAssert( sC2 != null );
+
 var s2 = sC2.CreateStrategy( TestHelper.Monitor );
 Throw.DebugAssert( s2 != null );
 s2.DoSomething( TestHelper.Monitor, 0 ).Should().Be( 2, "sC2 has now two ESimple strategies." );

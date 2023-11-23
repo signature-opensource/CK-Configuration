@@ -51,8 +51,8 @@ namespace Plugin.Strategy
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">Configuration to apply.</param>
         /// <returns>This or a new composite.</returns>
-        protected internal override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor,
-                                                                                    IConfigurationSection configuration )
+        public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor,
+                                                                        IConfigurationSection configuration )
         {
             ImmutableArray<ExtensibleStrategyConfiguration>.Builder? newItems = null;
             for( int i = 0; i < _items.Count; i++ )
@@ -67,7 +67,7 @@ namespace Plugin.Strategy
                         newItems.AddRange( _items.Take( i ) );
                     }
                 }
-                if( r != null && newItems != null ) newItems.Add( r );
+                newItems?.Add( r );
             }
             return newItems != null ? new ExtensibleCompositeStrategyConfiguration( this, newItems.ToImmutableArray() ) : this;
         }

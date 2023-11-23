@@ -29,8 +29,8 @@ namespace Plugin.Strategy
         public override IStrategy? CreateStrategy( IActivityMonitor monitor ) => null;
 
 
-        protected internal override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
-                                                                                     IConfigurationSection configuration )
+        public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor,
+                                                                        IConfigurationSection configuration )
         {
             if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
             {
@@ -41,8 +41,6 @@ namespace Plugin.Strategy
                     config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
                 }
                 var newC = builder.Create<ExtensibleStrategyConfiguration>( monitor, config );
-                // We choose here to keep the placeholder on error (by returning this).
-                // Returning a null newC here would remove the placeholder.
                 if( newC != null ) return newC;
             }
             return this;

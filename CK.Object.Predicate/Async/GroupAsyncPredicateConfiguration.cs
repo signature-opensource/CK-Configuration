@@ -1,4 +1,5 @@
 using CK.Core;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -33,10 +34,9 @@ namespace CK.Object.Predicate
             _atLeast = GroupPredicateConfiguration.ReadAtLeast( monitor, configuration, predicates.Count );
         }
 
-        internal GroupAsyncPredicateConfiguration( IActivityMonitor monitor,
-                                                int knownAtLeast,
-                                                ImmutableConfigurationSection configuration,
-                                                IReadOnlyList<ObjectAsyncPredicateConfiguration> predicates )
+        internal GroupAsyncPredicateConfiguration( int knownAtLeast,
+                                                   ImmutableConfigurationSection configuration,
+                                                   IReadOnlyList<ObjectAsyncPredicateConfiguration> predicates )
             : base( configuration )
         {
             _predicates = predicates;
@@ -56,6 +56,46 @@ namespace CK.Object.Predicate
 
         /// <inheritdoc cref="IGroupPredicateConfiguration.Predicates"/>
         public IReadOnlyList<ObjectAsyncPredicateConfiguration> Predicates => _predicates;
+
+        /// <summary>
+        /// Composite mutator.
+        /// <para>
+        /// Errors are emitted in the monitor. On error, this instance is returned. 
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor to use to signal errors.</param>
+        /// <param name="configuration">Configuration of the replaced placeholder.</param>
+        /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
+        public override ObjectAsyncPredicateConfiguration SetPlaceholder( IActivityMonitor monitor,
+                                                                          IConfigurationSection configuration )
+        {
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( configuration );
+
+            // Bails out early if we are not concerned.
+            if( !Configuration.IsChildPath( configuration.Path ) )
+            {
+                return this;
+            }
+            ImmutableArray<ObjectAsyncPredicateConfiguration>.Builder? newItems = null;
+            for( int i = 0; i < _predicates.Count; i++ )
+            {
+                var item = _predicates[i];
+                var r = item.SetPlaceholder( monitor, configuration );
+                if( r != item )
+                {
+                    if( newItems == null )
+                    {
+                        newItems = ImmutableArray.CreateBuilder<ObjectAsyncPredicateConfiguration>( _predicates.Count );
+                        newItems.AddRange( _predicates.Take( i ) );
+                    }
+                }
+                newItems?.Add( r );
+            }
+            return newItems != null
+                    ? new GroupAsyncPredicateConfiguration( _atLeast, Configuration, newItems.ToImmutableArray() )
+                    : this;
+        }
 
         /// <inheritdoc />
         public override ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, IPredicateEvaluationHook hook, IServiceProvider services )
