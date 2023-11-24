@@ -29,8 +29,13 @@ namespace CK.Object.Predicate
             _predicate = predicate;
         }
 
-        // Constructor for GroupAsyncPredicate.
-        internal ObjectAsyncPredicateHook( IPredicateEvaluationHook hook, IObjectPredicateConfiguration configuration )
+        /// <summary>
+        /// Constructor used by <see cref="GroupAsyncPredicateHook"/>. Must be used by specialized hook when the predicate contains
+        /// other <see cref="ObjectAsyncPredicateConfiguration"/> to expose the internal predicate structure.
+        /// </summary>
+        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="configuration">This configuration.</param>
+        protected ObjectAsyncPredicateHook( IPredicateEvaluationHook hook, IObjectPredicateConfiguration configuration )
         {
             Throw.CheckNotNullArgument( hook );
             Throw.CheckNotNullArgument( configuration );
@@ -47,7 +52,7 @@ namespace CK.Object.Predicate
         /// </summary>
         /// <param name="o">The object to evaluate.</param>
         /// <returns>The predicate result.</returns>
-        public virtual async ValueTask<bool> EvaluateAsync( object o )
+        public async ValueTask<bool> EvaluateAsync( object o )
         {
             if( !_hook.OnBeforePredicate( this, o ) )
             {
@@ -68,6 +73,11 @@ namespace CK.Object.Predicate
             return _hook.OnAfterPredicate( this, o, r );
         }
 
+        /// <summary>
+        /// Evaluates the predicate. 
+        /// </summary>
+        /// <param name="o">The object to evaluate.</param>
+        /// <returns>The predicate result.</returns>
         protected virtual ValueTask<bool> DoEvaluateAsync( object o ) => _predicate( o );
     }
 

@@ -28,8 +28,13 @@ namespace CK.Object.Predicate
             _predicate = predicate;
         }
 
-        // Constructor for GroupPredicateHook.
-        internal ObjectPredicateHook( IPredicateEvaluationHook hook, IObjectPredicateConfiguration configuration )
+        /// <summary>
+        /// Constructor used by <see cref="GroupPredicateHook"/>. Must be used by specialized hook when the predicate contains
+        /// other <see cref="ObjectPredicateConfiguration"/> to expose the internal predicate structure.
+        /// </summary>
+        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="configuration">This configuration.</param>
+        protected ObjectPredicateHook( IPredicateEvaluationHook hook, IObjectPredicateConfiguration configuration )
         {
             Throw.CheckNotNullArgument( hook );
             Throw.CheckNotNullArgument( configuration );

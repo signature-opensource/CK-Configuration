@@ -48,7 +48,7 @@ namespace CK.Object.Predicate
         /// <param name="source">The source predicate.</param>
         /// <param name="o">The object to evaluate.</param>
         /// <returns>Always true to continue the evaluation.</returns>
-        public bool OnBeforeEvaluate( IObjectPredicateHook source, object o )
+        public virtual bool OnBeforePredicate( IObjectPredicateHook source, object o )
         {
             _monitor.OpenGroup( _level, _tags, $"Evaluating '{source.Configuration.Configuration.Path}'." );
             return true;
@@ -63,7 +63,7 @@ namespace CK.Object.Predicate
         /// <param name="o">The object.</param>
         /// <param name="ex">The exception raised by the evaluation.</param>
         /// <returns>Always false to prevent the exception to be rethrown.</returns>
-        public bool OnEvaluationError( IObjectPredicateHook source, object o, Exception ex )
+        public virtual bool OnPredicateError( IObjectPredicateHook source, object o, Exception ex )
         {
             using( _monitor.OpenError( _tags, $"Predicate '{source.Configuration.Configuration.Path}' error while processing:", ex ) )
             {
@@ -76,13 +76,13 @@ namespace CK.Object.Predicate
         }
 
         /// <summary>
-        /// Closes the currently opened group withe result conclusion.
+        /// Closes the currently opened group with the result as a conclusion.
         /// </summary>
         /// <param name="source">The source predicate.</param>
         /// <param name="o">The object.</param>
         /// <param name="result">The evaluated result.</param>
         /// <returns>The <paramref name="result"/>.</returns>
-        public bool OnAfterEvaluate( IObjectPredicateHook source, object o, bool result )
+        public virtual bool OnAfterPredicate( IObjectPredicateHook source, object o, bool result )
         {
             _monitor.CloseGroup( $"=> {result}" );
             return result;

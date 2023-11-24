@@ -13,7 +13,7 @@ namespace CK.Object.Predicate
         readonly ImmutableArray<ObjectAsyncPredicateHook> _predicates;
 
         /// <summary>
-        /// Initializes a new wrapper without specific behavior.
+        /// Initializes a new hook.
         /// </summary>
         /// <param name="hook">The evaluation hook.</param>
         /// <param name="configuration">The predicate configuration.</param>
