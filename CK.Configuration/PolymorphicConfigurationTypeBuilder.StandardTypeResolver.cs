@@ -7,9 +7,13 @@ using System.Runtime.CompilerServices;
 
 namespace CK.Core
 {
-    public partial class PolymorphicConfigurationTypeBuilder
+    public sealed partial class PolymorphicConfigurationTypeBuilder
     {
-        internal sealed class StandardTypeResolver<TBuilder> : TypeResolver where TBuilder : PolymorphicConfigurationTypeBuilder
+        /// <summary>
+        /// Standard type resolver.
+        /// Note that composite support is optional.
+        /// </summary>
+        public sealed class StandardTypeResolver : TypeResolver
         {
             readonly string _typeFieldName;
             readonly string _typeNamespace;
@@ -18,21 +22,57 @@ namespace CK.Core
             readonly string _typeNameSuffix;
             readonly Type? _compositeBaseType;
             readonly string _compositeItemsFieldName;
-            readonly Func<IActivityMonitor, string, TBuilder, ImmutableConfigurationSection, object?>? _tryCreateFromTypeName;
+            readonly Func<IActivityMonitor, string, PolymorphicConfigurationTypeBuilder, ImmutableConfigurationSection, object?>? _tryCreateFromTypeName;
 
-            internal StandardTypeResolver( TBuilder builder,
-                                           Type baseType,
-                                           string typeNamespace,
-                                           bool allowOtherNamespace,
-                                           string? familyTypeNameSuffix,
-                                           Func<IActivityMonitor, string, TBuilder, ImmutableConfigurationSection, object?>? tryCreateFromTypeName,
-                                           Type? compositeBaseType,
-                                           string compositeItemsFieldName,
-                                           string typeFieldName,
-                                           string typeNameSuffix )
-                : base( builder, baseType )
+            /// <summary>
+            /// Initializes a new <see cref="StandardTypeResolver"/>.
+            /// </summary>
+            /// <param name="baseType">
+            /// The base type that generalizes all the types that will be handled by this resolver.
+            /// </param>
+            /// <param name="typeNamespace">
+            /// Required namespace that will be prepended to the type name read from <paramref name="typeFieldName"/> if
+            /// there is no '.' in it. This must not be empty or whitespace.
+            /// </param>
+            /// <param name="allowOtherNamespace">
+            /// True to allow type names in other namespaces than <paramref name="typeNamespace"/>.
+            /// </param>
+            /// <param name="familyTypeNameSuffix">
+            /// Type suffix that will be appended to the type name read from <paramref name="typeFieldName"/>
+            /// if it doesn't already end with it.
+            /// <para>
+            /// Example: with "Strategy", a "Simple" type name will be "SimpleStrategyConfiguration"
+            /// (the default <paramref name="typeNameSuffix"/> being "Configuration").
+            /// </para>
+            /// </param>
+            /// <param name="tryCreateFromTypeName">
+            /// Optional factory that can create a configured object only from its type name. This enables
+            /// shortcuts to be implemented.
+            /// <para>
+            /// This factory must either:
+            /// <list type="bullet">
+            /// <item>Returns null AND emit an error or a fatal log into the monitor.</item>
+            /// <item>OR returns a non null object AND NOT emit any error.</item>
+            /// </list>
+            /// </para>
+            /// </param>
+            /// <param name="compositeBaseType">Optional specialized type that is the default composite.</param>
+            /// <param name="compositeItemsFieldName">Required field name of a composite items.</param>
+            /// <param name="typeFieldName">The name of the "Type" field.</param>
+            /// <param name="typeNameSuffix">
+            /// Required type name suffix. This is automatically appended to the type name read from <paramref name="typeFieldName"/> if missing.
+            /// </param>
+            public StandardTypeResolver( Type baseType,
+                                         string typeNamespace,
+                                         bool allowOtherNamespace = false,
+                                         string? familyTypeNameSuffix = null,
+                                         Func<IActivityMonitor, string, PolymorphicConfigurationTypeBuilder, ImmutableConfigurationSection, object?>? tryCreateFromTypeName = null,
+                                         Type? compositeBaseType = null,
+                                         string compositeItemsFieldName = "Items",
+                                         string typeFieldName = "Type",
+                                         string typeNameSuffix = "Configuration" )
+                : base( baseType )
             {
-                Throw.CheckNotNullArgument( builder );
                 Throw.CheckNotNullArgument( baseType );
                 Throw.CheckNotNullOrWhiteSpaceArgument( typeFieldName );
                 Throw.CheckNotNullOrWhiteSpaceArgument( typeNamespace );
@@ -48,32 +88,36 @@ namespace CK.Core
                 _typeNameSuffix = typeNameSuffix;
             }
 
-            new TBuilder Builder => Unsafe.As<TBuilder>( base.Builder );
-
-            internal protected override object? Create( IActivityMonitor monitor, ImmutableConfigurationSection configuration )
+            internal protected override object? Create( IActivityMonitor monitor,
+                                                        PolymorphicConfigurationTypeBuilder builder,
+                                                        ImmutableConfigurationSection configuration )
             {
-                return DoCreate( monitor, configuration, _compositeBaseType != null );
+                return DoCreate( monitor, builder, configuration, _compositeBaseType != null );
             }
 
             internal protected override Array? CreateItems( IActivityMonitor monitor,
+                                                            PolymorphicConfigurationTypeBuilder builder,
                                                             ImmutableConfigurationSection composite,
                                                             bool requiresItemsFieldName,
                                                             string? alternateItemsFieldName )
             {
-                return DoCreateItems( monitor, composite, null, alternateItemsFieldName, requiresItemsFieldName );
+                return DoCreateItems( monitor, builder, composite, null, alternateItemsFieldName, requiresItemsFieldName );
             }
 
-            object? DoCreate( IActivityMonitor monitor, ImmutableConfigurationSection configuration, bool allowDefaultComposite )
+            object? DoCreate( IActivityMonitor monitor,
+                              PolymorphicConfigurationTypeBuilder builder,
+                              ImmutableConfigurationSection configuration,
+                              bool allowDefaultComposite )
             {
                 // First, check if the configuration is a value and if it is the case, we have no other choice
                 // to use the optional tryCreateFromTypeName. 
                 if( configuration.Value != null )
                 {
-                    return CreateFromValue( monitor, configuration, configuration.Value );
+                    return CreateFromValue( monitor, builder, configuration, configuration.Value );
                 }
                 // If it's a section then it may define assemblies.
-                var previousAssemblies = Builder.AssemblyConfiguration;
-                Builder.AssemblyConfiguration = Builder.AssemblyConfiguration.Apply( monitor, configuration ) ?? previousAssemblies;
+                var previousAssemblies = builder.AssemblyConfiguration;
+                builder.AssemblyConfiguration = builder.AssemblyConfiguration.Apply( monitor, configuration ) ?? previousAssemblies;
                 try
                 {
                     // Else, lookup the "Type" field.
@@ -81,26 +125,29 @@ namespace CK.Core
                     // If it exists and the optional tryCreateFromTypeName exists then give it a try.
                     if( typeName != null && _tryCreateFromTypeName != null )
                     {
-                        object? result = TryCreateFromTypeName( monitor, configuration, typeName );
+                        object? result = TryCreateFromTypeName( monitor, builder, configuration, typeName );
                         // If the result has been created, we're done.
                         if( result != null ) return result;
                     }
                     if( typeName == null )
                     {
                         // When no "Type" field is specified and if the family has a composite, we consider the default composite.
-                        return CreateWithNoTypeName( monitor, configuration, allowDefaultComposite );
+                        return CreateWithNoTypeName( monitor, builder, configuration, allowDefaultComposite );
                     }
-                    return CreateWithTypeName( monitor, configuration, typeName );
+                    return CreateWithTypeName( monitor, builder, configuration, typeName );
                 }
                 finally
                 {
-                    Builder.AssemblyConfiguration = previousAssemblies;
+                    builder.AssemblyConfiguration = previousAssemblies;
                 }
             }
 
-            object? CreateWithTypeName( IActivityMonitor monitor, ImmutableConfigurationSection configuration, string typeName )
+            object? CreateWithTypeName( IActivityMonitor monitor,
+                                        PolymorphicConfigurationTypeBuilder builder,
+                                        ImmutableConfigurationSection configuration,
+                                        string typeName )
             {
-                var type = Builder.AssemblyConfiguration.TryResolveType( monitor,
+                var type = builder.AssemblyConfiguration.TryResolveType( monitor,
                                                                          typeName,
                                                                          _typeNamespace,
                                                                          BaseType.Assembly,
@@ -121,9 +168,9 @@ namespace CK.Core
                 {
                     if( _compositeBaseType != null && _compositeBaseType.IsAssignableFrom( type ) )
                     {
-                        return DoCreateComposite( monitor, configuration, type, null );
+                        return DoCreateComposite( monitor, builder, configuration, type, null );
                     }
-                    return Activator.CreateInstance( type, monitor, Builder, configuration );
+                    return Activator.CreateInstance( type, monitor, builder, configuration );
                 }
                 catch( Exception ex )
                 {
@@ -132,7 +179,10 @@ namespace CK.Core
                 }
             }
 
-            object? CreateWithNoTypeName( IActivityMonitor monitor, ImmutableConfigurationSection configuration, bool allowDefaultComposite )
+            object? CreateWithNoTypeName( IActivityMonitor monitor,
+                                          PolymorphicConfigurationTypeBuilder builder,
+                                          ImmutableConfigurationSection configuration,
+                                          bool allowDefaultComposite )
             {
                 if( _compositeBaseType != null )
                 {
@@ -156,7 +206,7 @@ namespace CK.Core
                     {
                         try
                         {
-                            return DoCreateComposite( monitor, configuration, _compositeBaseType, itemsField );
+                            return DoCreateComposite( monitor, builder, configuration, _compositeBaseType, itemsField );
                         }
                         catch( Exception ex )
                         {
@@ -170,13 +220,16 @@ namespace CK.Core
                 return null;
             }
 
-            object? TryCreateFromTypeName( IActivityMonitor monitor, ImmutableConfigurationSection configuration, string typeName )
+            object? TryCreateFromTypeName( IActivityMonitor monitor,
+                                           PolymorphicConfigurationTypeBuilder builder,
+                                           ImmutableConfigurationSection configuration,
+                                           string typeName )
             {
                 object? result;
                 bool success = true;
                 using( monitor.OnError( () => success = false ) )
                 {
-                    result = DoTryCreateFromTypeName( monitor, typeName, configuration );
+                    result = DoTryCreateFromTypeName( monitor, builder, typeName, configuration );
                 }
                 // If an error has been raised, forgets the result (even if it is not null).
                 if( !success )
@@ -191,7 +244,10 @@ namespace CK.Core
                 return result;
             }
 
-            object? CreateFromValue( IActivityMonitor monitor, ImmutableConfigurationSection configuration, string value )
+            object? CreateFromValue( IActivityMonitor monitor,
+                                     PolymorphicConfigurationTypeBuilder builder,
+                                     ImmutableConfigurationSection configuration,
+                                     string value )
             {
                 // We ensure that, even if tryCreateFromTypeName has been called, if we have a null result, at least
                 // one error has been logged.
@@ -201,7 +257,7 @@ namespace CK.Core
                 {
                     using( monitor.OnError( () => errorEmitted = true ) )
                     {
-                        result = DoTryCreateFromTypeName( monitor, value, configuration );
+                        result = DoTryCreateFromTypeName( monitor, builder, value, configuration );
                     }
                 }
                 if( result == null && !errorEmitted )
@@ -211,10 +267,13 @@ namespace CK.Core
                 return result;
             }
 
-            object? DoTryCreateFromTypeName( IActivityMonitor monitor, string typeName, ImmutableConfigurationSection configuration )
+            object? DoTryCreateFromTypeName( IActivityMonitor monitor,
+                                             PolymorphicConfigurationTypeBuilder builder,
+                                             string typeName,
+                                             ImmutableConfigurationSection configuration )
             {
                 Throw.DebugAssert( _tryCreateFromTypeName != null );
-                object? result = _tryCreateFromTypeName( monitor, typeName, Builder, configuration );
+                object? result = _tryCreateFromTypeName( monitor, typeName, builder, configuration );
                 if( result != null && !BaseType.IsAssignableFrom( result.GetType() ) )
                 {
                     monitor.Error( ActivityMonitor.Tags.ToBeInvestigated,
@@ -228,15 +287,17 @@ namespace CK.Core
             }
 
             object? DoCreateComposite( IActivityMonitor monitor,
+                                       PolymorphicConfigurationTypeBuilder builder,
                                        ImmutableConfigurationSection configuration,
                                        Type type,
                                        ImmutableConfigurationSection? itemsField )
             {
-                Array? a = DoCreateItems( monitor, configuration, itemsField, null, false );
-                return a != null ? Activator.CreateInstance( type, monitor, Builder, configuration, a ) : null;
+                Array? a = DoCreateItems( monitor, builder, configuration, itemsField, null, false );
+                return a != null ? Activator.CreateInstance( type, monitor, builder, configuration, a ) : null;
             }
 
             Array? DoCreateItems( IActivityMonitor monitor,
+                                  PolymorphicConfigurationTypeBuilder builder,
                                   ImmutableConfigurationSection configuration,
                                   ImmutableConfigurationSection? itemsField,
                                   string? alternateItemsName,
@@ -272,7 +333,7 @@ namespace CK.Core
                 bool success = true;
                 for( int i = 0; i < a.Length; i++ )
                 {
-                    var o = DoCreate( monitor, children[i], false );
+                    var o = DoCreate( monitor, builder, children[i], false );
                     if( o == null ) success = false;
                     a.SetValue( o, i );
                 }

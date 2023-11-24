@@ -1,6 +1,7 @@
 using CK.Core;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Immutable;
 
 namespace CK.Object.Predicate
 {
@@ -11,6 +12,7 @@ namespace CK.Object.Predicate
     public sealed class PlaceholderPredicateConfiguration : ObjectPredicateConfiguration
     {
         readonly AssemblyConfiguration _assemblies;
+        readonly ImmutableArray<PolymorphicConfigurationTypeBuilder.TypeResolver> _resolvers;
 
         /// <summary>
         /// Initializes a new placeholder.
@@ -24,6 +26,7 @@ namespace CK.Object.Predicate
             : base( configuration )
         {
             _assemblies = builder.AssemblyConfiguration;
+            _resolvers = builder.Resolvers.ToImmutableArray();
         }
 
         /// <summary>
@@ -52,8 +55,7 @@ namespace CK.Object.Predicate
         {
             if( configuration.GetParentPath().Equals( Configuration.Path, StringComparison.OrdinalIgnoreCase ) )
             {
-                var builder = new PolymorphicConfigurationTypeBuilder( _assemblies );
-                ObjectPredicateConfiguration.AddResolver( builder );
+                var builder = new PolymorphicConfigurationTypeBuilder( _assemblies, _resolvers );
                 if( configuration is not ImmutableConfigurationSection config )
                 {
                     config = new ImmutableConfigurationSection( configuration, lookupParent: Configuration );

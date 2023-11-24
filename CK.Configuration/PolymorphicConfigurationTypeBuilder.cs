@@ -2,8 +2,11 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.AccessControl;
 
@@ -14,33 +17,46 @@ namespace CK.Core
     /// <para>
     /// Caution: this is a stateful object, concurrency is not supported.
     /// </para>
-    /// <para>
-    /// This can be specialized, typically to offer more context while instatiating objects.
-    /// </para>
     /// </summary>
-    public partial class PolymorphicConfigurationTypeBuilder
+    public sealed partial class PolymorphicConfigurationTypeBuilder
     {
         readonly List<TypeResolver> _resolvers;
         AssemblyConfiguration _assemblyConfiguration;
         int _createDepth;
+        List<(int Depth, int Index, TypeResolver Resolver)>? _hiddenResolvers;
 
         /// <summary>
         /// Initializes a new <see cref="PolymorphicConfigurationTypeBuilder"/>.
         /// </summary>
-        /// <param name="initialAssemblyConfiguration">Optional root assembly configuration to use.</param>
-        public PolymorphicConfigurationTypeBuilder( AssemblyConfiguration? initialAssemblyConfiguration = null )
+        public PolymorphicConfigurationTypeBuilder()
         {
             _resolvers = new List<TypeResolver>();
-            _assemblyConfiguration = initialAssemblyConfiguration ?? AssemblyConfiguration.Empty;
+            _assemblyConfiguration = AssemblyConfiguration.Empty;
         }
 
         /// <summary>
-        /// Gets the current list of resolvers.
+        /// Initializes a new <see cref="PolymorphicConfigurationTypeBuilder"/> with an <see cref="AssemblyConfiguration"/>
+        /// and <see cref="Resolvers"/>.
         /// <para>
-        /// Adding a new <see cref="TypeResolver"/> is done by the TypeResolver's constructor.
-        /// Resolvers must be added from the most specific to the most general <see cref="TypeResolver.BaseType"/>
-        /// (following <see cref="Type.IsAssignableFrom(Type?)"/>): this is like a switch case pattern matching.
+        /// This is typically used by placeholders to restore the creation state at their position.
         /// </para>
+        /// </summary>
+        /// <param name="assemblyConfiguration">Known initial assembly configuration to use.</param>
+        /// <param name="resolvers">Known resolvers to register.</param>
+        public PolymorphicConfigurationTypeBuilder( AssemblyConfiguration assemblyConfiguration,
+                                                    ImmutableArray<TypeResolver> resolvers )
+        {
+            _resolvers = resolvers.ToList();
+            _assemblyConfiguration = assemblyConfiguration;
+        }
+
+        /// <summary>
+        /// Gets whether at least one <see cref="Create(IActivityMonitor, Type, IConfigurationSection)"/> has been called.
+        /// </summary>
+        public bool IsCreating => _createDepth > 0;
+
+        /// <summary>
+        /// Gets the current list of resolvers.
         /// </summary>
         public IReadOnlyList<TypeResolver> Resolvers => _resolvers;
 
@@ -61,9 +77,54 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Gets whether at least one <see cref="Create(IActivityMonitor, Type, IConfigurationSection)"/> has been called.
+        /// Adds a type resolver. 
+        /// <para>
+        /// Adding a resolver can be done while <see cref="IsCreating"/> is true. In this case the added resolver
+        /// temporarily hides a previously registered resolver for the <see cref="TypeResolver.BaseType"/> until
+        /// the currently called <see cref="Create(IActivityMonitor, Type, IConfigurationSection)"/> call ends.
+        /// </para>
+        /// <para>
+        /// When <see cref="IsCreating"/> is false, the <see cref="TypeResolver.BaseType"/> must not already be
+        /// handled by an already registered resolver otherwise an <see cref="ArgumentException"/> is thrown.
+        /// </para>
+        /// <para>
+        /// Note that the same resolver instance can always be added muliple times.
+        /// </para>
         /// </summary>
-        public bool IsCreating => _createDepth > 0;
+        /// <remarks>
+        /// <see cref="TypeResolver.BaseType"/> is the key. Resolvers must be added from the most specific to the most
+        /// general <see cref="TypeResolver.BaseType"/> (following <see cref="Type.IsAssignableFrom(Type?)"/>): this is like a
+        /// switch case pattern matching. Please note that even if this works, this is a weird edge case: families' base type are
+        /// usually independent from each other (B1.IsAssignableFrom(B2) and B2.IsAssignableFrom(B1) are both false).
+        /// </remarks>
+        /// <param name="resolver">The resolver to add.</param>
+        public void AddResolver( TypeResolver resolver )
+        {
+            Throw.CheckNotNullArgument( resolver );
+            int idx = _resolvers.IndexOf( b => resolver.BaseType.IsAssignableFrom( b.BaseType ) );
+            if( idx < 0 )
+            {
+                // No conflict: always append the resolver, Create will truncate the list at its initial length.
+                _resolvers.Add( resolver );
+            }
+            else
+            {
+                // Conflict?
+                // Allows the same resolver instance to be added multiple times: this is a no-op idempotent
+                // operation.
+                if( resolver != _resolvers[idx] )
+                {
+                    if( !IsCreating )
+                    {
+                        Throw.ArgumentException( nameof( resolver ), $"A resolver for base type '{resolver.BaseType:N}' is already registered." );
+                    }
+                    // Registers the override and substitutes the new resolver.
+                    _hiddenResolvers ??= new List<(int, int, TypeResolver)>();
+                    _hiddenResolvers.Add( (_createDepth, idx, _resolvers[idx]) );
+                    _resolvers[idx] = resolver;
+                }
+            }
+        }
 
         /// <summary>
         /// Typed version of the <see cref="Create(IActivityMonitor, Type, IConfigurationSection)"/> method.
@@ -99,7 +160,7 @@ namespace CK.Core
         {
             Throw.CheckNotNullArgument( configuration );
             TypeResolver resolver = FindRequiredResolver( monitor, typeof(T) );
-            return (IReadOnlyList<T>?)resolver.CreateItems( monitor, configuration, requiresItemsFieldName, alternateItemsFieldName );
+            return (IReadOnlyList<T>?)resolver.CreateItems( monitor, this, configuration, requiresItemsFieldName, alternateItemsFieldName );
         }
 
         /// <summary>
@@ -118,15 +179,15 @@ namespace CK.Core
         /// used by this resolver must be used.
         /// </param>
         /// <returns>The resulting list or null if any error occurred.</returns>
-        public virtual IReadOnlyList<object>? CreateItems( IActivityMonitor monitor,
-                                                           Type baseType,
-                                                           ImmutableConfigurationSection configuration,
-                                                           bool requiresItemsFieldName = false,
-                                                           string? alternateItemsFieldName = null )
+        public IReadOnlyList<object>? CreateItems( IActivityMonitor monitor,
+                                                   Type baseType,
+                                                   ImmutableConfigurationSection configuration,
+                                                   bool requiresItemsFieldName = false,
+                                                   string? alternateItemsFieldName = null )
         {
             Throw.CheckNotNullArgument( configuration );
             TypeResolver resolver = FindRequiredResolver( monitor, baseType );
-            return (IReadOnlyList<object>?)resolver.CreateItems( monitor, configuration, requiresItemsFieldName, alternateItemsFieldName );
+            return (IReadOnlyList<object>?)resolver.CreateItems( monitor, this, configuration, requiresItemsFieldName, alternateItemsFieldName );
         }
 
         /// <summary>
@@ -140,9 +201,7 @@ namespace CK.Core
         /// <param name="type">The expected resulting instance type.</param>
         /// <param name="configuration">The configuration to process.</param>
         /// <returns>The configured object or null on error.</returns>
-        public virtual object? Create( IActivityMonitor monitor,
-                                       Type type,
-                                       IConfigurationSection configuration )
+        public object? Create( IActivityMonitor monitor, Type type, IConfigurationSection configuration )
         {
             Throw.CheckNotNullArgument( configuration );
             TypeResolver resolver = FindRequiredResolver( monitor, type );
@@ -157,7 +216,7 @@ namespace CK.Core
             using var detector = monitor.OnError( () => success = false );
             try
             {
-                var result = resolver.Create( monitor, config );
+                var result = resolver.Create( monitor, this, config );
                 if( result == null )
                 {
                     // Ensures that an error has been emitted.
@@ -178,9 +237,22 @@ namespace CK.Core
             }
             finally
             {
-                --_createDepth;
+                // Restores the initial assembly configuration, truncates the resolver list to its initial size
+                // and handles the temporarily substituted resolvers if any.
                 _assemblyConfiguration = initialAssembly;
                 _resolvers.RemoveRange( initialResolverCount, _resolvers.Count - initialResolverCount );
+                if( _hiddenResolvers != null )
+                {
+                    for( int i = _hiddenResolvers.Count - 1; i >= 0; i-- )
+                    {
+                        var (depth, index, previous) = _hiddenResolvers[ i ];
+                        Throw.DebugAssert( depth <= _createDepth );
+                        if( depth < _createDepth ) break;
+                        _resolvers[index] = previous;
+                        _hiddenResolvers.RemoveAt( index );
+                    }
+                }
+                --_createDepth;
             }
         }
 

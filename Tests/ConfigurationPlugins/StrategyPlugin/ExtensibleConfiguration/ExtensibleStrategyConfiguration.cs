@@ -83,12 +83,13 @@ namespace StrategyPlugin
         /// <param name="builder">A builder to configure.</param>
         public static void AddResolver( PolymorphicConfigurationTypeBuilder builder )
         {
-            builder.AddStandardTypeResolver( baseType: typeof( ExtensibleStrategyConfiguration ),
-                                             typeNamespace: "Plugin.Strategy",
-                                             allowOtherNamespace: false,
-                                             familyTypeNameSuffix: "Strategy",
-                                             compositeBaseType: typeof( Plugin.Strategy.ExtensibleCompositeStrategyConfiguration ),
-                                             compositeItemsFieldName: "Strategies" );
+            builder.AddResolver( new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
+                                        baseType: typeof( ExtensibleStrategyConfiguration ),
+                                        typeNamespace: "Plugin.Strategy",
+                                        allowOtherNamespace: false,
+                                        familyTypeNameSuffix: "Strategy",
+                                        compositeBaseType: typeof( Plugin.Strategy.ExtensibleCompositeStrategyConfiguration ),
+                                        compositeItemsFieldName: "Strategies" ) );
         }
 
     }

@@ -22,15 +22,13 @@ To support placeholders and configuration extension, a family must:
 ```
 - Define a Placeholder type. Here the [PlaceholderStrategyConfiguration](PlaceholderStrategyConfiguration.cs)
 does the job:
-  - It captures its own configuration AND the Assemblies configuration that applies where it is.
+  - It captures its own configuration AND the assemblies and the resolvers that apply where it is.
   - It is "empty": it always generate null strategies.
   - It overrides the `SetPlaceholder` to:
     - Check if the proposed new section is anchored in itself: the section parent configuration
-    path must be exactly the placeholder's path (the section name - the key - doesn't matter,
-    we often use `<Dynamic>` for the section name).
+    path must be exactly the placeholder's path.
     If the section is a "child", then:
-    - It creates a new `PolymorphicConfigurationTypeBuilder` that will use the captured assemblies.
-    - It adds the type resolver for its family to the builder.
+    - It creates a new `PolymorphicConfigurationTypeBuilder` that uses the captured assemblies and resolvers.
     - It ensures that the section is an immutable one or creates it (anchored at the right position).
     - It creates the configured object from the section.
     - If it fails (`Create` returns null), it does nothing (by returning itsef the placeholder is kept
@@ -39,6 +37,7 @@ does the job:
 public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
 {
     readonly AssemblyConfiguration _assemblies;
+    readonly ImmutableArray<PolymorphicConfigurationTypeBuilder.TypeResolver> _resolvers;
     readonly ImmutableConfigurationSection _configuration;
 
     public PlaceholderStrategyConfiguration( IActivityMonitor monitor,
@@ -46,6 +45,7 @@ public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfigu
                                               ImmutableConfigurationSection configuration )
     {
         _assemblies = builder.AssemblyConfiguration;
+        _resolvers = builder.Resolvers.ToImmutableArray();
         _configuration = configuration;
     }
 
@@ -56,8 +56,7 @@ public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfigu
     {
         if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
         {
-            var builder = new PolymorphicConfigurationTypeBuilder( _assemblies );
-            ExtensibleStrategyConfiguration.AddResolver( builder );
+            var builder = new PolymorphicConfigurationTypeBuilder( _assemblies, _resolvers );
             if( configuration is not ImmutableConfigurationSection config )
             {
                 config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
@@ -70,7 +69,7 @@ public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfigu
 }
 ```
 - Finally, the composite must handle the mutation.
-  - A mutation constructor is often useful:
+  - A mutation constructor is often useful but not required (an existing private constructor can do the job):
 ```csharp
   /// <summary>
   /// Private mutation constructor.
@@ -127,7 +126,7 @@ failed to find its target placeholder.
 /// <param name="configuration">The configuration that should replace a placeholder.</param>
 /// <returns>A new configuration or null if an error occurred or the placeholder was not found.</returns>
 public ExtensibleStrategyConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
-                                                          IConfigurationSection configuration )
+                                                           IConfigurationSection configuration )
 {
   return TrySetPlaceholder( monitor, configuration, out var _ );
 }
@@ -163,7 +162,9 @@ public ExtensibleStrategyConfiguration? TrySetPlaceholder( IActivityMonitor moni
 }
 ```    
 
-Note that nothing prevents a substituted section to also contains placeholders.
+Note that nothing prevents a substituted section to also contains placeholders. In this
+case, the section name is crucial and must uniquely identify the replaced section in its
+parent so that subsequent replacement paths can be properly resolved.
 
 ## Usage
 

@@ -90,13 +90,14 @@ namespace CK.Object.Predicate
         /// <param name="compositeItemsFieldName">Name of the composite field.</param>
         public static void AddResolver( PolymorphicConfigurationTypeBuilder builder, bool allowOtherNamespace = false, string compositeItemsFieldName = "Predicates" )
         {
-            builder.AddStandardTypeResolver( baseType: typeof( ObjectPredicateConfiguration ),
+            builder.AddResolver( new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
+                                             baseType: typeof( ObjectPredicateConfiguration ),
                                              typeNamespace: "CK.Object.Predicate",
                                              allowOtherNamespace: allowOtherNamespace,
                                              familyTypeNameSuffix: "Predicate",
                                              tryCreateFromTypeName: TryCreateFromTypeName,
                                              compositeBaseType: typeof( GroupPredicateConfiguration ),
-                                             compositeItemsFieldName: compositeItemsFieldName );
+                                             compositeItemsFieldName: compositeItemsFieldName ) );
 
         }
 

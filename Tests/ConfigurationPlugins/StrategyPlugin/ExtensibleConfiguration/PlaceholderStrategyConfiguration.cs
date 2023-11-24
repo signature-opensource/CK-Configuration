@@ -1,6 +1,7 @@
 using CK.Core;
 using Microsoft.Extensions.Configuration;
 using StrategyPlugin;
+using System.Collections.Immutable;
 
 namespace Plugin.Strategy
 {
@@ -13,6 +14,7 @@ namespace Plugin.Strategy
     public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
     {
         readonly AssemblyConfiguration _assemblies;
+        readonly ImmutableArray<PolymorphicConfigurationTypeBuilder.TypeResolver> _resolvers;
         readonly ImmutableConfigurationSection _configuration;
 
         public PlaceholderStrategyConfiguration( IActivityMonitor monitor,
@@ -20,6 +22,7 @@ namespace Plugin.Strategy
                                                  ImmutableConfigurationSection configuration )
         {
             _assemblies = builder.AssemblyConfiguration;
+            _resolvers = builder.Resolvers.ToImmutableArray();
             _configuration = configuration;
         }
 
@@ -34,8 +37,7 @@ namespace Plugin.Strategy
         {
             if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
             {
-                var builder = new PolymorphicConfigurationTypeBuilder( _assemblies );
-                ExtensibleStrategyConfiguration.AddResolver( builder );
+                var builder = new PolymorphicConfigurationTypeBuilder( _assemblies, _resolvers );
                 if( configuration is not ImmutableConfigurationSection config )
                 {
                     config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );

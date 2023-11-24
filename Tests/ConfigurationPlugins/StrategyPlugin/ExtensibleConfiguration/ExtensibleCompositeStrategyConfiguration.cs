@@ -8,7 +8,7 @@ namespace Plugin.Strategy
     /// <summary>
     /// Extensible composite configuration.
     /// <para>
-    /// This must be in the "plugin" namespace so that it can be explictely loaded.
+    /// This must be in the "plugin" namespace so that it can be found by the resolver.
     /// </para>
     /// </summary>
     public class ExtensibleCompositeStrategyConfiguration : ExtensibleStrategyConfiguration

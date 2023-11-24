@@ -30,7 +30,7 @@ namespace CK.Configuration.Tests
                 }
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.ConfigureWithoutComposite( builder );
+            IStrategyConfiguration.AddResolverWithoutComposite( builder );
             builder.AssemblyConfiguration = AssemblyConfiguration.Create( TestHelper.Monitor, config ) ?? AssemblyConfiguration.Empty;
             var s1C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S1" ) );
             var s2C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S2" ) );
@@ -77,7 +77,7 @@ namespace CK.Configuration.Tests
                 }
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.ConfigureWithoutComposite( builder );
+            IStrategyConfiguration.AddResolverWithoutComposite( builder );
             builder.AssemblyConfiguration = AssemblyConfiguration.Create( TestHelper.Monitor, config ) ?? AssemblyConfiguration.Empty;
             var s1C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S1" ) );
             var s2C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S2" ) );
@@ -134,7 +134,7 @@ namespace CK.Configuration.Tests
                 }
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
-            IStrategyConfiguration.ConfigureWithoutComposite( builder );
+            IStrategyConfiguration.AddResolverWithoutComposite( builder );
             builder.AssemblyConfiguration = AssemblyConfiguration.Create( TestHelper.Monitor, config ) ?? AssemblyConfiguration.Empty;
             var s1C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S1" ) );
             var s2C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S2" ) );

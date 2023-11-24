@@ -31,12 +31,13 @@ namespace StrategyPlugin
         /// Configures a builder to handle this type family (without <see cref="CompositeStrategyConfiguration"/>).
         /// </summary>
         /// <param name="builder">A builder to configure.</param>
-        public static void ConfigureWithoutComposite( PolymorphicConfigurationTypeBuilder builder )
+        public static void AddResolverWithoutComposite( PolymorphicConfigurationTypeBuilder builder )
         {
-            builder.AddStandardTypeResolver( baseType: typeof( IStrategyConfiguration ),
-                                             typeNamespace: "Plugin.Strategy",
-                                             allowOtherNamespace: false,
-                                             familyTypeNameSuffix: "Strategy" );
+            builder.AddResolver( new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
+                                        baseType: typeof( IStrategyConfiguration ),
+                                        typeNamespace: "Plugin.Strategy",
+                                        allowOtherNamespace: false,
+                                        familyTypeNameSuffix: "Strategy" ) );
         }
 
         /// <summary>
@@ -45,12 +46,13 @@ namespace StrategyPlugin
         /// <param name="builder">A builder to configure.</param>
         public static void AddResolver( PolymorphicConfigurationTypeBuilder builder )
         {
-            builder.AddStandardTypeResolver( baseType: typeof( IStrategyConfiguration ),
-                                             typeNamespace: "Plugin.Strategy",
-                                             allowOtherNamespace: false,
-                                             familyTypeNameSuffix: "Strategy",
-                                             compositeBaseType: typeof( CompositeStrategyConfiguration ),
-                                             compositeItemsFieldName: "Strategies" );
+            builder.AddResolver( new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
+                                        baseType: typeof( IStrategyConfiguration ),
+                                        typeNamespace: "Plugin.Strategy",
+                                        allowOtherNamespace: false,
+                                        familyTypeNameSuffix: "Strategy",
+                                        compositeBaseType: typeof( CompositeStrategyConfiguration ),
+                                        compositeItemsFieldName: "Strategies" ) );
         }
     }
 }
