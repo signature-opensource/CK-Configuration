@@ -13,6 +13,43 @@ namespace CK.Configuration.Tests
     public class MutableAndImmutableConfigurationSectionTests
     {
         [Test]
+        public void GetParentPath_and_IsChildPath()
+        {
+            var mA = new MutableConfigurationSection( "A" );
+            mA.GetParentPath( -1 ).ToString().Should().Be( "A" );
+            mA.GetParentPath( 0 ).ToString().Should().Be( "A" );
+            mA.GetParentPath().Length.Should().Be( 0 );
+            mA.GetParentPath( 1 ).Length.Should().Be( 0 );
+            mA.GetParentPath( 2 ).Length.Should().Be( 0 );
+            mA.IsChildPath( "" ).Should().BeFalse();
+            mA.IsChildPath( "A" ).Should().BeFalse();
+            mA.IsChildPath( "A:B" ).Should().BeTrue();
+            mA.IsChildPath( "A:B:C" ).Should().BeTrue();
+
+            var mAB = new MutableConfigurationSection( "A:B" );
+            mAB.GetParentPath( -1 ).ToString().Should().Be( "A:B" );
+            mAB.GetParentPath( 0 ).ToString().Should().Be( "A:B" );
+            mAB.GetParentPath().ToString().Should().Be( "A" );
+            mAB.GetParentPath( 1 ).ToString().Should().Be( "A" );
+            mAB.GetParentPath( 2 ).Length.Should().Be( 0 );
+            mAB.GetParentPath( 3 ).Length.Should().Be( 0 );
+            mAB.IsChildPath( "" ).Should().BeFalse();
+            mAB.IsChildPath( "A" ).Should().BeFalse();
+            mAB.IsChildPath( "A:B" ).Should().BeFalse();
+            mAB.IsChildPath( "A:B:C" ).Should().BeTrue();
+            mAB.IsChildPath( "A:B:C:D" ).Should().BeTrue();
+
+            var mABC = new MutableConfigurationSection( "A:B", "C" );
+            mABC.GetParentPath( -1 ).ToString().Should().Be( "A:B:C" );
+            mABC.GetParentPath( 0 ).ToString().Should().Be( "A:B:C" );
+            mABC.GetParentPath().ToString().Should().Be( "A:B" );
+            mABC.GetParentPath( 1 ).ToString().Should().Be( "A:B" );
+            mABC.GetParentPath( 2 ).ToString().Should().Be( "A" );
+            mABC.GetParentPath( 3 ).Length.Should().Be( 0 );
+        }
+
+
+        [Test]
         public void ImmutableConfigurationSection_captures_everything()
         {
             using var config = new ConfigurationManager();

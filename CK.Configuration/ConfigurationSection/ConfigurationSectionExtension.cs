@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.IO;
 
 namespace CK.Core
 {
@@ -116,15 +117,28 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Gets this section's parent path.
+        /// Gets this section's parent path (or any parent path).
         /// </summary>
         /// <param name="section">This section.</param>
+        /// <param name="distance">Optional distance to the parent section.</param>
         /// <returns>This section's parent path.</returns>
-        public static ReadOnlySpan<char> GetParentPath( this IConfigurationSection section )
+        public static ReadOnlySpan<char> GetParentPath( this IConfigurationSection section, int distance = 1 )
         {
-            return section.Key.Length > 0
-                    ? section.Path.AsSpan( 0, section.Path.Length - section.Key.Length - 1 )
-                    : section.Path.AsSpan();
+            if( distance <= 0 ) return section.Path;
+            if( distance == 1 )
+            {
+                int len = section.Path.Length - section.Key.Length - 1;
+                return len > 0
+                        ? section.Path.AsSpan( 0, len )
+                        : default;
+            }
+            ReadOnlySpan<char> p = section.Path;
+            int idx = 0;
+            while( --distance >= 0 && (idx = p.LastIndexOf( ':' )) >= 0 )
+            {
+                p = p.Slice( 0, idx );
+            }
+            return idx > 0 ? p : default;
         }
 
         /// <summary>
