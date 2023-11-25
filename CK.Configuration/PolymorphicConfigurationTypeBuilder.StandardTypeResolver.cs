@@ -325,6 +325,7 @@ namespace CK.Core
                         }
                         return null;
                     }
+                    // Empty array (but correctly typed).
                     return Array.CreateInstance( BaseType, 0 );
                 }
                 // We must use a correctly typed array for reflection binding.
@@ -339,7 +340,6 @@ namespace CK.Core
                 }
                 return success ? a : null;
             }
-
         }
     }
 }
