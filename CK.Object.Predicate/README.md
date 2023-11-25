@@ -252,3 +252,8 @@ public void complex_configuration_tree_with_EvaluationHook()
 ```
 This is of course a rather basic hook. `IPredicateEvaluationHook` are easy to implement (there are 3
 methods to override).
+
+## Placeholder support.
+
+Configuration extensibility is supported thanks to the Placeholder pattern described here:
+[../CK.Configuration/Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration](../Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration/README.md).

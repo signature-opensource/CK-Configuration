@@ -82,9 +82,5 @@ The design of a configuration system can introduce such "islands" with dedicated
 Placeholders are extension points that are "empty" but can be substituted by actual configuration
 sections to create a new configuration structure that extends the original one.
 
-`ImmutableConfigurationSection` on which any configuration object relies is deeply immutable. It's
-not the section that changes but the immutable configuration objects built upon them that can give
-birth to modified version of themselves (this is the classical pattern with immutable structures).
-
 The [Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration](../Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration/README.md)
 documents this approach.

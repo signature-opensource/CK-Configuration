@@ -10,7 +10,10 @@ other `IConfigurationSection`.
 
 ## The path/key ambiguity.
 We use `path` instead of `key` parameter name to remind you that a relative path
-is always available in the conffiguration API to address sub sections.
+is always available in the configuration API (like the helpers describe below) to address sub sections.
+
+When `key` is used, it is only a key (no ':' separator in it) like in
+`static bool MutableSection.IsValidKey( ReadOnlySpan<char> sKey )`.
 
 ## The non existing section issue and the "default configuration".
 A configuration section may not `Exists()`: it has no value nor children.
@@ -42,6 +45,39 @@ We recommend to apply the following pattern:
 
 The `ShouldApplyConfiguration` extension methods (in [ConfigurationSectionExtension](ConfigurationSectionExtension.cs))
 implements this once for all.
+
+## Reading a ImmutableConfigurationSection.
+The root `ImmutableConfigurationSection` methods are:
+- The `IConfigurationSection` inherited methods:
+  - `string? Value { get; }` and `string? this[string path] { get; }` (setter throws
+    an InvalidOperationException).
+  - `IReadOnlyList<ImmutableConfigurationSection> GetChildren() { get; }`
+  - `IConfigurationSection IConfiguration.GetSection( string path )` is explicitly implemented and hidden by
+    `ImmutableConfigurationSection GetSection( string path )`.
+
+    Its contract is to return an empty (useles) section. It is always better to use
+    `ImmutableConfigurationSection? TryGetSection( string path )` that avoids a stupid allocation.
+- Lookup section methods that use the lookup parent to a value or a section "here or above". This allows
+  "configuration inheritance" support:
+  - `string? TryLookupValue( string path )`  
+  - `string? TryLookupValue( string path, out int distance )`
+  - `ImmutableConfigurationSection? TryLookupSection( string path )` 
+  - `ImmutableConfigurationSection? TryLookupSection( string path, out int distance )`
+  - `IEnumerable<ImmutableConfigurationSection> LookupAllSection( string path )` 
+  - `IEnumerable<(ImmutableConfigurationSection,int)> LookupAllSectionWithDistance( string path )` 
+- Extension methods that parse, warn, with or without a default value for `boolean`, `int`, `TimeSpan`,
+  `DateTime`, `Double` and `Enum`.
+
+  Current helpers are not good enough. Below are the double helpers.
+    - `double? TryGetDoubleValue( IActivityMonitor monitor, string path, double min = 0.0, double max = double.MaxValue )`
+    - `double? TryLookupDoubleValue( IActivityMonitor monitor, string path, double min = 0.0, double max = double.MaxValue )` 
+    - `double LookupDoubleValue( IActivityMonitor monitor, string path, double defaultValue = 0.0 )`
+
+    There is too many variations to capture: exist or not, parsable or not, in range (or other constraint) or
+    not, whether a warning or an error should be emitted, etc.
+
+    > This requires more thougths. A less naïve, more explicit and versatile API should be invented
+      here!
 
 ## Why is there no `IConfigurationSection.ToImmutableConfigurationSection()` extension method?
 Short answer: because of the immutable section's lookup parent.
