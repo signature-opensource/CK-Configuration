@@ -179,7 +179,7 @@ namespace CK.Core
         /// <summary>
         /// Enumerates all child sections from root configuration up to the child of this section.
         /// <para>
-        /// Sections that appear in the path from the root to this one are skipped by this function.
+        /// Sections that appear in the path from the root to this one are skipped by this function by default.
         /// </para>
         /// </summary>
         /// <param name="path">The configuration key or a path to a subordinated key.</param>
@@ -200,8 +200,41 @@ namespace CK.Core
                 }
             }
             var sKey = path.AsSpan();
-            var sub = Find( ref sKey, _children, caller );
+            var sub = Find( ref sKey, _children, skip: caller );
             if( sub != null ) yield return sub;
+        }
+
+        /// <summary>
+        /// Enumerates all child sections from root configuration up to the direct child of this section with the
+        /// relative distance from this section to the found ones. If a direct child section exists it is the last
+        /// enumerated value at a 0 distance.
+        /// <para>
+        /// Sections that appear in the path from the root to this one are skipped by this function by default.
+        /// </para>
+        /// </summary>
+        /// <param name="path">The configuration key or a path to a subordinated key.</param>
+        /// <param name="skipSectionsOnThisPath">
+        /// Set it to false to return sections that occur on this path.
+        /// This is generally not what you want.
+        /// </param>
+        /// <returns>All the sections above and the direct child section (at 0 distance) if any.</returns>
+        public IEnumerable<(ImmutableConfigurationSection, int)> LookupAllSectionWithDistance( string path, bool skipSectionsOnThisPath = true )
+        {
+            return DoLookupAllSectionWithDistance( path, skipSectionsOnThisPath ? this : null, 0 );
+        }
+
+        IEnumerable<(ImmutableConfigurationSection,int)> DoLookupAllSectionWithDistance( string path, ImmutableConfigurationSection? caller, int distance )
+        {
+            if( _lookupParent != null )
+            {
+                foreach( var s in _lookupParent.DoLookupAllSectionWithDistance( path, caller != null ? this : null, distance + 1 ) )
+                {
+                    yield return s;
+                }
+            }
+            var sKey = path.AsSpan();
+            var sub = Find( ref sKey, _children, skip: caller );
+            if( sub != null ) yield return (sub, distance);
         }
 
         /// <summary>
