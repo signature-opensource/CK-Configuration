@@ -1,11 +1,32 @@
-# Extensible Configuration
+# Extensible Configuration: the Placeholder Pattern
+
+This pattern can be supported by a configuration family but is optional. It enables a configuration
+to define "extension points" at specific positions that can be "patched" with more dynamic configurations
+later.
+
+This pattern offers some strong guaranties:
+- The hosting configuration itself cannot be altered in any way by the subsequent configurations.
+- The placeholders are totally optionnal and are the only way to "extend" an existing configuration.
+- Placeholder replacements works on fully immutable objects, there are no concurrency issues by design.
+- Placeholder replacements can be constrained. For instance an extension may not be allowed to use any
+  other plugin assemblies than the ones that have been defined in the context of the Placeholder, by the
+  "host configuration".
+
+The `ImmutableConfigurationSection` on which any configuration object relies is deeply immutable.
+The configuration objects are also immutable.
+
+It's obviously not the `ImmutableConfigurationSection` that can be changed. The idea is to allow
+the immutable configuration objects (built upon the `ImmutableConfigurationSection`) to give
+birth to modified version of themselves based on the replacement of existing Placeholder (this is the
+classical pattern with immutable structures).
 
 ## Implementation
-To support placeholders and configuration extension, a family must:
-- Support the "empty configured object" pattern, either by implementing the [null object pattern](https://en.wikipedia.org/wiki/Null_object_pattern)
+To support placeholders and configuration extension, a family:
+- Must support the "empty configured object" pattern, either by implementing the [null object pattern](https://en.wikipedia.org/wiki/Null_object_pattern)
   or by simply allows created configured objects to be null.
 
-  In this Strategy family, a null `IStrategy` is the empty configured object.
+  In this [ExtensibleStrategyConfiguration](ExtensibleStrategyConfiguration.cs) family, a null `IStrategy` is the
+  "empty configured object".
 
 - The root family type must expose a mutator. The `ExtensibleStrategyConfiguration` defines:
 ```csharp
@@ -20,19 +41,19 @@ To support placeholders and configuration extension, a family must:
       return this;
   }
 ```
-- Define a Placeholder type. Here the [PlaceholderStrategyConfiguration](PlaceholderStrategyConfiguration.cs)
+- A Placeholder type must exist (convention is to name it "Placeholder"). Here the [PlaceholderStrategyConfiguration](PlaceholderStrategyConfiguration.cs)
 does the job:
   - It captures its own configuration AND the assemblies and the resolvers that apply where it is.
   - It is "empty": it always generate null strategies.
   - It overrides the `SetPlaceholder` to:
     - Check if the proposed new section is anchored in itself: the section parent configuration
-    path must be exactly the placeholder's path.
-    If the section is a "child", then:
-    - It creates a new `PolymorphicConfigurationTypeBuilder` that uses the captured assemblies and resolvers.
-    - It ensures that the section is an immutable one or creates it (anchored at the right position).
-    - It creates the configured object from the section.
-    - If it fails (`Create` returns null), it does nothing (by returning itsef the placeholder is kept
-      unchanged).
+      path must be exactly the placeholder's path.
+      If the section is a "child", then:
+      - It creates a new `PolymorphicConfigurationTypeBuilder` that uses the captured assemblies and resolvers.
+      - It ensures that the section is an immutable one or creates it (anchored at the right position).
+      - It creates the configured object from the section.
+      - If it fails (`Create` returns null), it does nothing (by returning itsef the placeholder is kept
+        unchanged).
 ``` csharp
 public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
 {
