@@ -10,7 +10,7 @@ namespace CK.Object.Predicate.Tests
 
 
     [TestFixture]
-    public class ObjectPredicateTests
+    public class PredicateTests
     {
         [Test]
         public void empty_configuration_fails()
