@@ -4,9 +4,6 @@ namespace CK.Object.Transform
 {
     /// <summary>
     /// Hook that can track each evaluation accross a <see cref="ObjectTransformHook"/> or <see cref="ObjectAsyncTransformHook"/>.
-    /// <para>
-    /// This is an interface with default implementation methods to ease composition (when possible).
-    /// </para>
     /// </summary>
     public interface ITransformEvaluationHook
     {
