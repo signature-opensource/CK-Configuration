@@ -26,6 +26,7 @@ namespace CK.Object.Transform
                                                  CKTrait? tags = null,
                                                  LogLevel level = LogLevel.Trace )
         {
+            Throw.CheckNotNullArgument( monitor );
             _monitor = monitor;
             _tags = tags;
             _level = level;
@@ -44,7 +45,7 @@ namespace CK.Object.Transform
         /// <summary>
         /// Opens a group. The object to transform is not logged.
         /// <para>
-        /// If <paramref name="o"/> is an exception, 
+        /// If <paramref name="o"/> is an exception, it is returned as the transformation result.
         /// </para>
         /// </summary>
         /// <param name="source">The source transform hook.</param>
@@ -77,7 +78,7 @@ namespace CK.Object.Transform
             }
             _errors ??= new List<ExceptionDispatchInfo>();
             _errors.Add( ExceptionDispatchInfo.Capture( ex ) );
-            _monitor.CloseGroup();
+            _monitor.CloseGroup( "Error." );
             return ex;
         }
 
@@ -90,7 +91,7 @@ namespace CK.Object.Transform
         /// <returns>The <paramref name="result"/>.</returns>
         public object OnAfterTransform( IObjectTransformHook source, object o, object result )
         {
-            _monitor.CloseGroup();
+            _monitor.CloseGroup( result is Exception ? "Error." : null );
             return result;
         }
     }

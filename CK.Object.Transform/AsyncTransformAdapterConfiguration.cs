@@ -15,7 +15,7 @@ namespace CK.Object.Transform
         /// <summary>
         /// Initializes a new adapter.
         /// </summary>
-        /// <param name="sync">The synchronous transform function.</param>
+        /// <param name="sync">The synchronous transform configuration.</param>
         public AsyncTransformAdapterConfiguration( T sync )
             : base( sync.Configuration )
         {

@@ -14,7 +14,7 @@ namespace CK.Object.Transform
     /// </summary>
     public sealed class SequenceAsyncTransformConfiguration : ObjectAsyncTransformConfiguration, ISequenceTransformConfiguration
     {
-        readonly IReadOnlyList<ObjectAsyncTransformConfiguration> _transforms;
+        readonly ImmutableArray<ObjectAsyncTransformConfiguration> _transforms;
 
         /// <summary>
         /// Required constructor.
@@ -29,11 +29,11 @@ namespace CK.Object.Transform
                                               IReadOnlyList<ObjectAsyncTransformConfiguration> transforms )
             : base( configuration )
         {
-            _transforms = transforms;
+            _transforms = transforms.ToImmutableArray();
         }
 
         internal SequenceAsyncTransformConfiguration( ImmutableConfigurationSection configuration,
-                                                      IReadOnlyList<ObjectAsyncTransformConfiguration> transforms )
+                                                      ImmutableArray<ObjectAsyncTransformConfiguration> transforms )
             : base( configuration )
         {
             _transforms = transforms;
@@ -65,7 +65,7 @@ namespace CK.Object.Transform
                 return this;
             }
             ImmutableArray<ObjectAsyncTransformConfiguration>.Builder? newItems = null;
-            for( int i = 0; i < _transforms.Count; i++ )
+            for( int i = 0; i < _transforms.Length; i++ )
             {
                 var item = _transforms[i];
                 var r = item.SetPlaceholder( monitor, configuration );
@@ -73,7 +73,7 @@ namespace CK.Object.Transform
                 {
                     if( newItems == null )
                     {
-                        newItems = ImmutableArray.CreateBuilder<ObjectAsyncTransformConfiguration>( _transforms.Count );
+                        newItems = ImmutableArray.CreateBuilder<ObjectAsyncTransformConfiguration>( _transforms.Length );
                         newItems.AddRange( _transforms.Take( i ) );
                     }
                 }

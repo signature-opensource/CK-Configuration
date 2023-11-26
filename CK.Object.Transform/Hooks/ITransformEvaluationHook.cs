@@ -28,6 +28,7 @@ namespace CK.Object.Transform
         /// When a non null object is returned, it becomes the result of the transformation. 
         /// Implementations should return the exception: whith the help of <see cref="OnBeforeTransform(IObjectTransformHook, object)"/>
         /// the exception will be propagated up to the root hook.
+        /// </para>
         /// </summary>
         /// <param name="source">The source transform hook.</param>
         /// <param name="o">The object that causes the error.</param>

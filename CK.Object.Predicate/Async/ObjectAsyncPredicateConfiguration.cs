@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Immutable;
 using System.Security;
 using System.Threading.Tasks;
 using static CK.Object.Predicate.ObjectPredicateConfiguration;
@@ -115,14 +116,14 @@ namespace CK.Object.Predicate
                 var predicates = builder.CreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
                 if( predicates == null ) return null;
                 WarnUnusedKeys( monitor, configuration );
-                return new GroupAsyncPredicateConfiguration( 0, configuration, predicates );
+                return new GroupAsyncPredicateConfiguration( 0, configuration, predicates.ToImmutableArray() );
             }
             if( typeName.Equals( "Any", StringComparison.OrdinalIgnoreCase ) )
             {
                 var predicates = builder.CreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
                 if( predicates == null ) return null;
                 WarnUnusedKeys( monitor, configuration );
-                return predicates != null ? new GroupAsyncPredicateConfiguration( 1, configuration, predicates ) : null;
+                return predicates != null ? new GroupAsyncPredicateConfiguration( 1, configuration, predicates.ToImmutableArray() ) : null;
             }
             return null;
         }

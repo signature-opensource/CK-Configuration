@@ -14,7 +14,7 @@ namespace CK.Object.Predicate
     /// </summary>
     public sealed class GroupPredicateConfiguration : ObjectPredicateConfiguration, IGroupPredicateConfiguration
     {
-        readonly IReadOnlyList<ObjectPredicateConfiguration> _predicates;
+        readonly ImmutableArray<ObjectPredicateConfiguration> _predicates;
         readonly int _atLeast;
 
         /// <summary>
@@ -30,16 +30,16 @@ namespace CK.Object.Predicate
                                             IReadOnlyList<ObjectPredicateConfiguration> predicates )
             : base( configuration )
         {
-            _predicates = predicates;
+            _predicates = predicates.ToImmutableArray();
             _atLeast = ReadAtLeast( monitor, configuration, predicates.Count );
         }
 
         internal GroupPredicateConfiguration( int knownAtLeast,
                                               ImmutableConfigurationSection configuration,
-                                              IReadOnlyList<ObjectPredicateConfiguration> predicates )
+                                              ImmutableArray<ObjectPredicateConfiguration> predicates )
             : base( configuration )
         {
-            Throw.DebugAssert( knownAtLeast >= 0 && (predicates.Count < 2 || knownAtLeast < predicates.Count) );
+            Throw.DebugAssert( knownAtLeast >= 0 && (predicates.Length < 2 || knownAtLeast < predicates.Length) );
             _predicates = predicates;
             _atLeast = knownAtLeast;
         }
@@ -147,7 +147,7 @@ namespace CK.Object.Predicate
                 return this;
             }
             ImmutableArray<ObjectPredicateConfiguration>.Builder? newItems = null;
-            for( int i = 0; i < _predicates.Count; i++ )
+            for( int i = 0; i < _predicates.Length; i++ )
             {
                 var item = _predicates[i];
                 var r = item.SetPlaceholder( monitor, configuration );
@@ -155,14 +155,14 @@ namespace CK.Object.Predicate
                 {
                     if( newItems == null )
                     {
-                        newItems = ImmutableArray.CreateBuilder<ObjectPredicateConfiguration>( _predicates.Count );
-                        newItems.AddRange( _predicates.Take( i ) );
+                        newItems = ImmutableArray.CreateBuilder<ObjectPredicateConfiguration>( _predicates.Length );
+                        newItems.AddRange( _predicates, i );
                     }
                 }
                 newItems?.Add( r );
             }
             return newItems != null
-                    ? new GroupPredicateConfiguration( _atLeast, Configuration, newItems.ToImmutableArray() )
+                    ? new GroupPredicateConfiguration( _atLeast, Configuration, newItems.ToImmutable() )
                     : this;
         }
 

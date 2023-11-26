@@ -1,6 +1,7 @@
 using CK.Core;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Immutable;
 using System.Security;
 
 namespace CK.Object.Predicate
@@ -119,14 +120,14 @@ namespace CK.Object.Predicate
                 var items = builder.CreateItems<ObjectPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedKeys( monitor, configuration );
-                return new GroupPredicateConfiguration( 0, configuration, items );
+                return new GroupPredicateConfiguration( 0, configuration, items.ToImmutableArray() );
             }
             if( typeName.Equals( "Any", StringComparison.OrdinalIgnoreCase ) )
             {
                 var items = builder.CreateItems<ObjectPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedKeys( monitor, configuration );
-                return items != null ? new GroupPredicateConfiguration( 1, configuration, items ) : null;
+                return items != null ? new GroupPredicateConfiguration( 1, configuration, items.ToImmutableArray() ) : null;
             }
             return null;
         }

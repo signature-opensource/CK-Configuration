@@ -15,7 +15,7 @@ namespace CK.Object.Predicate
         /// <summary>
         /// Initializes a new adapter.
         /// </summary>
-        /// <param name="sync">The synchronous predicate.</param>
+        /// <param name="sync">The synchronous predicate configuration.</param>
         public AsyncPredicateAdapterConfiguration( T sync )
             : base( sync.Configuration )
         {

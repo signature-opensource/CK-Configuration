@@ -26,6 +26,7 @@ namespace CK.Object.Predicate
                                                  CKTrait? tags = null,
                                                  LogLevel level = LogLevel.Trace )
         {
+            Throw.CheckNotNullArgument( monitor );
             _monitor = monitor;
             _tags = tags;
             _level = level;

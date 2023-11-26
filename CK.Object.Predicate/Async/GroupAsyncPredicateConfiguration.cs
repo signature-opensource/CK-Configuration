@@ -14,7 +14,7 @@ namespace CK.Object.Predicate
     /// </summary>
     public sealed class GroupAsyncPredicateConfiguration : ObjectAsyncPredicateConfiguration, IGroupPredicateConfiguration
     {
-        readonly IReadOnlyList<ObjectAsyncPredicateConfiguration> _predicates;
+        readonly ImmutableArray<ObjectAsyncPredicateConfiguration> _predicates;
         readonly int _atLeast;
 
         /// <summary>
@@ -25,18 +25,18 @@ namespace CK.Object.Predicate
         /// <param name="configuration">The configuration for this object.</param>
         /// <param name="predicates">The subordinated items.</param>
         public GroupAsyncPredicateConfiguration( IActivityMonitor monitor,
-                                              PolymorphicConfigurationTypeBuilder builder,
-                                              ImmutableConfigurationSection configuration,
-                                              IReadOnlyList<ObjectAsyncPredicateConfiguration> predicates )
+                                                 PolymorphicConfigurationTypeBuilder builder,
+                                                 ImmutableConfigurationSection configuration,
+                                                 IReadOnlyList<ObjectAsyncPredicateConfiguration> predicates )
             : base( configuration )
         {
-            _predicates = predicates;
+            _predicates = predicates.ToImmutableArray();
             _atLeast = GroupPredicateConfiguration.ReadAtLeast( monitor, configuration, predicates.Count );
         }
 
         internal GroupAsyncPredicateConfiguration( int knownAtLeast,
                                                    ImmutableConfigurationSection configuration,
-                                                   IReadOnlyList<ObjectAsyncPredicateConfiguration> predicates )
+                                                   ImmutableArray<ObjectAsyncPredicateConfiguration> predicates )
             : base( configuration )
         {
             _predicates = predicates;
@@ -78,7 +78,7 @@ namespace CK.Object.Predicate
                 return this;
             }
             ImmutableArray<ObjectAsyncPredicateConfiguration>.Builder? newItems = null;
-            for( int i = 0; i < _predicates.Count; i++ )
+            for( int i = 0; i < _predicates.Length; i++ )
             {
                 var item = _predicates[i];
                 var r = item.SetPlaceholder( monitor, configuration );
@@ -86,14 +86,14 @@ namespace CK.Object.Predicate
                 {
                     if( newItems == null )
                     {
-                        newItems = ImmutableArray.CreateBuilder<ObjectAsyncPredicateConfiguration>( _predicates.Count );
-                        newItems.AddRange( _predicates.Take( i ) );
+                        newItems = ImmutableArray.CreateBuilder<ObjectAsyncPredicateConfiguration>( _predicates.Length );
+                        newItems.AddRange( _predicates, i );
                     }
                 }
                 newItems?.Add( r );
             }
             return newItems != null
-                    ? new GroupAsyncPredicateConfiguration( _atLeast, Configuration, newItems.ToImmutableArray() )
+                    ? new GroupAsyncPredicateConfiguration( _atLeast, Configuration, newItems.ToImmutable() )
                     : this;
         }
 

@@ -14,7 +14,7 @@ namespace CK.Object.Transform
     /// </summary>
     public sealed class SequenceTransformConfiguration : ObjectTransformConfiguration, ISequenceTransformConfiguration
     {
-        readonly IReadOnlyList<ObjectTransformConfiguration> _transforms;
+        readonly ImmutableArray<ObjectTransformConfiguration> _transforms;
 
         /// <summary>
         /// Required constructor.
@@ -29,14 +29,14 @@ namespace CK.Object.Transform
                                                IReadOnlyList<ObjectTransformConfiguration> transformers )
             : base( configuration )
         {
-            _transforms = transformers;
+            _transforms = transformers.ToImmutableArray();
         }
 
         internal SequenceTransformConfiguration( ImmutableConfigurationSection configuration,
-                                                 IReadOnlyList<ObjectTransformConfiguration> predicates )
+                                                 ImmutableArray<ObjectTransformConfiguration> transfomers )
             : base( configuration )
         {
-            _transforms = predicates;
+            _transforms = transfomers;
         }
 
         IReadOnlyList<IObjectTransformConfiguration> ISequenceTransformConfiguration.Transforms => _transforms;
@@ -96,7 +96,7 @@ namespace CK.Object.Transform
                 return this;
             }
             ImmutableArray<ObjectTransformConfiguration>.Builder? newItems = null;
-            for( int i = 0; i < _transforms.Count; i++ )
+            for( int i = 0; i < _transforms.Length; i++ )
             {
                 var item = _transforms[i];
                 var r = item.SetPlaceholder( monitor, configuration );
@@ -104,14 +104,14 @@ namespace CK.Object.Transform
                 {
                     if( newItems == null )
                     {
-                        newItems = ImmutableArray.CreateBuilder<ObjectTransformConfiguration>( _transforms.Count );
-                        newItems.AddRange( _transforms.Take( i ) );
+                        newItems = ImmutableArray.CreateBuilder<ObjectTransformConfiguration>( _transforms.Length );
+                        newItems.AddRange( _transforms, i );
                     }
                 }
                 newItems?.Add( r );
             }
             return newItems != null
-                    ? new SequenceTransformConfiguration( Configuration, newItems.ToImmutableArray() )
+                    ? new SequenceTransformConfiguration( Configuration, newItems.ToImmutable() )
                     : this;
         }
 
