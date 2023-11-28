@@ -4,9 +4,11 @@ using System;
 namespace CK.Object.Predicate
 {
     /// <summary>
-    /// Simple always true object predicate.
+    /// Base class that defines a Type constraint.
+    /// <see cref="Type.IsAssignableFrom(Type?)"/> is used.
     /// </summary>
-    public sealed class AlwaysTruePredicateConfiguration : ObjectPredicateConfiguration
+    /// <typeparam name="T">The expected type.</typeparam>
+    public abstract class IsTypeBasePredicateConfiguration<T> : ObjectPredicateConfiguration
     {
         /// <summary>
         /// Required constructor.
@@ -14,9 +16,7 @@ namespace CK.Object.Predicate
         /// <param name="monitor">Unused monitor.</param>
         /// <param name="builder">Unused builder.</param>
         /// <param name="configuration">Captured configuration.</param>
-        public AlwaysTruePredicateConfiguration( IActivityMonitor monitor,
-                                                 PolymorphicConfigurationTypeBuilder builder,
-                                                 ImmutableConfigurationSection configuration )
+        protected IsTypeBasePredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
             : base( configuration )
         {
         }
@@ -24,7 +24,7 @@ namespace CK.Object.Predicate
         /// <inheritdoc />
         public override Func<object, bool> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
         {
-            return static _ => true;
+            return static o => typeof(T).IsAssignableFrom( o.GetType() );
         }
     }
 

@@ -1,8 +1,6 @@
 using CK.Core;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Immutable;
-using System.Security;
 
 namespace CK.Object.Predicate
 {
@@ -30,10 +28,10 @@ namespace CK.Object.Predicate
         public ImmutableConfigurationSection Configuration => _configuration;
 
         /// <summary>
-        /// Creates a synchronous predicate that requires external services to do its job.
+        /// Creates a synchronous predicate.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="services">The services.</param>
+        /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A configured object predicate or null for an empty predicate.</returns>
         public abstract Func<object, bool>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services );
 
@@ -47,7 +45,7 @@ namespace CK.Object.Predicate
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="hook">The hook context.</param>
-        /// <param name="services">The services.</param>
+        /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
         public virtual ObjectPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook, IServiceProvider services )
         {
@@ -119,26 +117,51 @@ namespace CK.Object.Predicate
             {
                 var items = builder.CreateItems<ObjectPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
-                WarnUnusedKeys( monitor, configuration );
-                return new GroupPredicateConfiguration( 0, configuration, items.ToImmutableArray() );
+                WarnUnusedAny( monitor, configuration );
+                return new GroupPredicateConfiguration( 0, 0, configuration, items.ToImmutableArray() );
             }
             if( typeName.Equals( "Any", StringComparison.OrdinalIgnoreCase ) )
             {
                 var items = builder.CreateItems<ObjectPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
-                WarnUnusedKeys( monitor, configuration );
-                return items != null ? new GroupPredicateConfiguration( 1, configuration, items.ToImmutableArray() ) : null;
+                WarnUnusedSingle( monitor, configuration );
+                return items != null ? new GroupPredicateConfiguration( 1, 0, configuration, items.ToImmutableArray() ) : null;
+            }
+            if( typeName.Equals( "Single", StringComparison.OrdinalIgnoreCase ) )
+            {
+                var items = builder.CreateItems<ObjectPredicateConfiguration>( monitor, configuration );
+                if( items == null ) return null;
+                WarnUnusedAtLeastAtMost( monitor, configuration );
+                return items != null ? new GroupPredicateConfiguration( 1, 1, configuration, items.ToImmutableArray() ) : null;
             }
             return null;
         }
 
-        internal static void WarnUnusedKeys( IActivityMonitor monitor, ImmutableConfigurationSection configuration )
+        internal static void WarnUnusedAny( IActivityMonitor monitor, ImmutableConfigurationSection configuration )
         {
             if( configuration["Any"] != null )
             {
                 monitor.Warn( $"Configuration '{configuration.Path}:Any' is ignored." );
             }
+            WarnUnusedSingle( monitor, configuration );
+        }
+
+        internal static void WarnUnusedSingle( IActivityMonitor monitor, ImmutableConfigurationSection configuration )
+        {
+            if( configuration["Single"] != null )
+            {
+                monitor.Warn( $"Configuration '{configuration.Path}:Single' is ignored." );
+            }
+            WarnUnusedAtLeastAtMost( monitor, configuration );
+        }
+
+        internal static void WarnUnusedAtLeastAtMost( IActivityMonitor monitor, ImmutableConfigurationSection configuration )
+        {
             if( configuration["AtLeast"] != null )
+            {
+                monitor.Warn( $"Configuration '{configuration.Path}:AtLeast' is ignored." );
+            }
+            if( configuration["AtMost"] != null )
             {
                 monitor.Warn( $"Configuration '{configuration.Path}:AtLeast' is ignored." );
             }

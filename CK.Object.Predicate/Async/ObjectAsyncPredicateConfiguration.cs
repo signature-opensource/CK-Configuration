@@ -1,9 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Immutable;
-using System.Security;
 using System.Threading.Tasks;
-using static CK.Object.Predicate.ObjectPredicateConfiguration;
 
 namespace CK.Object.Predicate
 {
@@ -31,10 +29,10 @@ namespace CK.Object.Predicate
         public ImmutableConfigurationSection Configuration => _configuration;
 
         /// <summary>
-        /// Creates an asynchronous predicate that requires external services to do its job.
+        /// Creates an asynchronous predicate.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="services">The services.</param>
+        /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A configured predicate or null for an empty predicate.</returns>
         public abstract Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services );
 
@@ -48,7 +46,7 @@ namespace CK.Object.Predicate
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="hook">The hook context.</param>
-        /// <param name="services">The services.</param>
+        /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
         public virtual ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook, IServiceProvider services )
         {
@@ -62,7 +60,7 @@ namespace CK.Object.Predicate
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <returns>A configured predicate or null for an empty predicate.</returns>
-        public Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor ) => CreatePredicate( monitor, EmptyServiceProvider.Instance );
+        public Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor ) => CreatePredicate( monitor, ObjectPredicateConfiguration.EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Creates an <see cref="ObjectAsyncPredicateHook"/> that doesn't require any external service to do its job.
@@ -72,7 +70,7 @@ namespace CK.Object.Predicate
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="hook">The hook context.</param>
         /// <returns>A configured wrapper bound to the hook context or null for an empty predicate.</returns>
-        public ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
+        public ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook ) => CreateHook( monitor, hook, ObjectPredicateConfiguration.EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Adds a <see cref="PolymorphicConfigurationTypeBuilder.TypeResolver"/> for asynchronous <see cref="ObjectAsyncPredicateConfiguration"/>.
@@ -115,29 +113,24 @@ namespace CK.Object.Predicate
             {
                 var predicates = builder.CreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
                 if( predicates == null ) return null;
-                WarnUnusedKeys( monitor, configuration );
-                return new GroupAsyncPredicateConfiguration( 0, configuration, predicates.ToImmutableArray() );
+                ObjectPredicateConfiguration.WarnUnusedAny( monitor, configuration );
+                return new GroupAsyncPredicateConfiguration( 0, 0, configuration, predicates.ToImmutableArray() );
             }
             if( typeName.Equals( "Any", StringComparison.OrdinalIgnoreCase ) )
             {
                 var predicates = builder.CreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
                 if( predicates == null ) return null;
-                WarnUnusedKeys( monitor, configuration );
-                return predicates != null ? new GroupAsyncPredicateConfiguration( 1, configuration, predicates.ToImmutableArray() ) : null;
+                ObjectPredicateConfiguration.WarnUnusedSingle( monitor, configuration );
+                return predicates != null ? new GroupAsyncPredicateConfiguration( 1, 0, configuration, predicates.ToImmutableArray() ) : null;
+            }
+            if( typeName.Equals( "Single", StringComparison.OrdinalIgnoreCase ) )
+            {
+                var predicates = builder.CreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
+                if( predicates == null ) return null;
+                ObjectPredicateConfiguration.WarnUnusedAtLeastAtMost( monitor, configuration );
+                return predicates != null ? new GroupAsyncPredicateConfiguration( 1, 1, configuration, predicates.ToImmutableArray() ) : null;
             }
             return null;
-        }
-
-        internal static void WarnUnusedKeys( IActivityMonitor monitor, ImmutableConfigurationSection configuration )
-        {
-            if( configuration["Any"] != null )
-            {
-                monitor.Warn( $"Configuration '{configuration.Path}:Any' is ignored." );
-            }
-            if( configuration["AtLeast"] != null )
-            {
-                monitor.Warn( $"Configuration '{configuration.Path}:AtLeast' is ignored." );
-            }
         }
 
     }

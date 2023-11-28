@@ -30,12 +30,10 @@ public abstract class ObjectPredicateConfiguration : IObjectPredicateConfigurati
 For simple scenario where predicates don't need external services, an empty service provider is used. `ObjectAsyncPredicateConfiguration`
 has the same methods that return `Func<object,ValueTask<bool>>`.
 
-The predicate composite is [`GroupObjectPredicateConfiguration`](Sync/GroupObjectPredicateConfiguration.cs) (resp. [`GroupObjectAsyncPredicateConfiguration`](Async/GroupObjectAsyncPredicateConfiguration.cs)).
+The predicate composite is [`GroupPredicateConfiguration`](Sync/GroupPredicateConfiguration.cs) (resp. [`GroupAsyncPredicateConfiguration`](Async/GroupAsyncPredicateConfiguration.cs)).
 A group content is by default defined by a `Predicates` field (this can be changed when registering the type resolver).
 
-A group defaults to 'All' (logical connector 'And'), but the configuration can specify `Any: true` or `AtLeast: <n>` where
-`<n>` is the number of predicates that must be satisfied among the `Predicates.Count` subordinated items (this offers
-a "n among m" condition).
+A group defaults to 'All' (logical connector 'And') but can also be a "Any" or "Single" group (see below).
 
 ## Configuration sample.
 A typical predicate configuration looks like this (in json):
@@ -100,7 +98,59 @@ A typical predicate configuration looks like this (in json):
 }
 ```
 
-## Logical pitfalls of 'All' and 'Any' and the "empty predicate".
+## Basic predicates.
+`AlwaysTruePredicateConfiguration` and `AlwaysFalsePredicateConfiguration` are the simplest one.
+
+The `NotPredicateConfiguration` defines an `Operand` predicate and reverts the operand evaluation
+result (true &lt;--&gt; false).
+
+The `IsTypeBasePredicateConfiguration<T>` is helper: actual type match must be explicitely
+defined: there is no "IsType" predicate with a "ExpectedType" expressed as an assembly qualified
+name or other .Net naming.
+
+## Predicate composite: the Group.
+### "Any", "All", "Single" and "AtLeast"/"AtMost"
+The `GroupPredicateConfiguration` is configured with two integers "AtLeast" and "AtMost".
+This enables the Group to handle logical operators between its predicates:
+- "All" is the default and corresponds to the "And" operator ("AtLeast" = 0, "AtMost" = 0).
+- "Any" corresponds to the "Or" operator ("AtLeast" = 1, "AtMost" = "0").
+- "Single" corresponds to the "XOr" (exclusive or) operator ("AtLeast" = 1, "AtMost" = "1").
+  Strictly speaking, this is a XOr when there are exactly 2 predicates in the Group but the
+  semantics is extended to be "exactly one" to handle more than 2 predicates.
+
+"AtLeast" and "AtMost" can be specified in the configuration but the easier way is to use
+a property:
+```jsonc
+{
+  "Type": "Group",
+  "Any": true,
+  "Predicates": [
+  {
+    "Type": "Group",
+    "Single": true,
+    "Predicates": [/* ... */]
+  }
+  ]
+}
+```
+Or even simpler, the type name can be "All", "Any" or "Single":
+```jsonc
+{
+  "Type": "Any",
+  "Predicates": [
+  {
+    "Type": "Single",
+    "Predicates": [/* ... */]
+  },
+  {
+    "Type": "All",
+    "Predicates": [/* ... */]
+  }
+  ]
+}
+```
+
+### Logical pitfalls of 'All' and 'Any' and the "empty predicate".
 
 When there is no subordinated predicates, what should a 'All' or 'Any' group answer? 
 Linq `All`/`Any` extension methods answer are:
@@ -108,18 +158,19 @@ Linq `All`/`Any` extension methods answer are:
 - An empty 'Any' evaluates to true.
 
 This is a convention (that actually is the result of the code). One could have implemented this but instead
-we rely on the fact that our `GroupObjectPredicateConfiguration` is not the predicate itself but a factory
+we rely on the fact that our `GroupPredicateConfiguration` is not the predicate itself but a factory
 of predicates: we allow `CreatePredicate` to return a null function. This null function is the "empty predicate".
 A empty predicate result is not true nor false: it **is not**. This could also have been modeled by returning
 a `bool?` instead of a `bool`  but ternary logic is tedious and error prone.
 
 An empty predicate is not an error, it's just that it has nothing to say and should simply be ignored
-by callers. `GroupObjectPredicateConfiguration` filters out its null children predicates and eventually
+by callers. `GroupPredicateConfiguration` filters out its null children predicates and eventually
 returns a null predicate if it has no actual child predicate.
 
-Note that `GroupObjectPredicateConfiguration` also avoids returning a stupidly complex predicate when
+Note that `GroupPredicateConfiguration` also avoids returning a stupidly complex predicate when
 it has only one actual child predicate: it simply returns the single predicate since this works
-for 'All' as well as 'Any' (and AtLeast requires at least 3 children).
+for 'All' as well as 'Any' and 'Single' (note that for "AtLeast" or "AtMost" to be greater than 1
+this requires at least 3 children).
 
 ## Sync vs. Async
 Predicates can be asynchronous or synchronous. In practice, mixing the sync and async predicates in the same

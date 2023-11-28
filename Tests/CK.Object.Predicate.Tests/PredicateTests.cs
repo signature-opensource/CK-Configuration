@@ -271,5 +271,42 @@ namespace CK.Object.Predicate.Tests
             (await f.EvaluateAsync( "Bzy" )).Should().Be( true );
             (await f.EvaluateAsync( "Bzy but too long" )).Should().Be( false );
         }
+
+        [Test]
+        public async Task Not_predicate_test_Async()
+        {
+            var config = ImmutableConfigurationSection.CreateFromJson( "Root",
+                """
+                {
+                    "Type": "Not",
+                    "Operand":
+                    {
+                        "Assemblies": { "CK.Object.Predicate.Tests": "P"},
+                        "Type": "StringContains, P",
+                        "Content": "Hello!"
+                    }
+                }
+                """ );
+            var builder = new PolymorphicConfigurationTypeBuilder();
+            ObjectAsyncPredicateConfiguration.AddResolver( builder );
+            ObjectPredicateConfiguration.AddResolver( builder );
+
+            {
+                var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config );
+                Throw.DebugAssert( fC != null );
+                var f = fC.CreatePredicate( TestHelper.Monitor );
+                Throw.DebugAssert( f != null );
+                f( "With Hello! fails." ).Should().BeFalse();
+                f( "Without succeeds." ).Should().BeTrue();
+            }
+            {
+                var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config );
+                Throw.DebugAssert( fC != null );
+                var f = fC.CreatePredicate( TestHelper.Monitor );
+                Throw.DebugAssert( f != null );
+                (await f( "With Hello! fails." )).Should().BeFalse();
+                (await f( "Without succeeds." )).Should().BeTrue();
+            }
+        }
     }
 }

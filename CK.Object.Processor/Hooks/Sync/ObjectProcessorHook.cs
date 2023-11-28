@@ -10,7 +10,7 @@ namespace CK.Object.Processor
     /// </summary>
     public class ObjectProcessorHook : IObjectProcessorHook
     {
-        readonly ProcessorHookContext _hook;
+        readonly ProcessorHookContext _context;
         readonly IObjectProcessorConfiguration _configuration;
         readonly ObjectPredicateHook? _condition;
         readonly ObjectTransformHook? _action;
@@ -18,16 +18,16 @@ namespace CK.Object.Processor
         /// <summary>
         /// Initializes a new hook.
         /// </summary>
-        /// <param name="hook">The hook context.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="configuration">The processor configuration.</param>
-        public ObjectProcessorHook( ProcessorHookContext hook,
+        public ObjectProcessorHook( ProcessorHookContext context,
                                     IObjectProcessorConfiguration configuration,
                                     ObjectPredicateHook? condition,
                                     ObjectTransformHook? action )
         {
-            Throw.CheckNotNullArgument( hook );
+            Throw.CheckNotNullArgument( context );
             Throw.CheckNotNullArgument( configuration );
-            _hook = hook;
+            _context = context;
             _configuration = configuration;
             _condition = condition;
             _action = action;
@@ -38,11 +38,16 @@ namespace CK.Object.Processor
 
         IObjectPredicateHook? IObjectProcessorHook.Condition => _condition;
 
+        /// <inheritdoc />
         public ObjectPredicateHook? Condition => _condition;
 
         IObjectTransformHook? IObjectProcessorHook.Transform => _action;
 
+        /// <inheritdoc />
         public ObjectTransformHook? Transform => _action;
+
+        /// <inheritdoc />
+        public ProcessorHookContext Context => _context;
 
         /// <summary>
         /// Process the input object.

@@ -8,31 +8,31 @@ namespace CK.Object.Predicate
     public interface IGroupPredicateConfiguration : IObjectPredicateConfiguration
     {
         /// <summary>
-        /// Gets whether this is a "And" group (same as <see cref="AtLeast"/> == 0).
+        /// Gets whether this is a "And" group (the default: <see cref="AtLeast"/> == 0 and <see cref="AtMost"/> == 0).
         /// </summary>
         bool All { get; }
 
         /// <summary>
-        /// Gets whether this is a "Or" group (same as <see cref="AtLeast"/> == 1).
+        /// Gets whether this is a "Or" group (<see cref="AtLeast"/> == 1 and <see cref="AtMost"/> == 0).
         /// </summary>
         bool Any { get; }
 
         /// <summary>
-        /// Gets the number of predicates to satisfy.
-        /// <list type="bullet">
-        /// <item>
-        /// 0 - For the default "All" ("And" connector): all condition must be met. When <see cref="Predicates"/> is empty, this always evaluates to true.
-        /// </item>
-        /// <item>
-        /// 1 - For "Any" ("Or" connector): at least one condition must be met. When <see cref="Predicates"/> is empty, this always evaluates to false.
-        /// </item>
-        /// <item>
-        /// Other - At least this number of conditions among the <see cref="Predicates"/> count conditions (note that there is necessarily
-        /// at least 3 predicates otherwise this would be a "All" or a "Any".
-        /// </item>
-        /// </list>
+        /// Gets whether this is a "Exclusive Or" group (<see cref="AtLeast"/> == 1 and <see cref="AtMost"/> == 1).
+        /// </summary>
+        bool Single { get; }
+
+        /// <summary>
+        /// Gets the minimal number of predicates to satisfy among the <see cref="Predicates"/>.
+        /// This can be 0 for "All" or if <see cref="AtMost"/> is positive.
         /// </summary>
         int AtLeast { get; }
+
+        /// <summary>
+        /// Gets the maximal number of predicates to satisfy among the <see cref="Predicates"/>.
+        /// When 0 this is ignored.
+        /// </summary>
+        int AtMost { get; }
 
         /// <summary>
         /// Gets the subordinated predicates configurations.

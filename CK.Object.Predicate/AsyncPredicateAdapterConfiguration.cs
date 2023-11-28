@@ -27,7 +27,7 @@ namespace CK.Object.Predicate
         /// The resulting predicate simply uses <see cref="ValueTask.FromResult{TResult}(TResult)"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="services">The services.</param>
+        /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A configured predicate or null for an empty predicate.</returns>
         public override Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
         {

@@ -9,6 +9,12 @@ namespace CK.Object.Predicate
     /// </summary>
     public sealed class AlwaysTrueAsyncPredicateConfiguration : ObjectAsyncPredicateConfiguration
     {
+        /// <summary>
+        /// Required constructor.
+        /// </summary>
+        /// <param name="monitor">Unused monitor.</param>
+        /// <param name="builder">Unused builder.</param>
+        /// <param name="configuration">Captured configuration.</param>
         public AlwaysTrueAsyncPredicateConfiguration( IActivityMonitor monitor,
                                                       PolymorphicConfigurationTypeBuilder builder,
                                                       ImmutableConfigurationSection configuration )

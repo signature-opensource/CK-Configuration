@@ -14,6 +14,11 @@ namespace CK.Object.Processor
         IObjectProcessorConfiguration Configuration { get; }
 
         /// <summary>
+        /// Gets the hook context to which this hook is bound.
+        /// </summary>
+        ProcessorHookContext Context { get; }
+
+        /// <summary>
         /// Gets the optional condition hook.
         /// </summary>
         IObjectPredicateHook? Condition { get; }

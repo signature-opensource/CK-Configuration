@@ -108,8 +108,6 @@ namespace CK.Object.Transform.Tests
             return c;
         }
 
-
-
         [Test]
         public void evaluation_hook_finds_error()
         {

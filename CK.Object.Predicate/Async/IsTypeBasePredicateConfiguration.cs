@@ -5,9 +5,11 @@ using System.Threading.Tasks;
 namespace CK.Object.Predicate
 {
     /// <summary>
-    /// Simple always false asynchronous predicate.
+    /// Base class that defines a Type constraint.
+    /// <see cref="Type.IsAssignableFrom(Type?)"/> is used.
     /// </summary>
-    public sealed class AlwaysFalseAsyncPredicateConfiguration : ObjectAsyncPredicateConfiguration
+    /// <typeparam name="T">The expected type.</typeparam>
+    public abstract class IsTypeBasePredicateAsyncConfiguration<T> : ObjectAsyncPredicateConfiguration
     {
         /// <summary>
         /// Required constructor.
@@ -15,16 +17,16 @@ namespace CK.Object.Predicate
         /// <param name="monitor">Unused monitor.</param>
         /// <param name="builder">Unused builder.</param>
         /// <param name="configuration">Captured configuration.</param>
-        public AlwaysFalseAsyncPredicateConfiguration( IActivityMonitor monitor,
-                                                       PolymorphicConfigurationTypeBuilder builder,
-                                                       ImmutableConfigurationSection configuration )
+        protected IsTypeBasePredicateAsyncConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
             : base( configuration )
         {
         }
 
+        /// <inheritdoc />
         public override Func<object, ValueTask<bool>> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
         {
-            return static _ => ValueTask.FromResult( false );
+            return static o => ValueTask.FromResult( typeof(T).IsAssignableFrom( o.GetType() ) );
         }
     }
+
 }

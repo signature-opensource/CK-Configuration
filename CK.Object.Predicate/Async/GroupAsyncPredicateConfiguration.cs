@@ -16,6 +16,7 @@ namespace CK.Object.Predicate
     {
         readonly ImmutableArray<ObjectAsyncPredicateConfiguration> _predicates;
         readonly int _atLeast;
+        readonly int _atMost;
 
         /// <summary>
         /// Required constructor.
@@ -31,26 +32,36 @@ namespace CK.Object.Predicate
             : base( configuration )
         {
             _predicates = predicates.ToImmutableArray();
-            _atLeast = GroupPredicateConfiguration.ReadAtLeast( monitor, configuration, predicates.Count );
+            (_atLeast,_atMost) = GroupPredicateConfiguration.ReadAtLeastAtMost( monitor, configuration, predicates.Count );
         }
 
         internal GroupAsyncPredicateConfiguration( int knownAtLeast,
+                                                   int knownAtMost,
                                                    ImmutableConfigurationSection configuration,
                                                    ImmutableArray<ObjectAsyncPredicateConfiguration> predicates )
             : base( configuration )
         {
+            Throw.DebugAssert( knownAtLeast >= 0 && (predicates.Length < 2 || knownAtLeast < predicates.Length) );
+            Throw.DebugAssert( knownAtMost == 0 || knownAtMost >= knownAtLeast );
             _predicates = predicates;
             _atLeast = knownAtLeast;
+            _atMost = knownAtMost;
         }
 
         /// <inheritdoc />
-        public bool Any => _atLeast == 1;
+        public bool Any => _atLeast == 1 && _atMost == 0;
 
         /// <inheritdoc />
-        public bool All => _atLeast == 0;
+        public bool All => _atLeast == 0 && _atMost == 0;
+
+        /// <inheritdoc />
+        public bool Single => _atLeast == 0 && _atMost == 1;
 
         /// <inheritdoc />
         public int AtLeast => _atLeast;
+
+        /// <inheritdoc />
+        public int AtMost => _atMost;
 
         IReadOnlyList<IObjectPredicateConfiguration> IGroupPredicateConfiguration.Predicates => _predicates;
 
@@ -93,7 +104,7 @@ namespace CK.Object.Predicate
                 newItems?.Add( r );
             }
             return newItems != null
-                    ? new GroupAsyncPredicateConfiguration( _atLeast, Configuration, newItems.ToImmutable() )
+                    ? new GroupAsyncPredicateConfiguration( _atLeast, _atMost, Configuration, newItems.ToImmutable() )
                     : this;
         }
 
@@ -116,12 +127,23 @@ namespace CK.Object.Predicate
                                                                                   .ToImmutableArray()!;
             if( predicates.Length == 0 ) return null;
             if( predicates.Length == 1 ) return predicates[0];
-            return _atLeast switch
+            if( _atMost == 0 )
             {
-                0 => o => AllAsync( predicates, o ),
-                1 => o => AnyAsync( predicates, o ),
-                _ => o => AtLeastAsync( predicates, o, _atLeast )
-            };
+                return _atLeast switch
+                {
+                    0 => o => AllAsync( predicates, o ),
+                    1 => o => AnyAsync( predicates, o ),
+                    _ => o => AtLeastAsync( predicates, o, _atLeast )
+                };
+            }
+            else
+            {
+                return _atLeast switch
+                {
+                    0 => o => AtMostAsync( predicates, o, _atMost ),
+                    _ => o => MatchBetweenAsync( predicates, o, _atLeast, _atMost )
+                };
+            }
         }
 
         static async ValueTask<bool> AllAsync( ImmutableArray<Func<object, ValueTask<bool>>> predicates, object o )
@@ -154,6 +176,34 @@ namespace CK.Object.Predicate
             }
             return false;
         }
+
+        static async ValueTask<bool> AtMostAsync( ImmutableArray<Func<object, ValueTask<bool>>> predicates, object o, int atMost )
+        {
+            int c = 0;
+            foreach( var f in predicates )
+            {
+                if( await f( o ) )
+                {
+                    if( ++c > atMost ) return false;
+                }
+            }
+            return true;
+        }
+
+        static async ValueTask<bool> MatchBetweenAsync( ImmutableArray<Func<object, ValueTask<bool>>> predicates, object o, int atLeast, int atMost )
+        {
+            int c = 0;
+            foreach( var f in predicates )
+            {
+                if( await f( o ) )
+                {
+                    if( ++c > atMost ) return false;
+                    if( c == atLeast ) return true;
+                }
+            }
+            return false;
+        }
+
     }
 
 }
