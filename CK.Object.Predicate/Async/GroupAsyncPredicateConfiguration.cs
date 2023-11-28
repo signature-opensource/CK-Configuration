@@ -98,7 +98,7 @@ namespace CK.Object.Predicate
         }
 
         /// <inheritdoc />
-        public override ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, IPredicateEvaluationHook hook, IServiceProvider services )
+        public override ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook, IServiceProvider services )
         {
             ImmutableArray<ObjectAsyncPredicateHook> predicates = _predicates.Select( c => c.CreateHook( monitor, hook, services ) )
                                                                              .Where( s => s != null )

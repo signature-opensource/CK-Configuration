@@ -47,10 +47,10 @@ namespace CK.Object.Predicate
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="hook">The hook context.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A wrapper bound to the evaluation hook or null for an empty predicate.</returns>
-        public virtual ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, IPredicateEvaluationHook hook, IServiceProvider services )
+        /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
+        public virtual ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook, IServiceProvider services )
         {
             var p = CreatePredicate( monitor, services );
             return p != null ? new ObjectAsyncPredicateHook( hook, this, p ) : null;
@@ -66,13 +66,13 @@ namespace CK.Object.Predicate
 
         /// <summary>
         /// Creates an <see cref="ObjectAsyncPredicateHook"/> that doesn't require any external service to do its job.
-        /// <see cref="CreateHook(IActivityMonitor, IPredicateEvaluationHook, IServiceProvider)"/> is called with an
+        /// <see cref="CreateHook(IActivityMonitor, PredicateHookContext, IServiceProvider)"/> is called with an
         /// empty <see cref="IServiceProvider"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The evaluation hook.</param>
-        /// <returns>A configured wrapper bound to the evaluation hook or null for an empty predicate.</returns>
-        public ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, IPredicateEvaluationHook hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
+        /// <param name="hook">The hook context.</param>
+        /// <returns>A configured wrapper bound to the hook context or null for an empty predicate.</returns>
+        public ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Adds a <see cref="PolymorphicConfigurationTypeBuilder.TypeResolver"/> for asynchronous <see cref="ObjectAsyncPredicateConfiguration"/>.

@@ -9,6 +9,11 @@ namespace CK.Object.Predicate
         /// Gets the configuration.
         /// </summary>
         IObjectPredicateConfiguration Configuration { get; }
+
+        /// <summary>
+        /// Gets the hook context to which this hook is bound.
+        /// </summary>
+        PredicateHookContext Context { get; }
     }
 
 }

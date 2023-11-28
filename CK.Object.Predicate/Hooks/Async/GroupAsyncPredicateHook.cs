@@ -15,10 +15,10 @@ namespace CK.Object.Predicate
         /// <summary>
         /// Initializes a new hook.
         /// </summary>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="hook">The hook context.</param>
         /// <param name="configuration">The predicate configuration.</param>
         /// <param name="predicates">The subordinated predicates.</param>
-        public GroupAsyncPredicateHook( IPredicateEvaluationHook hook, IGroupPredicateConfiguration configuration, ImmutableArray<ObjectAsyncPredicateHook> predicates )
+        public GroupAsyncPredicateHook( PredicateHookContext hook, IGroupPredicateConfiguration configuration, ImmutableArray<ObjectAsyncPredicateHook> predicates )
             : base( hook, configuration )
         {
             Throw.CheckNotNullArgument( predicates );

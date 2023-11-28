@@ -87,7 +87,7 @@ namespace CK.Object.Predicate
         public IReadOnlyList<ObjectPredicateConfiguration> Predicates => _predicates;
 
         /// <inheritdoc />
-        public override ObjectPredicateHook? CreateHook( IActivityMonitor monitor, IPredicateEvaluationHook hook, IServiceProvider services )
+        public override ObjectPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook, IServiceProvider services )
         {
             ImmutableArray<ObjectPredicateHook> items = _predicates.Select( c => c.CreateHook( monitor, hook, services ) )
                                                                    .Where( s => s != null )

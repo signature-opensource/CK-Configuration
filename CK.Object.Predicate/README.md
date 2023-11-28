@@ -195,7 +195,7 @@ taken are the result of the configuration without any explanations. Instead of p
 object can be created from a configuration: their `Evaluate( object )` and `EvaluateAsync( object )` enables the
 decisions to be analyzed.
 
-The [`IPredicateEvaluationHook`](Hooks/IPredicateEvaluationHook.cs) enables to create wrapper rather than pure predicate
+The [`PredicateHookContext`](Hooks/PredicateHookContext.cs) enables to create wrapper rather than pure predicate
 functions:
 ```csharp
 public abstract class ObjectPredicateConfiguration : IObjectPredicateConfiguration
@@ -211,13 +211,13 @@ public abstract class ObjectPredicateConfiguration : IObjectPredicateConfigurati
   /// </para>
   /// </summary>
   /// <param name="monitor">The monitor that must be used to signal errors.</param>
-  /// <param name="hook">The evaluation hook.</param>
+  /// <param name="context">The hook context.</param>
   /// <param name="services">The services.</param>
-  /// <returns>A wrapper bound to the evaluation hook or null for an empty predicate.</returns>
-  public virtual ObjectPredicateHook? CreateHook( IActivityMonitor monitor, IPredicateEvaluationHook hook, IServiceProvider services )
+  /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
+  public virtual ObjectPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
   {
       var p = CreatePredicate( monitor, services );
-      return p != null ? new ObjectPredicateHook( hook, this, p ) : null;
+      return p != null ? new ObjectPredicateHook( context, this, p ) : null;
   }
 }
 ```
@@ -229,7 +229,7 @@ items: the whole resolved structure can be explored.
 Note that hook follow the same "empty predicate" null management: a null hook is empty and should
 be ignored.
 
-The specialized [`MonitoredPredicateEvaluationHook`](Hooks/MonitoredPredicateEvaluationHook.cs) logs all the evaluator
+The specialized [`MonitoredPredicateHookContext`](Hooks/MonitoredPredicateHookContext.cs) logs all the evaluator
 along with their result and captures exceptions that evaluation may throw.
 
 Sample usage (the evaluation of "Bzy" is logged into the `TestHelper.Monitor`):
@@ -244,14 +244,17 @@ public void complex_configuration_tree_with_EvaluationHook()
     var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config );
     Throw.DebugAssert( fC != null );
 
-    var hook = new MonitoredPredicateEvaluationHook( TestHelper.Monitor );
+    var context = new MonitoredPredicateHookContext( TestHelper.Monitor );
 
-    var f = fC.CreateHook( TestHelper.Monitor, hook );
+    var f = fC.CreateHook( TestHelper.Monitor, context );
     f.Evaluate( "Bzy" ).Should().Be( true );
 }
 ```
-This is of course a rather basic hook. `IPredicateEvaluationHook` are easy to implement (there are 3
-methods to override).
+
+Because these hooks have the primary purpose to "explain" the configured process:
+- The `PredicateHookContext` has an optional `UserMessageCollector` that can be used to emit
+  translatable error, warnings and informations.
+- the `MonitoredPredicateHookContext` (that adds a monitor) should be enough in practice.
 
 ## Placeholder support.
 

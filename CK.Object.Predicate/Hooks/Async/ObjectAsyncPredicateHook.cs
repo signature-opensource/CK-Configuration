@@ -9,22 +9,22 @@ namespace CK.Object.Predicate
     /// </summary>
     public class ObjectAsyncPredicateHook : IObjectPredicateHook
     {
-        readonly IPredicateEvaluationHook _hook;
+        readonly PredicateHookContext _context;
         readonly IObjectPredicateConfiguration _configuration;
         readonly Func<object, ValueTask<bool>> _predicate;
 
         /// <summary>
         /// Initializes a new hook.
         /// </summary>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="hook">The hook context.</param>
         /// <param name="configuration">The predicate configuration.</param>
         /// <param name="predicate">The predicate.</param>
-        public ObjectAsyncPredicateHook( IPredicateEvaluationHook hook, IObjectPredicateConfiguration configuration, Func<object, ValueTask<bool>> predicate )
+        public ObjectAsyncPredicateHook( PredicateHookContext hook, IObjectPredicateConfiguration configuration, Func<object, ValueTask<bool>> predicate )
         {
             Throw.CheckNotNullArgument( hook );
             Throw.CheckNotNullArgument( configuration );
             Throw.CheckNotNullArgument( predicate );
-            _hook = hook;
+            _context = hook;
             _configuration = configuration;
             _predicate = predicate;
         }
@@ -33,19 +33,22 @@ namespace CK.Object.Predicate
         /// Constructor used by <see cref="GroupAsyncPredicateHook"/>. Must be used by specialized hook when the predicate contains
         /// other <see cref="ObjectAsyncPredicateConfiguration"/> to expose the internal predicate structure.
         /// </summary>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="hook">The hook context.</param>
         /// <param name="configuration">This configuration.</param>
-        protected ObjectAsyncPredicateHook( IPredicateEvaluationHook hook, IObjectPredicateConfiguration configuration )
+        protected ObjectAsyncPredicateHook( PredicateHookContext hook, IObjectPredicateConfiguration configuration )
         {
             Throw.CheckNotNullArgument( hook );
             Throw.CheckNotNullArgument( configuration );
-            _hook = hook;
+            _context = hook;
             _configuration = configuration;
             _predicate = null!;
         }
 
         /// <inheritdoc />
         public IObjectPredicateConfiguration Configuration => _configuration;
+
+        /// <inheritdoc />
+        public PredicateHookContext Context => _context;
 
         /// <summary>
         /// Evaluates the predicate.
@@ -54,7 +57,7 @@ namespace CK.Object.Predicate
         /// <returns>The predicate result.</returns>
         public async ValueTask<bool> EvaluateAsync( object o )
         {
-            if( !_hook.OnBeforePredicate( this, o ) )
+            if( !_context.OnBeforePredicate( this, o ) )
             {
                 return false;
             }
@@ -65,12 +68,12 @@ namespace CK.Object.Predicate
             }
             catch( Exception ex )
             {
-                if( _hook.OnPredicateError( this, o, ex ) )
+                if( _context.OnPredicateError( this, o, ex ) )
                 {
                     throw;
                 }
             }
-            return _hook.OnAfterPredicate( this, o, r );
+            return _context.OnAfterPredicate( this, o, r );
         }
 
         /// <summary>
