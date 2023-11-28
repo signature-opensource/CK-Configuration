@@ -45,7 +45,7 @@ namespace CK.Object.Transform
         public IReadOnlyList<ObjectTransformConfiguration> Transforms => _transforms;
 
         /// <inheritdoc />
-        public override ObjectTransformHook? CreateHook( IActivityMonitor monitor, ITransformEvaluationHook hook, IServiceProvider services )
+        public override ObjectTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext hook, IServiceProvider services )
         {
             ImmutableArray<ObjectTransformHook> items = _transforms.Select( c => c.CreateHook( monitor, hook, services ) )
                                                                    .Where( s => s != null )

@@ -85,7 +85,7 @@ namespace CK.Object.Transform
         }
 
         /// <inheritdoc />
-        public override ObjectAsyncTransformHook? CreateHook( IActivityMonitor monitor, ITransformEvaluationHook hook, IServiceProvider services )
+        public override ObjectAsyncTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext hook, IServiceProvider services )
         {
             ImmutableArray<ObjectAsyncTransformHook> transforms = _transforms.Select( c => c.CreateHook( monitor, hook, services ) )
                                                                              .Where( s => s != null )

@@ -124,7 +124,7 @@ namespace CK.Object.Transform.Tests
 
             FluentActions.Invoking( () => f( 0 ) ).Should().Throw<ArgumentException>();
 
-            var hook = new MonitoredTransformEvaluationHook( TestHelper.Monitor );
+            var hook = new MonitoredTransformHookContext( TestHelper.Monitor );
             var fH = fC.CreateHook( TestHelper.Monitor, hook );
             Throw.DebugAssert( fH != null );
 
@@ -155,7 +155,7 @@ namespace CK.Object.Transform.Tests
 
             await FluentActions.Awaiting( async () => await f( 0 ) ).Should().ThrowAsync<ArgumentException>();
 
-            var hook = new MonitoredTransformEvaluationHook( TestHelper.Monitor );
+            var hook = new MonitoredTransformHookContext( TestHelper.Monitor );
             var fH = fC.CreateHook( TestHelper.Monitor, hook );
             Throw.DebugAssert( fH != null );
 

@@ -240,7 +240,7 @@ namespace CK.Object.Predicate.Tests
             var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( fC != null );
 
-            var hook = new MonitoredPredicateEvaluationHook( TestHelper.Monitor );
+            var hook = new MonitoredPredicateHookContext( TestHelper.Monitor );
 
             var f = fC.CreateHook( TestHelper.Monitor, hook );
             Throw.DebugAssert( f != null );
@@ -261,7 +261,7 @@ namespace CK.Object.Predicate.Tests
             var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( fC != null );
 
-            var hook = new MonitoredPredicateEvaluationHook( TestHelper.Monitor );
+            var hook = new MonitoredPredicateHookContext( TestHelper.Monitor );
 
             var f = fC.CreateHook( TestHelper.Monitor, hook );
             Throw.DebugAssert( f != null );

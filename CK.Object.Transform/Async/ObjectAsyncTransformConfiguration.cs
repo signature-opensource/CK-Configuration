@@ -46,10 +46,10 @@ namespace CK.Object.Transform
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="hook">The hook context.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A wrapper bound to the evaluation hook or null for an identity function.</returns>
-        public virtual ObjectAsyncTransformHook? CreateHook( IActivityMonitor monitor, ITransformEvaluationHook hook, IServiceProvider services )
+        /// <returns>A wrapper bound to the hook context or null for an identity function.</returns>
+        public virtual ObjectAsyncTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext hook, IServiceProvider services )
         {
             var p = CreateTransform( monitor, services );
             return p != null ? new ObjectAsyncTransformHook( hook, this, p ) : null;
@@ -65,13 +65,13 @@ namespace CK.Object.Transform
 
         /// <summary>
         /// Creates an <see cref="ObjectAsyncTransformHook"/> that doesn't require any external service to do its job.
-        /// <see cref="CreateHook(IActivityMonitor, ITransformEvaluationHook, IServiceProvider)"/> is called with an
+        /// <see cref="CreateHook(IActivityMonitor, TransformHookContext, IServiceProvider)"/> is called with an
         /// empty <see cref="IServiceProvider"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The evaluation hook.</param>
-        /// <returns>A wrapper bound to the evaluation hook or null for an identity function.</returns>
-        public ObjectAsyncTransformHook? CreateHook( IActivityMonitor monitor, ITransformEvaluationHook hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
+        /// <param name="hook">The hook context.</param>
+        /// <returns>A wrapper bound to the hook context or null for an identity function.</returns>
+        public ObjectAsyncTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Adds a <see cref="PolymorphicConfigurationTypeBuilder.TypeResolver"/> for asynchronous <see cref="ObjectAsyncTransformConfiguration"/>.

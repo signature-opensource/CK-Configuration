@@ -16,10 +16,10 @@ namespace CK.Object.Transform
         /// Initializes a new hook.
         /// </summary>
         /// <param name="configuration">The transform configuration.</param>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="transforms">The subordinated transform functions.</param>
-        public SequenceAsyncTransformHook( ITransformEvaluationHook hook, ISequenceTransformConfiguration configuration, ImmutableArray<ObjectAsyncTransformHook> transforms )
-            : base( hook, configuration )
+        public SequenceAsyncTransformHook( TransformHookContext context, ISequenceTransformConfiguration configuration, ImmutableArray<ObjectAsyncTransformHook> transforms )
+            : base( context, configuration )
         {
             Throw.CheckNotNullArgument( transforms );
             _transforms = transforms;
@@ -36,7 +36,7 @@ namespace CK.Object.Transform
         /// <inheritdoc />
         protected override async ValueTask<object> DoTransformAsync( object o )
         {
-            // Breaks on a null result: TransformAsync will throw the InvalidOperationException. 
+            // Breaks on a null result: base.TransformAsync will throw the InvalidOperationException. 
             foreach( var i in _transforms )
             {
                 o = await i.TransformAsync( o ).ConfigureAwait( false );

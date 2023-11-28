@@ -8,22 +8,22 @@ namespace CK.Object.Transform
     /// </summary>
     public class ObjectTransformHook : IObjectTransformHook
     {
-        readonly ITransformEvaluationHook _hook;
+        readonly TransformHookContext _context;
         readonly IObjectTransformConfiguration _configuration;
         readonly Func<object, object> _transform;
 
         /// <summary>
         /// Initializes a new hook.
         /// </summary>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="configuration">The transform configuration.</param>
         /// <param name="transform">The transform function.</param>
-        public ObjectTransformHook( ITransformEvaluationHook hook, IObjectTransformConfiguration configuration, Func<object, object> transform )
+        public ObjectTransformHook( TransformHookContext context, IObjectTransformConfiguration configuration, Func<object, object> transform )
         {
-            Throw.CheckNotNullArgument( hook );
+            Throw.CheckNotNullArgument( context );
             Throw.CheckNotNullArgument( configuration );
             Throw.CheckNotNullArgument( transform );
-            _hook = hook;
+            _context = context;
             _configuration = configuration;
             _transform = transform;
         }
@@ -32,19 +32,22 @@ namespace CK.Object.Transform
         /// Constructor used by <see cref="SequenceTransformHook"/>. Must be used by specialized hook when the transform
         /// configuration contains other <see cref="ObjectTransformConfiguration"/> to expose the internal function structure.
         /// </summary>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="configuration">This configuration.</param>
-        internal ObjectTransformHook( ITransformEvaluationHook hook, IObjectTransformConfiguration configuration )
+        internal ObjectTransformHook( TransformHookContext context, IObjectTransformConfiguration configuration )
         {
-            Throw.CheckNotNullArgument( hook );
+            Throw.CheckNotNullArgument( context );
             Throw.CheckNotNullArgument( configuration );
-            _hook = hook;
+            _context = context;
             _configuration = configuration;
             _transform = null!;
         }
 
         /// <inheritdoc />
         public IObjectTransformConfiguration Configuration => _configuration;
+
+        /// <inheritdoc />
+        public TransformHookContext Context => _context;
 
         /// <summary>
         /// Applies the transformation.
@@ -53,7 +56,7 @@ namespace CK.Object.Transform
         /// <returns>The transformed object.</returns>
         public object Transform( object o )
         {
-            object? r = _hook.OnBeforeTransform( this, o );
+            object? r = _context.OnBeforeTransform( this, o );
             if( r != null ) return r;
             try
             {
@@ -62,11 +65,11 @@ namespace CK.Object.Transform
                 {
                     Throw.InvalidOperationException( $"Transform '{_configuration.Configuration.Path}' returned a null reference." );
                 }
-                return _hook.OnAfterTransform( this, o, r ) ?? r;
+                return _context.OnAfterTransform( this, o, r ) ?? r;
             }
             catch( Exception ex )
             {
-                r = _hook.OnTransformError( this, o, ex );
+                r = _context.OnTransformError( this, o, ex );
                 if( r == null )
                 {
                     throw;

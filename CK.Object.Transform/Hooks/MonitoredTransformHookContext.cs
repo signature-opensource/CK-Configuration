@@ -7,24 +7,26 @@ using System.Runtime.ExceptionServices;
 namespace CK.Object.Transform
 {
     /// <summary>
-    /// Hook that logs the evaluation details and capture errors.
+    /// Hook context that logs the evaluation details and capture errors.
     /// </summary>
-    public class MonitoredTransformEvaluationHook : ITransformEvaluationHook
+    public class MonitoredTransformHookContext : TransformHookContext
     {
         readonly IActivityMonitor _monitor;
         readonly CKTrait? _tags;
         readonly LogLevel _level;
-        List<ExceptionDispatchInfo>? _errors;
 
         /// <summary>
-        /// Initializes a new hook.
+        /// Initializes a new hook. Use <paramref name="groupLevel"/> = <see cref="LogLevel.None"/> to not open a group for each transform:
+        /// only error will be logged.
         /// </summary>
         /// <param name="monitor">The monitor that will receive evaluation details.</param>
         /// <param name="tags">Optional tags for log entries.</param>
-        /// <param name="level">Default group level.</param>
-        public MonitoredTransformEvaluationHook( IActivityMonitor monitor,
-                                                 CKTrait? tags = null,
-                                                 LogLevel level = LogLevel.Trace )
+        /// <param name="level">Default group level. Use <see cref="LogLevel.None"/> to not open a group for each transform.</param>
+        public MonitoredTransformHookContext( IActivityMonitor monitor,
+                                              CKTrait? tags = null,
+                                              LogLevel level = LogLevel.Trace,
+                                              UserMessageCollector? userMessageCollector = null )
+            : base( userMessageCollector )
         {
             Throw.CheckNotNullArgument( monitor );
             _monitor = monitor;
@@ -33,14 +35,10 @@ namespace CK.Object.Transform
         }
 
         /// <summary>
-        /// Gets the evaluation errors that occurred.
+        /// Gets the log level for log groups. When <see cref="LogLevel.None"/>, no structure is logged, only the
+        /// error may be logged.
         /// </summary>
-        public IReadOnlyList<ExceptionDispatchInfo> Errors => (IReadOnlyList<ExceptionDispatchInfo>?)_errors ?? ImmutableArray<ExceptionDispatchInfo>.Empty;
-
-        /// <summary>
-        /// Clears any <see cref="Errors"/>.
-        /// </summary>
-        public void ClearErrors() => _errors?.Clear();
+        public LogLevel Level => _level;
 
         /// <summary>
         /// Opens a group. The object to transform is not logged.
@@ -54,31 +52,32 @@ namespace CK.Object.Transform
         /// Always null (to continue the transformation) except if the object to evaluate is an exception: it becomes the eventual
         /// transformation result.
         /// </returns>
-        public virtual object? OnBeforeTransform( IObjectTransformHook source, object o )
+        internal protected override object? OnBeforeTransform( IObjectTransformHook source, object o )
         {
             if( o is Exception ) return o;
-            _monitor.OpenGroup( _level, _tags, $"Evaluating '{source.Configuration.Configuration.Path}'." );
+            if( _level != LogLevel.None )
+            {
+                _monitor.OpenGroup( _level, _tags, $"Evaluating '{source.Configuration.Configuration.Path}'." );
+            }
             return null;
         }
 
         /// <summary>
-        /// Emits an <see cref="LogLevel.Error"/> with the exception and the <paramref name="o"/> (its <see cref="object.ToString()"/>),
-        /// captures the exception into <see cref="Errors"/>, close the currently opened group and returns the exception as the
-        /// transformation result.
+        /// In addition to the base <see cref="TransformHookContext.OnTransformError(IObjectTransformHook, object, Exception)"/>, this emits
+        /// a <see cref="LogLevel.Error"/> with the exception and the <paramref name="o"/> (its <see cref="object.ToString()"/>).
+        /// It also always returns the exception.
         /// </summary>
         /// <param name="source">The source transform hook.</param>
         /// <param name="o">The object that causes the error.</param>
         /// <param name="ex">The exception raised by the transformation.</param>
         /// <returns>The exception.</returns>
-        public object? OnTransformError( IObjectTransformHook source, object o, Exception ex )
+        internal protected override object? OnTransformError( IObjectTransformHook source, object o, Exception ex )
         {
+            base.OnTransformError( source, o, ex );
             using( _monitor.OpenError( _tags, $"Transform '{source.Configuration.Configuration.Path}' error while processing:", ex ) )
             {
                 _monitor.Trace( _tags, o?.ToString() ?? "<null>" );
             }
-            _errors ??= new List<ExceptionDispatchInfo>();
-            _errors.Add( ExceptionDispatchInfo.Capture( ex ) );
-            _monitor.CloseGroup( "Error." );
             return ex;
         }
 
@@ -89,9 +88,12 @@ namespace CK.Object.Transform
         /// <param name="o">The initial object.</param>
         /// <param name="result">The transformed object.</param>
         /// <returns>The <paramref name="result"/>.</returns>
-        public object OnAfterTransform( IObjectTransformHook source, object o, object result )
+        internal protected override object OnAfterTransform( IObjectTransformHook source, object o, object result )
         {
-            _monitor.CloseGroup( result is Exception ? "Error." : null );
+            if( _level != LogLevel.None )
+            {
+                _monitor.CloseGroup( result is Exception ? "Error." : null );
+            }
             return result;
         }
     }
