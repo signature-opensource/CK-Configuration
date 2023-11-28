@@ -12,8 +12,16 @@ namespace CK.Object.Processor
         /// Gets the configuration.
         /// </summary>
         IObjectProcessorConfiguration Configuration { get; }
+
+        /// <summary>
+        /// Gets the optional condition hook.
+        /// </summary>
         IObjectPredicateHook? Condition { get; }
-        IObjectTransformHook? Action { get; }
+
+        /// <summary>
+        /// Gets the optional transform hook.
+        /// </summary>
+        IObjectTransformHook? Transform { get; }
     }
 
 }

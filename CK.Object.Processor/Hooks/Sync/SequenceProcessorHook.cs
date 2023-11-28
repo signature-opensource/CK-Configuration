@@ -16,14 +16,16 @@ namespace CK.Object.Processor
         /// Initializes a new hook.
         /// </summary>
         /// <param name="configuration">The processor configuration.</param>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="hook">The hook context.</param>
+        /// <param name="condition">The condition.</param>
+        /// <param name="transform">The transform action.</param>
         /// <param name="processors">The subordinated processors.</param>
-        public SequenceProcessorHook( IProcessorEvaluationHook hook,
+        public SequenceProcessorHook( ProcessorHookContext hook,
                                       ISequenceProcessorConfiguration configuration,
                                       Predicate.ObjectPredicateHook? condition,
-                                      Transform.ObjectTransformHook? action,
+                                      Transform.ObjectTransformHook? transform,
                                       ImmutableArray<ObjectProcessorHook> processors )
-            : base( hook, configuration, condition, action )
+            : base( hook, configuration, condition, transform )
         {
             _processors = processors;
         }
@@ -37,7 +39,7 @@ namespace CK.Object.Processor
         public ImmutableArray<ObjectProcessorHook> Processors => _processors;
 
         /// <inheritdoc />
-        protected override object? DoProcess( object o )
+        public override object? Process( object o )
         {
             if( Condition != null && !Condition.Evaluate( o ) )
             {
@@ -49,9 +51,9 @@ namespace CK.Object.Processor
                 o = i.Process( o )!;
                 if( o != null ) break;
             }
-            if( o != null && Action != null )
+            if( o != null && Transform != null )
             {
-                o = Action.Transform( o );
+                o = Transform.Transform( o );
             }
             return o;
         }

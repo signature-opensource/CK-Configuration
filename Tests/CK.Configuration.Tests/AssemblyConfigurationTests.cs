@@ -50,7 +50,9 @@ namespace CK.Configuration.Tests
                                          """ "Assemblies":{ "Locked": true }, """,
                                          """ "Assemblies":{ "Lock": true }, """,
                                          """ "Assemblies":[ "Locked" ], """,
-                                         """ "Assemblies":[ "Locked", "ConsumerA.Strategy" ], """} )
+                                         """ "Assemblies":[ "Locked", "ConsumerA.Strategy" ], """,
+                                         """ "Assemblies":[ "IsLocked", "ConsumerA.Strategy" ], """,
+                                         """ "Assemblies":[ "Lock", "ConsumerA.Strategy" ], """} )
             {
                 var ignoredPath = usePlaceholder
                                     ? "Assemblies is locked. Ignoring 'Root:Strategies:0:Strategies:1:<Dynamic>:Assemblies'."

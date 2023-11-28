@@ -38,6 +38,42 @@ Assembly names have no version, culture, or token. Only the simple name is consi
 is by design.
 
 The `AssemblyConfiguration.TryResolveType` is the method that does the actual job of "finding a plugin".
+A plugin is typically defined with a simple `Type = "XXX"` configuration:
+
+- `Type = "My.Namespace.MyPluginComponentConfiguration"`: Will be searched in the DefaultAssembly if defined (or in the assembly that
+  defines the "plugin family" - see the `PolymorphicConfigurationTypeBuilder` for this).
+- `Type = "MyPlugin"`: The PolymorphicConfigurationTypeBuilder can introduce a default namespace and
+  automatically suffix the type name with its resolver's configuration.
+- `Type = "MyPlugin, Acme.Corp.Strategies"`: The type will be search in the specified assembly (that must
+  be explicitely allowed). 
+- `Type = "MyPlugin, B"`: The type will be search in the specified assembly alias. 
+
+The `AssemblyConfiguration` can be locked. When locked, subordinated  "DefaultAssembly" and "Assemblies" sections
+are ignored (with a warning). No more external assemblies can enter the game. To lock the configuration,
+multiple constructs are handled, **"IsLocked", "Lock" and "Locked"** are synonims:
+```json
+{
+  "Assemblies": {
+    "Acme.Corp.Strategies": "A",
+    "Too.Long.To.Repeat.Plugin.Assembly": "B" },
+    "Universal.StdPlugins": "C",
+    "IsLocked": true
+  }
+}
+```
+Or:
+```jsonc
+{
+  "Assemblies": "Lock",
+}
+```
+Or:
+```jsonc
+{
+  "Assemblies": "Assemblies":[ "Locked", "ConsumerA.Strategy" ],
+}
+```
+
 
 ## PolymorphicConfigurationTypeBuilder
 

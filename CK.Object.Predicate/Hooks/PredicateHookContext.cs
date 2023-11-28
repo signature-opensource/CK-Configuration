@@ -42,7 +42,7 @@ namespace CK.Object.Predicate
         /// Gets whether at least one error occurred.
         /// When true, <see cref="OnBeforePredicate(IObjectPredicateHook, object)"/> returns false to skip any further evaulations.
         /// </summary>
-        public bool HasError => _errors != null;
+        public bool HasError => _errors != null && _errors.Count > 0;
 
         /// <summary>
         /// Clears any <see cref="Errors"/>.

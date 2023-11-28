@@ -39,6 +39,11 @@ namespace CK.Object.Transform
         public IReadOnlyList<ExceptionDispatchInfo> Errors => (IReadOnlyList<ExceptionDispatchInfo>?)_errors ?? ImmutableArray<ExceptionDispatchInfo>.Empty;
 
         /// <summary>
+        /// Gets whether any error has been captured.
+        /// </summary>
+        public bool HasError => _errors != null && _errors.Count > 0;
+
+        /// <summary>
         /// Clears any <see cref="Errors"/>.
         /// </summary>
         public void ClearErrors() => _errors?.Clear();

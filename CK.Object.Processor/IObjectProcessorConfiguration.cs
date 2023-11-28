@@ -22,6 +22,6 @@ namespace CK.Object.Processor
         /// <summary>
         /// Gets the optional action configuration.
         /// </summary>
-        ObjectTransformConfiguration? Action { get; }
+        ObjectTransformConfiguration? Transform { get; }
     }
 }

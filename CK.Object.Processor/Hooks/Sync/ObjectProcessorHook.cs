@@ -10,7 +10,7 @@ namespace CK.Object.Processor
     /// </summary>
     public class ObjectProcessorHook : IObjectProcessorHook
     {
-        readonly IProcessorEvaluationHook _hook;
+        readonly ProcessorHookContext _hook;
         readonly IObjectProcessorConfiguration _configuration;
         readonly ObjectPredicateHook? _condition;
         readonly ObjectTransformHook? _action;
@@ -18,9 +18,9 @@ namespace CK.Object.Processor
         /// <summary>
         /// Initializes a new hook.
         /// </summary>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="hook">The hook context.</param>
         /// <param name="configuration">The processor configuration.</param>
-        public ObjectProcessorHook( IProcessorEvaluationHook hook,
+        public ObjectProcessorHook( ProcessorHookContext hook,
                                     IObjectProcessorConfiguration configuration,
                                     ObjectPredicateHook? condition,
                                     ObjectTransformHook? action )
@@ -40,49 +40,25 @@ namespace CK.Object.Processor
 
         public ObjectPredicateHook? Condition => _condition;
 
-        IObjectTransformHook? IObjectProcessorHook.Action => _action;
+        IObjectTransformHook? IObjectProcessorHook.Transform => _action;
 
-        public ObjectTransformHook? Action => _action;
+        public ObjectTransformHook? Transform => _action;
 
         /// <summary>
         /// Process the input object.
         /// </summary>
         /// <param name="o">The object to process.</param>
         /// <returns>The processed object or null if this processor rejects this input.</returns>
-        public object? Process( object o )
+        public virtual object? Process( object o )
         {
             Throw.CheckNotNullArgument( o );
-            object? r = _hook.OnBeforeProcessor( this, o );
-            if( r != null ) return r;
-            try
-            {
-                r = DoProcess( o );
-                return _hook.OnAfterProcessor( this, o, r );
-            }
-            catch( Exception ex )
-            {
-                r = _hook.OnProcessorError( this, o, ex );
-                if( r == null )
-                {
-                    throw;
-                }
-                return r;
-            }
-        }
-
-        /// <summary>
-        /// Actual process.
-        /// </summary>
-        /// <param name="o">The object to process (necessarily not null).</param>
-        /// <returns>The process result.</returns>
-        protected virtual object? DoProcess( object o )
-        {
             if( _condition != null && !_condition.Evaluate( o ) )
             {
                 return null;
             }
             return _action != null ? _action.Transform( o ) : o;
         }
+
     }
 
 }

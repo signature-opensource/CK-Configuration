@@ -8,8 +8,11 @@ using System.Collections.Immutable;
 namespace CK.Object.Processor
 {
     /// <summary>
-    /// Processor placeholder.
-    /// This always generates a null processor that is the void processor.
+    /// Processor placeholder. A placholder is not allowed to have a <see cref="ObjectProcessorConfiguration.Condition"/>
+    /// or a <see cref="ObjectProcessorConfiguration.Transform"/>.
+    /// <para>
+    /// This always generates a null processor (the void processor).
+    /// </para>
     /// </summary>
     public sealed class PlaceholderProcessorConfiguration : ObjectProcessorConfiguration
     {
@@ -18,6 +21,7 @@ namespace CK.Object.Processor
 
         /// <summary>
         /// Initializes a new placeholder.
+        /// "Condition" and "Transform" are forbidden.
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="builder">The builder.</param>
@@ -27,9 +31,9 @@ namespace CK.Object.Processor
                                                   ImmutableConfigurationSection configuration )
             : base( monitor, builder, configuration )
         {
-            if( Condition != null || Action != null )
+            if( Condition != null || Transform != null )
             {
-                monitor.Error( $"A processor Placeholder cannot define a 'Condition' or an 'Action' (Configuration '{configuration.Path}')." );
+                monitor.Error( $"A processor Placeholder cannot define a 'Condition' or an 'Transform' (Configuration '{configuration.Path}')." );
             }
             _assemblies = builder.AssemblyConfiguration;
             _resolvers = builder.Resolvers.ToImmutableArray();

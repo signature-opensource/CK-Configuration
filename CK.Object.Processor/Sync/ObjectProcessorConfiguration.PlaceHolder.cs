@@ -52,7 +52,7 @@ namespace CK.Object.Processor
         }
 
         /// <summary>
-        /// Mutator default implementation handles "Condition" and "Action" mutations.
+        /// Mutator default implementation handles "Condition" and "Transform" mutations.
         /// <para>
         /// Errors are emitted in the monitor. On error, this instance is returned. 
         /// </para>
@@ -75,31 +75,31 @@ namespace CK.Object.Processor
             {
                 condition = condition.SetPlaceholder( monitor, configuration );
             }
-            // Handles placeholder in Action.
-            var action = Action;
-            if( action != null )
+            // Handles placeholder in Transform.
+            var transform = Transform;
+            if( transform != null )
             {
-                action = action.SetPlaceholder( monitor, configuration );
+                transform = transform.SetPlaceholder( monitor, configuration );
             }
-            return DoSetPlaceholder( monitor, configuration, condition, action );
+            return DoSetPlaceholder( monitor, configuration, condition, transform );
         }
 
         /// <summary>
-        /// Actual placeholder replacement implementation: "Configuration" and "Action" are already
+        /// Actual placeholder replacement implementation: "Condition" and "Transform" are already
         /// handled.
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="configuration">The placeholder configuration.</param>
         /// <param name="condition">A new or the current <see cref="Condition"/>.</param>
-        /// <param name="action">A new or the current <see cref="Action"/>.</param>
+        /// <param name="transform">A new or the current <see cref="Transform"/>.</param>
         /// <returns>A new configuration or this if nothing has changed or an error occurred.</returns>
         protected virtual ObjectProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
                                                                          IConfigurationSection configuration,
                                                                          ObjectPredicateConfiguration? condition,
-                                                                         ObjectTransformConfiguration? action )
+                                                                         ObjectTransformConfiguration? transform )
         {
-            return condition != Condition || action != Action
-                    ? new ObjectProcessorConfiguration( this, condition, action )
+            return condition != Condition || transform != Transform
+                    ? new ObjectProcessorConfiguration( this, condition, transform )
                     : this;
         }
     }

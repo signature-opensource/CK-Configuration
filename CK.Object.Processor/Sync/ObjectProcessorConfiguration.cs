@@ -17,10 +17,10 @@ namespace CK.Object.Processor
     {
         readonly ImmutableConfigurationSection _configuration;
         readonly ObjectPredicateConfiguration? _condition;
-        readonly ObjectTransformConfiguration? _action;
+        readonly ObjectTransformConfiguration? _transform;
 
         /// <summary>
-        /// Handles "Condition" and "Action" from the configuration section.
+        /// Handles "Condition" and "Transform" from the configuration section.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors and warnings.</param>
         /// <param name="builder">The builder.</param>
@@ -35,32 +35,32 @@ namespace CK.Object.Processor
             {
                 _condition = builder.Create<ObjectPredicateConfiguration>( monitor, cCond );
             }
-            var cAction = configuration.TryGetSection( "Action" );
-            if( cAction != null )
+            var cTrans = configuration.TryGetSection( "Transform" );
+            if( cTrans != null )
             {
-                _action = builder.Create<ObjectTransformConfiguration>( monitor, cAction );
+                _transform = builder.Create<ObjectTransformConfiguration>( monitor, cTrans );
             }
         }
 
         /// <summary>
         /// Mutation constructor.
         /// <para>
-        /// As long as only the Placeholder is used to mutate configurations, <paramref name="condition"/> (and <paramref name="action"/>)
-        /// can be null only if current <see cref="Condition"/> (and <see cref="Action"/>) is null. We don't check this here to allow
+        /// As long as only the Placeholder is used to mutate configurations, <paramref name="condition"/> (and <paramref name="transform"/>)
+        /// can be null only if current <see cref="Condition"/> (and <see cref="Transform"/>) is null. We don't check this here to allow
         /// other kind of mutations to be supported if needed.
         /// </para>
         /// </summary>
         /// <param name="source">The original configuration.</param>
         /// <param name="condition">The <see cref="Condition"/>.</param>
-        /// <param name="action">The <see cref="Action"/>.</param>
+        /// <param name="transform">The <see cref="Transform"/>.</param>
         protected ObjectProcessorConfiguration( ObjectProcessorConfiguration source,
                                                 ObjectPredicateConfiguration? condition,
-                                                ObjectTransformConfiguration? action )
+                                                ObjectTransformConfiguration? transform )
         {
             Throw.CheckNotNullArgument( source );
             _configuration = source._configuration;
             _condition = condition;
-            _action = action;
+            _transform = transform;
         }
 
         /// <inheritdoc />
@@ -70,12 +70,12 @@ namespace CK.Object.Processor
         public ObjectPredicateConfiguration? Condition => _condition;
 
         /// <inheritdoc />
-        public ObjectTransformConfiguration? Action => _action;
+        public ObjectTransformConfiguration? Transform => _transform;
 
         /// <summary>
         /// Creates a synchronous processor function that requires external services to do its job.
         /// <para>
-        /// This base implementation creates a function based on <see cref="Condition"/> and <see cref="Action"/>
+        /// This base implementation creates a function based on <see cref="Condition"/> and <see cref="Transform"/>
         /// configurations.
         /// </para>
         /// </summary>
@@ -84,7 +84,7 @@ namespace CK.Object.Processor
         /// <returns>A configured processor function or null for a void processor.</returns>
         public virtual Func<object, object?>? CreateProcessor( IActivityMonitor monitor, IServiceProvider services )
         {
-            return CreateFromConditionAndAction( CreateCondition( monitor, services ), CreateAction( monitor, services ) );
+            return CreateFromConditionAndTransform( CreateCondition( monitor, services ), CreateTransform( monitor, services ) );
         }
 
         /// <summary>
@@ -99,14 +99,14 @@ namespace CK.Object.Processor
         }
 
         /// <summary>
-        /// Creates the action (an object transform function). 
+        /// Creates the transformation. 
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">The services.</param>
         /// <returns>The transform function or null for the identity function.</returns>
-        protected virtual Func<object, object>? CreateAction( IActivityMonitor monitor, IServiceProvider services )
+        protected virtual Func<object, object>? CreateTransform( IActivityMonitor monitor, IServiceProvider services )
         {
-            return _action?.CreateTransform( monitor, services );
+            return _transform?.CreateTransform( monitor, services );
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace CK.Object.Processor
         /// <param name="c">The predicate.</param>
         /// <param name="a">The transform function.</param>
         /// <returns>A configured processor function or null for a void processor.</returns>
-        protected static Func<object, object?>? CreateFromConditionAndAction( Func<object, bool>? c, Func<object, object>? a )
+        protected static Func<object, object?>? CreateFromConditionAndTransform( Func<object, bool>? c, Func<object, object>? a )
         {
             if( c != null )
             {
@@ -149,42 +149,42 @@ namespace CK.Object.Processor
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="hook">The hook context.</param>
         /// <param name="services">The services.</param>
-        /// <returns>A wrapper bound to the evaluation hook or null for a void processor.</returns>
-        public virtual ObjectProcessorHook? CreateHook( IActivityMonitor monitor, IProcessorEvaluationHook hook, IServiceProvider services )
+        /// <returns>A wrapper bound to the hook context or null for a void processor.</returns>
+        public virtual ObjectProcessorHook? CreateHook( IActivityMonitor monitor, ProcessorHookContext hook, IServiceProvider services )
         {
-            var c = CreateConditionHook( monitor, hook.ConditionEvaluationHook, services );
-            var a = CreateActionHook( monitor, hook.ActionEvaluationHook, services );
-            return a != null || c != null ? new ObjectProcessorHook( hook, this, c, a ) : null;
+            var c = CreateConditionHook( monitor, hook.ConditionHookContext, services );
+            var t = CreateTransformHook( monitor, hook.TransformHookContext, services );
+            return t != null || c != null ? new ObjectProcessorHook( hook, this, c, t ) : null;
         }
 
         /// <summary>
         /// Creates the condition hook object. 
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="hook">The hook context.</param>
         /// <param name="services">The services.</param>
         /// <returns>The hook predicate or null for the empty predicate.</returns>
         protected virtual ObjectPredicateHook? CreateConditionHook( IActivityMonitor monitor,
-                                                                    IPredicateEvaluationHook hook,
+                                                                    PredicateHookContext hook,
                                                                     IServiceProvider services )
         {
             return _condition?.CreateHook( monitor, hook, services );
         }
 
         /// <summary>
-        /// Creates the action hook object. 
+        /// Creates the transform hook object. 
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The evaluation hook.</param>
+        /// <param name="hook">The hook context.</param>
         /// <param name="services">The services.</param>
         /// <returns>The transform hook or null for the identity function.</returns>
-        protected virtual ObjectTransformHook? CreateActionHook( IActivityMonitor monitor,
-                                                                 ITransformEvaluationHook hook,
-                                                                 IServiceProvider services )
+        protected virtual ObjectTransformHook? CreateTransformHook( IActivityMonitor monitor,
+                                                                    TransformHookContext hook,
+                                                                    IServiceProvider services )
         {
-            return _action?.CreateHook( monitor, hook, services );
+            return _transform?.CreateHook( monitor, hook, services );
         }
 
         /// <summary>
@@ -203,13 +203,13 @@ namespace CK.Object.Processor
 
         /// <summary>
         /// Creates an <see cref="ObjectProcessorHook"/> that doesn't require any external service to do its job.
-        /// <see cref="CreateHook(IActivityMonitor, IProcessorEvaluationHook, IServiceProvider)"/> is called with an
+        /// <see cref="CreateHook(IActivityMonitor, ProcessorHookContext, IServiceProvider)"/> is called with an
         /// empty <see cref="IServiceProvider"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The evaluation hook.</param>
-        /// <returns>A wrapper bound to the evaluation hook or null for a void processor.</returns>
-        public ObjectProcessorHook? CreateHook( IActivityMonitor monitor, IProcessorEvaluationHook hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
+        /// <param name="hook">The hook context.</param>
+        /// <returns>A wrapper bound to the hook context or null for a void processor.</returns>
+        public ObjectProcessorHook? CreateHook( IActivityMonitor monitor, ProcessorHookContext hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Adds a <see cref="PolymorphicConfigurationTypeBuilder.TypeResolver"/> for synchronous <see cref="ObjectProcessorConfiguration"/>.
