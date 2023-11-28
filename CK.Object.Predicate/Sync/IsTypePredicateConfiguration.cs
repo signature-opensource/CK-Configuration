@@ -8,7 +8,7 @@ namespace CK.Object.Predicate
     /// <see cref="Type.IsAssignableFrom(Type?)"/> is used.
     /// </summary>
     /// <typeparam name="T">The expected type.</typeparam>
-    public abstract class IsTypeBasePredicateConfiguration<T> : ObjectPredicateConfiguration
+    public abstract class IsTypePredicateConfiguration<T> : ObjectPredicateConfiguration
     {
         /// <summary>
         /// Required constructor.
@@ -16,7 +16,7 @@ namespace CK.Object.Predicate
         /// <param name="monitor">Unused monitor.</param>
         /// <param name="builder">Unused builder.</param>
         /// <param name="configuration">Captured configuration.</param>
-        protected IsTypeBasePredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
+        protected IsTypePredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
             : base( configuration )
         {
         }

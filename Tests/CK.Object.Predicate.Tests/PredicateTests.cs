@@ -308,5 +308,50 @@ namespace CK.Object.Predicate.Tests
                 (await f( "Without succeeds." )).Should().BeTrue();
             }
         }
+
+        [Test]
+        public async Task IsType_helper_test_Async()
+        {
+            var config = ImmutableConfigurationSection.CreateFromJson( "Root",
+                """
+                {
+                    "Assemblies": { "CK.Object.Predicate.Tests": "Test"},
+                    "Type": "Any",
+                    "Predicates": [
+                        {
+                            "Type": "IsString, Test",
+                        },
+                        {
+                            "Type": "IsDouble, Test",
+                        }
+                    ]
+                }
+                """ );
+            var builder = new PolymorphicConfigurationTypeBuilder();
+            ObjectAsyncPredicateConfiguration.AddResolver( builder );
+            ObjectPredicateConfiguration.AddResolver( builder );
+
+            {
+                var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config );
+                Throw.DebugAssert( fC != null );
+                var f = fC.CreatePredicate( TestHelper.Monitor );
+                Throw.DebugAssert( f != null );
+                f( 0 ).Should().BeFalse();
+                f( this ).Should().BeFalse();
+                f( 0.0 ).Should().BeTrue();
+                f( "Hello" ).Should().BeTrue();
+            }
+            {
+                var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config );
+                Throw.DebugAssert( fC != null );
+                var f = fC.CreatePredicate( TestHelper.Monitor );
+                Throw.DebugAssert( f != null );
+                (await f( this )).Should().BeFalse();
+                (await f( 0 )).Should().BeFalse();
+                (await f( double.Epsilon )).Should().BeTrue();
+                (await f( string.Empty )).Should().BeTrue();
+            }
+        }
+
     }
 }

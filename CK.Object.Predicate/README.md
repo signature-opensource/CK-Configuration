@@ -104,9 +104,21 @@ A typical predicate configuration looks like this (in json):
 The `NotPredicateConfiguration` defines an `Operand` predicate and reverts the operand evaluation
 result (true &lt;--&gt; false).
 
-The `IsTypeBasePredicateConfiguration<T>` is helper: actual type match must be explicitely
+The `IsTypePredicateConfiguration<T>` is helper: actual type match must be explicitely
 defined: there is no "IsType" predicate with a "ExpectedType" expressed as an assembly qualified
-name or other .Net naming.
+name or other .Net naming. To use it (only the constructor needs to be relayed):
+```csharp
+public sealed class IsStringPredicateConfiguration : IsTypePredicateConfiguration<string>
+{
+    public IsStringPredicateConfiguration( IActivityMonitor monitor,
+                                           PolymorphicConfigurationTypeBuilder builder,
+                                           ImmutableConfigurationSection configuration )
+        : base( monitor, builder, configuration )
+    {
+    }
+}
+```
+
 
 ## Predicate composite: the Group.
 ### "Any", "All", "Single" and "AtLeast"/"AtMost"
