@@ -38,6 +38,8 @@ namespace CK.Object.Predicate
         /// Gets the subordinated predicates configurations.
         /// <para>
         /// When this is empty, this configuration generates the empty (null) predicate.
+        /// Note that this is only configurations. Each of them can generate an empty predicate:
+        /// items in this list doens't guaranty anything about the eventual predicate. 
         /// </para>
         /// </summary>
         IReadOnlyList<IObjectPredicateConfiguration> Predicates { get; }

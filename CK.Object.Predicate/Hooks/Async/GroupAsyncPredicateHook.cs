@@ -15,11 +15,11 @@ namespace CK.Object.Predicate
         /// <summary>
         /// Initializes a new hook.
         /// </summary>
-        /// <param name="hook">The hook context.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="configuration">The predicate configuration.</param>
         /// <param name="predicates">The subordinated predicates.</param>
-        public GroupAsyncPredicateHook( PredicateHookContext hook, IGroupPredicateConfiguration configuration, ImmutableArray<ObjectAsyncPredicateHook> predicates )
-            : base( hook, configuration )
+        public GroupAsyncPredicateHook( PredicateHookContext context, IGroupPredicateConfiguration configuration, ImmutableArray<ObjectAsyncPredicateHook> predicates )
+            : base( context, configuration )
         {
             Throw.CheckNotNullArgument( predicates );
             _predicates = predicates;
@@ -34,32 +34,36 @@ namespace CK.Object.Predicate
         public ImmutableArray<ObjectAsyncPredicateHook> Predicates => _predicates;
 
         /// <inheritdoc />
-        protected override async ValueTask<bool> DoEvaluateAsync( object o )
+        protected override ValueTask<bool> DoEvaluateAsync( object o )
         {
             var atLeast = Configuration.AtLeast;
-            var r = atLeast switch
+            var atMost = Configuration.AtMost;
+            if( atMost == 0 )
             {
-                0 => await AllAsync( _predicates, o ).ConfigureAwait( false ),
-                1 => await AnyAsync( _predicates, o ).ConfigureAwait( false ),
-                _ => await AtLeastAsync( _predicates, o, atLeast ).ConfigureAwait( false )
-            };
-            return r;
+                return atLeast switch
+                {
+                    0 => AllAsync( _predicates, o ),
+                    1 => AnyAsync( _predicates, o ),
+                    _ => AtLeastAsync( _predicates, o, atLeast )
+                };
+            }
+            return MatchBetweenAsync( _predicates, o, atLeast, atMost );
         }
 
         static async ValueTask<bool> AllAsync( ImmutableArray<ObjectAsyncPredicateHook> items, object o )
         {
-            foreach( var i in items )
+            foreach( var p in items )
             {
-                if( !await i.EvaluateAsync( o ).ConfigureAwait( false ) ) return false;
+                if( !await p.EvaluateAsync( o ).ConfigureAwait( false ) ) return false;
             }
             return true;
         }
 
         static async ValueTask<bool> AnyAsync( ImmutableArray<ObjectAsyncPredicateHook> items, object o )
         {
-            foreach( var i in items )
+            foreach( var p in items )
             {
-                if( await i.EvaluateAsync( o ).ConfigureAwait( false ) ) return true;
+                if( await p.EvaluateAsync( o ).ConfigureAwait( false ) ) return true;
             }
             return false;
         }
@@ -67,14 +71,27 @@ namespace CK.Object.Predicate
         static async ValueTask<bool> AtLeastAsync( ImmutableArray<ObjectAsyncPredicateHook> items, object o, int atLeast )
         {
             int c = 0;
-            foreach( var i in items )
+            foreach( var p in items )
             {
-                if( await i.EvaluateAsync( o ).ConfigureAwait( false ) )
+                if( await p.EvaluateAsync( o ).ConfigureAwait( false ) )
                 {
                     if( ++c == atLeast ) return true;
                 }
             }
             return false;
+        }
+
+        static async ValueTask<bool> MatchBetweenAsync( ImmutableArray<ObjectAsyncPredicateHook> items, object o, int atLeast, int atMost )
+        {
+            int c = 0;
+            foreach( var p in items )
+            {
+                if( await p.EvaluateAsync( o ).ConfigureAwait( false ) )
+                {
+                    if( ++c > atMost ) return false;
+                }
+            }
+            return c >= atLeast;
         }
 
     }

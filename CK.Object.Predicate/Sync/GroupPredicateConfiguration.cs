@@ -156,11 +156,7 @@ namespace CK.Object.Predicate
             }
             else
             {
-                return _atLeast switch
-                {
-                    0 => o => AtMostMatch( items, o, _atMost ),
-                    _ => o => MatchBetween( items, o, _atLeast, _atMost )
-                };
+                return o => MatchBetween( items, o, _atLeast, _atMost );
             }
 
             static bool AtLeastMatch( ImmutableArray<Func<object, bool>> predicates, object o, int atLeast )
@@ -176,19 +172,6 @@ namespace CK.Object.Predicate
                 return false;
             }
 
-            static bool AtMostMatch( ImmutableArray<Func<object, bool>> predicates, object o, int atMost )
-            {
-                int c = 0;
-                foreach( var f in predicates )
-                {
-                    if( f( o ) )
-                    {
-                        if( ++c > atMost ) return false;
-                    }
-                }
-                return true;
-            }
-
             static bool MatchBetween( ImmutableArray<Func<object, bool>> predicates, object o, int atLeast, int atMost )
             {
                 int c = 0;
@@ -197,10 +180,9 @@ namespace CK.Object.Predicate
                     if( f( o ) )
                     {
                         if( ++c > atMost ) return false;
-                        if( c == atLeast ) return true;
                     }
                 }
-                return false;
+                return c >= atLeast;
             }
         }
 

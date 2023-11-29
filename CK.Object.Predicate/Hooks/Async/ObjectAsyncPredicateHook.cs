@@ -16,15 +16,15 @@ namespace CK.Object.Predicate
         /// <summary>
         /// Initializes a new hook.
         /// </summary>
-        /// <param name="hook">The hook context.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="configuration">The predicate configuration.</param>
         /// <param name="predicate">The predicate.</param>
-        public ObjectAsyncPredicateHook( PredicateHookContext hook, IObjectPredicateConfiguration configuration, Func<object, ValueTask<bool>> predicate )
+        public ObjectAsyncPredicateHook( PredicateHookContext context, IObjectPredicateConfiguration configuration, Func<object, ValueTask<bool>> predicate )
         {
-            Throw.CheckNotNullArgument( hook );
+            Throw.CheckNotNullArgument( context );
             Throw.CheckNotNullArgument( configuration );
             Throw.CheckNotNullArgument( predicate );
-            _context = hook;
+            _context = context;
             _configuration = configuration;
             _predicate = predicate;
         }
@@ -33,13 +33,13 @@ namespace CK.Object.Predicate
         /// Constructor used by <see cref="GroupAsyncPredicateHook"/>. Must be used by specialized hook when the predicate contains
         /// other <see cref="ObjectAsyncPredicateConfiguration"/> to expose the internal predicate structure.
         /// </summary>
-        /// <param name="hook">The hook context.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="configuration">This configuration.</param>
-        protected ObjectAsyncPredicateHook( PredicateHookContext hook, IObjectPredicateConfiguration configuration )
+        protected ObjectAsyncPredicateHook( PredicateHookContext context, IObjectPredicateConfiguration configuration )
         {
-            Throw.CheckNotNullArgument( hook );
+            Throw.CheckNotNullArgument( context );
             Throw.CheckNotNullArgument( configuration );
-            _context = hook;
+            _context = context;
             _configuration = configuration;
             _predicate = null!;
         }

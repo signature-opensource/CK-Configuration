@@ -121,6 +121,7 @@ public sealed class IsStringPredicateConfiguration : IsTypePredicateConfiguratio
 
 
 ## Predicate composite: the Group.
+
 ### "Any", "All", "Single" and "AtLeast"/"AtMost"
 The `GroupPredicateConfiguration` is configured with two integers "AtLeast" and "AtMost".
 This enables the Group to handle logical operators between its predicates:
@@ -318,6 +319,10 @@ Because these hooks have the primary purpose to "explain" the configured process
 - The `PredicateHookContext` has an optional `UserMessageCollector` that can be used to emit
   translatable error, warnings and informations.
 - the `MonitoredPredicateHookContext` (that adds a monitor) should be enough in practice.
+
+> It is planned to add a `void Describe( UserMessageCollector description )` to the `ObjectPredicateHook`
+  that will capture a translatable explanation of what it does in a human readable text (that includes
+  its configured values).
 
 ## Placeholder support.
 

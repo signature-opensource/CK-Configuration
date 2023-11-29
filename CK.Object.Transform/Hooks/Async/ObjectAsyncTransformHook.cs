@@ -35,7 +35,7 @@ namespace CK.Object.Transform
         /// </summary>
         /// <param name="context">The hook context.</param>
         /// <param name="configuration">This configuration.</param>
-        internal ObjectAsyncTransformHook( TransformHookContext context, IObjectTransformConfiguration configuration )
+        protected ObjectAsyncTransformHook( TransformHookContext context, IObjectTransformConfiguration configuration )
         {
             Throw.CheckNotNullArgument( context );
             Throw.CheckNotNullArgument( configuration );

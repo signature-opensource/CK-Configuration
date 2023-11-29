@@ -16,12 +16,12 @@ namespace CK.Object.Predicate
         /// Initializes a new hook.
         /// </summary>
         /// <param name="configuration">The predicate configuration.</param>
-        /// <param name="hook">The hook context.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="predicates">The subordinated predicates.</param>
-        public GroupPredicateHook( PredicateHookContext hook,
+        public GroupPredicateHook( PredicateHookContext context,
                                    IGroupPredicateConfiguration configuration,
                                    ImmutableArray<ObjectPredicateHook> predicates )
-            : base( hook, configuration )
+            : base( context, configuration )
         {
             Throw.CheckNotNullArgument( predicates );
             _predicates = predicates;
@@ -39,21 +39,37 @@ namespace CK.Object.Predicate
         protected override bool DoEvaluate( object o )
         {
             var atLeast = Configuration.AtLeast;
-            switch( atLeast )
+            var atMost = Configuration.AtMost;
+            if( atMost == 0 )
             {
-                case 0: return _predicates.All( i => i.Evaluate( o ) );
-                case 1: return _predicates.Any( i => i.Evaluate( o ) );
-                default:
-                    int c = 0;
-                    foreach( var i in _predicates )
-                    {
-                        if( i.Evaluate( o ) )
+                switch( atLeast )
+                {
+                    case 0: return _predicates.All( i => i.Evaluate( o ) );
+                    case 1: return _predicates.Any( i => i.Evaluate( o ) );
+                    default:
+                        int c = 0;
+                        foreach( var i in _predicates )
                         {
-                            if( ++c == atLeast ) return true;
+                            if( i.Evaluate( o ) )
+                            {
+                                if( ++c == atLeast ) return true;
+                            }
                         }
+                        return false;
+                };
+            }
+            else
+            {
+                int c = 0;
+                foreach( var i in _predicates )
+                {
+                    if( i.Evaluate( o ) )
+                    {
+                        if( ++c > atMost ) return false;
                     }
-                    return false;
-            };
+                }
+                return c >= atLeast;
+            }
         }
     }
 

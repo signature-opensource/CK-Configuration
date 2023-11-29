@@ -2,7 +2,6 @@ using CK.Core;
 using System;
 using System.Security;
 using System.Threading.Tasks;
-using static CK.Object.Transform.ObjectTransformConfiguration;
 
 namespace CK.Object.Transform
 {
@@ -33,7 +32,7 @@ namespace CK.Object.Transform
         /// Creates an asynchronous transform function that requires external services to do its job.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="services">The services.</param>
+        /// <param name="services">Services that may be required for some (complex) transform functions.</param>
         /// <returns>A configured transform function or null for an identity function.</returns>
         public abstract Func<object, ValueTask<object>>? CreateTransform( IActivityMonitor monitor, IServiceProvider services );
 
@@ -47,7 +46,7 @@ namespace CK.Object.Transform
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="hook">The hook context.</param>
-        /// <param name="services">The services.</param>
+        /// <param name="services">Services that may be required for some (complex) transform functions.</param>
         /// <returns>A wrapper bound to the hook context or null for an identity function.</returns>
         public virtual ObjectAsyncTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext hook, IServiceProvider services )
         {
@@ -61,7 +60,7 @@ namespace CK.Object.Transform
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <returns>A configured transform function or null for an identity function.</returns>
-        public Func<object, ValueTask<object>>? CreateTransform( IActivityMonitor monitor ) => CreateTransform( monitor, EmptyServiceProvider.Instance );
+        public Func<object, ValueTask<object>>? CreateTransform( IActivityMonitor monitor ) => CreateTransform( monitor, ObjectTransformConfiguration.EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Creates an <see cref="ObjectAsyncTransformHook"/> that doesn't require any external service to do its job.
@@ -71,7 +70,7 @@ namespace CK.Object.Transform
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="hook">The hook context.</param>
         /// <returns>A wrapper bound to the hook context or null for an identity function.</returns>
-        public ObjectAsyncTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext hook ) => CreateHook( monitor, hook, EmptyServiceProvider.Instance );
+        public ObjectAsyncTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext hook ) => CreateHook( monitor, hook, ObjectTransformConfiguration.EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Adds a <see cref="PolymorphicConfigurationTypeBuilder.TypeResolver"/> for asynchronous <see cref="ObjectAsyncTransformConfiguration"/>.

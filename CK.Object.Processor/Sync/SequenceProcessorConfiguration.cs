@@ -22,7 +22,7 @@ namespace CK.Object.Processor
     /// </item>
     /// </list>
     /// </summary>
-    public sealed class SequenceProcessorConfiguration : ObjectProcessorConfiguration, ISequenceProcessorConfiguration
+    public class SequenceProcessorConfiguration : ObjectProcessorConfiguration, ISequenceProcessorConfiguration
     {
         readonly ImmutableArray<ObjectProcessorConfiguration> _processors;
 
@@ -64,7 +64,7 @@ namespace CK.Object.Processor
         public IReadOnlyList<ObjectProcessorConfiguration> Processors => _processors;
 
         /// <inheritdoc />
-        public override ObjectProcessorHook? CreateHook( IActivityMonitor monitor, ProcessorHookContext hook, IServiceProvider services )
+        public sealed override ObjectProcessorHook? CreateHook( IActivityMonitor monitor, ProcessorHookContext hook, IServiceProvider services )
         {
             ImmutableArray<ObjectProcessorHook> processors = _processors.Select( c => c.CreateHook( monitor, hook, services ) )
                                                                         .Where( s => s != null )
@@ -78,7 +78,7 @@ namespace CK.Object.Processor
         }
 
         /// <inheritdoc />
-        public override Func<object, object?>? CreateProcessor( IActivityMonitor monitor, IServiceProvider services )
+        public sealed override Func<object, object?>? CreateProcessor( IActivityMonitor monitor, IServiceProvider services )
         {
             ImmutableArray<Func<object, object?>> processors = _processors.Select( c => c.CreateProcessor( monitor, services ) )
                                                                           .Where( f => f != null )
@@ -86,7 +86,9 @@ namespace CK.Object.Processor
             // Trivial case: not a composite. Base implementation handles the Condition and the Transform.
             if( processors.Length == 0 ) return base.CreateProcessor( monitor, services );
             // Regular case: we have one or more processors.
-            var innerProcessor = processors.Length == 1 ? processors[0] : o => Apply( processors, o );
+            var innerProcessor = processors.Length == 1
+                                    ? processors[0]
+                                    : o => Apply( processors, o );
             var thisCondition = CreateCondition( monitor, services );
             var thisTransform = CreateTransform( monitor, services );
             if( thisCondition != null )
@@ -122,10 +124,10 @@ namespace CK.Object.Processor
                 foreach( var t in processors )
                 {
                     Throw.DebugAssert( o != null );
-                    o = t( o )!;
-                    if( o != null ) break;
+                    var o2 = t( o )!;
+                    if( o2 != null ) return o2;
                 }
-                return o;
+                return null;
             }
         }
 
@@ -138,10 +140,10 @@ namespace CK.Object.Processor
         /// <param name="monitor">The monitor to use to signal errors.</param>
         /// <param name="configuration">Configuration of the replaced placeholder.</param>
         /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
-        protected override ObjectProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
-                                                                          IConfigurationSection configuration,
-                                                                          ObjectPredicateConfiguration? condition,
-                                                                          ObjectTransformConfiguration? action )
+        protected sealed  override ObjectProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
+                                                                                  IConfigurationSection configuration,
+                                                                                  ObjectPredicateConfiguration? condition,
+                                                                                  ObjectTransformConfiguration? action )
         {
             // Handles placeholder inside Processors.
             ImmutableArray<ObjectProcessorConfiguration>.Builder? newItems = null;

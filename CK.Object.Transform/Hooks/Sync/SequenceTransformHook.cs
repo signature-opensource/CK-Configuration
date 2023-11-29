@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -17,12 +18,25 @@ namespace CK.Object.Transform
         /// </summary>
         /// <param name="configuration">The transform configuration.</param>
         /// <param name="context">The hook context.</param>
-        /// <param name="transforms">The subordinated transform functions.</param>
+        /// <param name="transforms">The subordinated transform hook.</param>
         public SequenceTransformHook( TransformHookContext context, ISequenceTransformConfiguration configuration, ImmutableArray<ObjectTransformHook> transforms )
             : base( context, configuration )
         {
             Throw.CheckNotNullArgument( transforms );
             _transforms = transforms;
+        }
+
+        /// <summary>
+        /// Initializes a new hook.
+        /// </summary>
+        /// <param name="configuration">The transform configuration.</param>
+        /// <param name="context">The hook context.</param>
+        /// <param name="h">The subordinated transform hook.</param>
+        public SequenceTransformHook( TransformHookContext context, ISequenceTransformConfiguration configuration, params ObjectTransformHook[] h )
+            : base( context, configuration )
+        {
+            // Waiting for .NET8: ImmutableCollectionsMarshal.AsImmutableArray(h)
+            _transforms = Unsafe.As<ObjectTransformHook[], ImmutableArray<ObjectTransformHook>>( ref h );
         }
 
         /// <inheritdoc />

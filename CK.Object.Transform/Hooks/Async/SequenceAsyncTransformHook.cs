@@ -25,6 +25,19 @@ namespace CK.Object.Transform
             _transforms = transforms;
         }
 
+        /// <summary>
+        /// Initializes a new hook.
+        /// </summary>
+        /// <param name="configuration">The transform configuration.</param>
+        /// <param name="context">The hook context.</param>
+        /// <param name="h">The subordinated transform hook.</param>
+        public SequenceAsyncTransformHook( TransformHookContext context, ISequenceTransformConfiguration configuration, params ObjectAsyncTransformHook[] h )
+            : base( context, configuration )
+        {
+            // Waiting for .NET8: ImmutableCollectionsMarshal.AsImmutableArray(h)
+            _transforms = Unsafe.As<ObjectAsyncTransformHook[], ImmutableArray<ObjectAsyncTransformHook>>( ref h );
+        }
+
         /// <inheritdoc />
         public new ISequenceTransformConfiguration Configuration => Unsafe.As<ISequenceTransformConfiguration>( base.Configuration );
 

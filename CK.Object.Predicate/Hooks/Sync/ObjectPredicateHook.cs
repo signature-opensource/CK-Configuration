@@ -6,7 +6,7 @@ namespace CK.Object.Predicate
     /// <summary>
     /// Hook implementation for synchronous predicate.
     /// </summary>
-    public class ObjectPredicateHook : IObjectPredicateHook
+    public partial class ObjectPredicateHook : IObjectPredicateHook
     {
         readonly PredicateHookContext _context;
         readonly IObjectPredicateConfiguration _configuration;
@@ -15,15 +15,15 @@ namespace CK.Object.Predicate
         /// <summary>
         /// Initializes a new hook.
         /// </summary>
-        /// <param name="hook">The hook context.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="configuration">The predicate configuration.</param>
         /// <param name="predicate">The predicate.</param>
-        public ObjectPredicateHook( PredicateHookContext hook, IObjectPredicateConfiguration configuration, Func<object, bool> predicate )
+        public ObjectPredicateHook( PredicateHookContext context, IObjectPredicateConfiguration configuration, Func<object, bool> predicate )
         {
-            Throw.CheckNotNullArgument( hook );
+            Throw.CheckNotNullArgument( context );
             Throw.CheckNotNullArgument( configuration );
             Throw.CheckNotNullArgument( predicate );
-            _context = hook;
+            _context = context;
             _configuration = configuration;
             _predicate = predicate;
         }
@@ -33,13 +33,13 @@ namespace CK.Object.Predicate
         /// other <see cref="ObjectPredicateConfiguration"/> to expose the internal predicate structure (and <see cref="DoEvaluate(object)"/>
         /// must be overridden).
         /// </summary>
-        /// <param name="hook">The hook context.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="configuration">This configuration.</param>
-        protected ObjectPredicateHook( PredicateHookContext hook, IObjectPredicateConfiguration configuration )
+        protected ObjectPredicateHook( PredicateHookContext context, IObjectPredicateConfiguration configuration )
         {
-            Throw.CheckNotNullArgument( hook );
+            Throw.CheckNotNullArgument( context );
             Throw.CheckNotNullArgument( configuration );
-            _context = hook;
+            _context = context;
             _configuration = configuration;
             _predicate = null!;
         }
@@ -82,6 +82,7 @@ namespace CK.Object.Predicate
         /// <param name="o">The object to evaluate.</param>
         /// <returns>The predicate result.</returns>
         protected virtual bool DoEvaluate( object o ) => _predicate( o );
+
     }
 
 }

@@ -136,30 +136,23 @@ namespace CK.Object.Predicate
                     _ => o => AtLeastAsync( predicates, o, _atLeast )
                 };
             }
-            else
-            {
-                return _atLeast switch
-                {
-                    0 => o => AtMostAsync( predicates, o, _atMost ),
-                    _ => o => MatchBetweenAsync( predicates, o, _atLeast, _atMost )
-                };
-            }
+            return o => MatchBetweenAsync( predicates, o, _atLeast, _atMost );
         }
 
         static async ValueTask<bool> AllAsync( ImmutableArray<Func<object, ValueTask<bool>>> predicates, object o )
         {
-            foreach( var f in predicates )
+            foreach( var p in predicates )
             {
-                if( !await f( o ) ) return false;
+                if( !await p( o ) ) return false;
             }
             return true;
         }
 
         static async ValueTask<bool> AnyAsync( ImmutableArray<Func<object, ValueTask<bool>>> predicates, object o )
         {
-            foreach( var f in predicates )
+            foreach( var p in predicates )
             {
-                if( await f( o ) ) return true;
+                if( await p( o ) ) return true;
             }
             return false;
         }
@@ -167,9 +160,9 @@ namespace CK.Object.Predicate
         static async ValueTask<bool> AtLeastAsync( ImmutableArray<Func<object, ValueTask<bool>>> predicates, object o, int atLeast )
         {
             int c = 0;
-            foreach( var f in predicates )
+            foreach( var p in predicates )
             {
-                if( await f( o ) )
+                if( await p( o ) )
                 {
                     if( ++c == atLeast ) return true; 
                 }
@@ -177,31 +170,17 @@ namespace CK.Object.Predicate
             return false;
         }
 
-        static async ValueTask<bool> AtMostAsync( ImmutableArray<Func<object, ValueTask<bool>>> predicates, object o, int atMost )
-        {
-            int c = 0;
-            foreach( var f in predicates )
-            {
-                if( await f( o ) )
-                {
-                    if( ++c > atMost ) return false;
-                }
-            }
-            return true;
-        }
-
         static async ValueTask<bool> MatchBetweenAsync( ImmutableArray<Func<object, ValueTask<bool>>> predicates, object o, int atLeast, int atMost )
         {
             int c = 0;
-            foreach( var f in predicates )
+            foreach( var p in predicates )
             {
-                if( await f( o ) )
+                if( await p( o ) )
                 {
                     if( ++c > atMost ) return false;
-                    if( c == atLeast ) return true;
                 }
             }
-            return false;
+            return c >= atLeast;
         }
 
     }

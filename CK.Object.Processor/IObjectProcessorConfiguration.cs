@@ -7,20 +7,15 @@ namespace CK.Object.Processor
     /// <summary>
     /// Generalizes <see cref="ObjectProcessorConfiguration"/> and <see cref="ObjectAsyncProcessorConfiguration"/>.
     /// </summary>
-    public interface IObjectProcessorConfiguration
+    public interface IObjectProcessorConfiguration : IObjectPredicateConfiguration, IObjectTransformConfiguration
     {
         /// <summary>
-        /// Gets the configuration section.
-        /// </summary>
-        ImmutableConfigurationSection Configuration { get; }
-
-        /// <summary>
-        /// Gets the optional condition configuration.
+        /// Gets the optional configured condition.
         /// </summary>
         ObjectPredicateConfiguration? Condition { get; }
 
         /// <summary>
-        /// Gets the optional action configuration.
+        /// Gets the optional configured transformation.
         /// </summary>
         ObjectTransformConfiguration? Transform { get; }
     }

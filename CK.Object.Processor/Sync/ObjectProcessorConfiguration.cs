@@ -10,7 +10,7 @@ namespace CK.Object.Processor
     /// <summary>
     /// Configuration base class for synchronous processor.
     /// <para>
-    /// This is a concrete type that handles 
+    /// This is a concrete type that handles an optional <see cref="Condition"/> and an optional <see cref="Transform"/>.
     /// </para>
     /// </summary>
     public partial class ObjectProcessorConfiguration : IObjectProcessorConfiguration
@@ -66,47 +66,21 @@ namespace CK.Object.Processor
         /// <inheritdoc />
         public ImmutableConfigurationSection Configuration => _configuration;
 
-        /// <inheritdoc />
-        public ObjectPredicateConfiguration? Condition => _condition;
-
-        /// <inheritdoc />
-        public ObjectTransformConfiguration? Transform => _transform;
-
         /// <summary>
-        /// Creates a synchronous processor function that requires external services to do its job.
+        /// Creates a synchronous processor function.
         /// <para>
         /// This base implementation creates a function based on <see cref="Condition"/> and <see cref="Transform"/>
         /// configurations.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="services">The services.</param>
+        /// <param name="services">Services that may be required for some (complex) transform functions.</param>
         /// <returns>A configured processor function or null for a void processor.</returns>
         public virtual Func<object, object?>? CreateProcessor( IActivityMonitor monitor, IServiceProvider services )
         {
-            return CreateFromConditionAndTransform( CreateCondition( monitor, services ), CreateTransform( monitor, services ) );
-        }
-
-        /// <summary>
-        /// Creates the condition (an object predicate). 
-        /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="services">The services.</param>
-        /// <returns>The predicate or null for the empty predicate.</returns>
-        protected virtual Func<object, bool>? CreateCondition( IActivityMonitor monitor, IServiceProvider services )
-        {
-            return _condition?.CreatePredicate( monitor, services );
-        }
-
-        /// <summary>
-        /// Creates the transformation. 
-        /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="services">The services.</param>
-        /// <returns>The transform function or null for the identity function.</returns>
-        protected virtual Func<object, object>? CreateTransform( IActivityMonitor monitor, IServiceProvider services )
-        {
-            return _transform?.CreateTransform( monitor, services );
+            Func<object, bool>? c = CreateCondition( monitor, services );
+            Func<object, object>? t = CreateTransform( monitor, services );
+            return CreateFromConditionAndTransform( c, t );
         }
 
         /// <summary>
@@ -160,34 +134,6 @@ namespace CK.Object.Processor
         }
 
         /// <summary>
-        /// Creates the condition hook object. 
-        /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The hook context.</param>
-        /// <param name="services">The services.</param>
-        /// <returns>The hook predicate or null for the empty predicate.</returns>
-        protected virtual ObjectPredicateHook? CreateConditionHook( IActivityMonitor monitor,
-                                                                    PredicateHookContext hook,
-                                                                    IServiceProvider services )
-        {
-            return _condition?.CreateHook( monitor, hook, services );
-        }
-
-        /// <summary>
-        /// Creates the transform hook object. 
-        /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The hook context.</param>
-        /// <param name="services">The services.</param>
-        /// <returns>The transform hook or null for the identity function.</returns>
-        protected virtual ObjectTransformHook? CreateTransformHook( IActivityMonitor monitor,
-                                                                    TransformHookContext hook,
-                                                                    IServiceProvider services )
-        {
-            return _transform?.CreateHook( monitor, hook, services );
-        }
-
-        /// <summary>
         /// Creates a synchronous processor that doesn't require any external service to do its job.
         /// <see cref="CreateProcessor(IActivityMonitor, IServiceProvider)"/> is called with an empty <see cref="IServiceProvider"/>.
         /// </summary>
@@ -202,7 +148,7 @@ namespace CK.Object.Processor
         }
 
         /// <summary>
-        /// Creates an <see cref="ObjectProcessorHook"/> that doesn't require any external service to do its job.
+        /// Creates a <see cref="ObjectProcessorHook"/> that doesn't require any external service to do its job.
         /// <see cref="CreateHook(IActivityMonitor, ProcessorHookContext, IServiceProvider)"/> is called with an
         /// empty <see cref="IServiceProvider"/>.
         /// </summary>
@@ -217,12 +163,17 @@ namespace CK.Object.Processor
         /// <item>The processors must be in the "CK.Object.Processor" namespace.</item>
         /// <item>Their name must end with "ProcessorConfiguration".</item>
         /// </list>
+        /// This also calls <see cref="ObjectPredicateConfiguration.AddResolver(PolymorphicConfigurationTypeBuilder, bool, string)"/>
+        /// and <see cref="ObjectTransformConfiguration.AddResolver(PolymorphicConfigurationTypeBuilder, bool, string)"/>.
         /// </summary>
         /// <param name="builder">The builder.</param>
         /// <param name="allowOtherNamespace">True to allow other namespaces than "CK.Object.Processor" to be specified.</param>
         /// <param name="compositeItemsFieldName">Name of the composite field.</param>
         public static void AddResolver( PolymorphicConfigurationTypeBuilder builder, bool allowOtherNamespace = false, string compositeItemsFieldName = "Processors" )
         {
+            // Add the resolvers for Predicates and Transforms.
+            ObjectPredicateConfiguration.AddResolver( builder, allowOtherNamespace );
+            ObjectTransformConfiguration.AddResolver( builder, allowOtherNamespace );
             builder.AddResolver( new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
                                              baseType: typeof( ObjectProcessorConfiguration ),
                                              typeNamespace: "CK.Object.Processor",
@@ -230,7 +181,6 @@ namespace CK.Object.Processor
                                              familyTypeNameSuffix: "Processor",
                                              compositeBaseType: typeof( SequenceProcessorConfiguration ),
                                              compositeItemsFieldName: compositeItemsFieldName ) );
-
         }
 
     }

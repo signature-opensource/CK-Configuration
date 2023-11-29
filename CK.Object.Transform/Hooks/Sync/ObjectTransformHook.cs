@@ -6,7 +6,7 @@ namespace CK.Object.Transform
     /// <summary>
     /// Hook implementation for synchronous transform functions.
     /// </summary>
-    public class ObjectTransformHook : IObjectTransformHook
+    public partial class ObjectTransformHook : IObjectTransformHook
     {
         readonly TransformHookContext _context;
         readonly IObjectTransformConfiguration _configuration;
@@ -34,7 +34,7 @@ namespace CK.Object.Transform
         /// </summary>
         /// <param name="context">The hook context.</param>
         /// <param name="configuration">This configuration.</param>
-        internal ObjectTransformHook( TransformHookContext context, IObjectTransformConfiguration configuration )
+        protected ObjectTransformHook( TransformHookContext context, IObjectTransformConfiguration configuration )
         {
             Throw.CheckNotNullArgument( context );
             Throw.CheckNotNullArgument( configuration );

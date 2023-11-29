@@ -45,17 +45,18 @@ namespace CK.Object.Processor
             {
                 return null;
             }
+            object? o2 = null;
             foreach( var i in _processors )
             {
                 Throw.DebugAssert( o != null );
-                o = i.Process( o )!;
-                if( o != null ) break;
+                o2 = i.Process( o )!;
+                if( o2 != null ) break;
             }
-            if( o != null && Transform != null )
+            if( o2 != null && Transform != null )
             {
-                o = Transform.Transform( o );
+                o2 = Transform.Transform( o2 );
             }
-            return o;
+            return o2;
         }
     }
 
