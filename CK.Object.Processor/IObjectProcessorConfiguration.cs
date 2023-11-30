@@ -12,11 +12,11 @@ namespace CK.Object.Processor
         /// <summary>
         /// Gets the optional configured condition.
         /// </summary>
-        ObjectPredicateConfiguration? Condition { get; }
+        IObjectPredicateConfiguration? Condition { get; }
 
         /// <summary>
         /// Gets the optional configured transformation.
         /// </summary>
-        ObjectTransformConfiguration? Transform { get; }
+        IObjectTransformConfiguration? Transform { get; }
     }
 }

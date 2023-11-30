@@ -7,7 +7,7 @@ namespace CK.Object.Predicate
     /// <summary>
     /// Hook implementation for asynchronous predicates.
     /// </summary>
-    public class ObjectAsyncPredicateHook : IObjectPredicateHook
+    public partial class ObjectAsyncPredicateHook : IObjectPredicateHook
     {
         readonly PredicateHookContext _context;
         readonly IObjectPredicateConfiguration _configuration;

@@ -7,7 +7,7 @@ namespace CK.Object.Transform
     /// <summary>
     /// Hook implementation for asynchronous transform functions.
     /// </summary>
-    public class ObjectAsyncTransformHook : IObjectTransformHook
+    public partial class ObjectAsyncTransformHook : IObjectTransformHook
     {
         readonly TransformHookContext _context;
         readonly IObjectTransformConfiguration _configuration;
