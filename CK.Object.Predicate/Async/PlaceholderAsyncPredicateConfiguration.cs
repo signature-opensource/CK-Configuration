@@ -36,7 +36,7 @@ namespace CK.Object.Predicate
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">The services.</param>
         /// <returns>The empty predicate (null).</returns>
-        public override Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, ValueTask<bool>>? CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
         {
             return null;
         }

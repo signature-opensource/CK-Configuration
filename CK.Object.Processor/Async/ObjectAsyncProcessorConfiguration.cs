@@ -14,7 +14,7 @@ namespace CK.Object.Processor
     /// This is a concrete type that handles an optional <see cref="Condition"/> and an optional <see cref="Transform"/>.
     /// </para>
     /// </summary>
-    public partial class ObjectAsyncProcessorConfiguration : IObjectProcessorConfiguration
+    public partial class ObjectAsyncProcessorConfiguration : IObjectProcessorConfiguration, IObjectPredicateConfiguration, IObjectTransformConfiguration
     {
         readonly ImmutableConfigurationSection _configuration;
         readonly ObjectAsyncPredicateConfiguration? _condition;

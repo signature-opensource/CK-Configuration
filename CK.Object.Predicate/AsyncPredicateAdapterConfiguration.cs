@@ -29,7 +29,7 @@ namespace CK.Object.Predicate
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A configured predicate or null for an empty predicate.</returns>
-        public override Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, ValueTask<bool>>? CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
         {
             Func<object, bool>? p = _sync.CreatePredicate( monitor, services );
             return p != null ? o => ValueTask.FromResult( p( o ) ) : null;

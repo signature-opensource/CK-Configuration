@@ -1,13 +1,14 @@
 using CK.Core;
 using System;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace CK.Object.Predicate
 {
     /// <summary>
     /// Configuration base class for synchronous predicates.
     /// </summary>
-    public abstract partial class ObjectPredicateConfiguration : IObjectPredicateConfiguration
+    public abstract partial class ObjectPredicateConfiguration : ISyncObjectPredicateConfiguration
     {
         readonly ImmutableConfigurationSection _configuration;
 
@@ -26,6 +27,14 @@ namespace CK.Object.Predicate
 
         /// <inheritdoc />
         public ImmutableConfigurationSection Configuration => _configuration;
+
+        ISyncObjectPredicateConfiguration? IObjectPredicateConfiguration.AsSync => this;
+
+        Func<object, ValueTask<bool>>? IObjectPredicateConfiguration.CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
+        {
+            var p = CreatePredicate(monitor, services);
+            return p != null ? o => ValueTask.FromResult( p( o ) ) : null;
+        }
 
         /// <summary>
         /// Creates a synchronous predicate.

@@ -23,7 +23,7 @@ namespace CK.Object.Predicate
         }
 
         /// <inheritdoc />
-        public override Func<object, ValueTask<bool>> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, ValueTask<bool>> CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
         {
             return static o => ValueTask.FromResult( typeof(T).IsAssignableFrom( o.GetType() ) );
         }

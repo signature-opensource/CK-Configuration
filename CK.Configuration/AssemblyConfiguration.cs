@@ -92,6 +92,7 @@ namespace CK.Core
         /// Required namespace that will be prepended to the <paramref name="typeName"/> if there is no '.' in it.
         /// This must not be empty or whitespace.
         /// </param>
+        /// <param name="isOptional">True to not emit an error if the type is not found. Must be used when an alternative is possible.</param>
         /// <param name="allowOtherNamespace">
         /// True to allow type names in other namespaces than <paramref name="typeNamespace"/>.
         /// </param>
@@ -112,6 +113,7 @@ namespace CK.Core
         public Type? TryResolveType( IActivityMonitor monitor,
                                      string typeName,
                                      string typeNamespace,
+                                     bool isOptional = false,
                                      Assembly? fallbackDefaultAssembly = null,
                                      bool allowOtherNamespace = false,
                                      string? familyTypeNameSuffix = null,
@@ -192,30 +194,31 @@ namespace CK.Core
             if( assembly == null )
             {
                 Throw.DebugAssert( isDefaultAssembly && _defaultAssemblyName == null && fallbackDefaultAssembly != null );
-                return LoadType( monitor, fallbackDefaultAssembly, null, finalTypeName, errorPrefix, errorSuffix );
+                return LoadType( monitor, fallbackDefaultAssembly, null, finalTypeName, isOptional, errorPrefix, errorSuffix );
             }
             if( isDefaultAssembly && fallbackDefaultAssembly != null )
             {
-                return LoadType( monitor, assembly, fallbackDefaultAssembly, finalTypeName, errorPrefix, errorSuffix );
+                return LoadType( monitor, assembly, fallbackDefaultAssembly, finalTypeName, isOptional, errorPrefix, errorSuffix );
             }
-            return LoadType( monitor, assembly, null, finalTypeName, errorPrefix, errorSuffix );
+            return LoadType( monitor, assembly, null, finalTypeName, isOptional, errorPrefix, errorSuffix );
         }
 
         static Type? LoadType( IActivityMonitor monitor,
                                Assembly a1,
                                Assembly? a2,
                                string finalTypeName,
+                               bool isOptional,
                                Func<string>? errorPrefix,
                                Func<string>? errorSuffix )
         {
             var t = SafeGetType( monitor, a1, finalTypeName );
             if( t == null && a2 != null ) t = SafeGetType( monitor, a2, finalTypeName );
-            if( t == null )
+            if( t == null && !isOptional )
             {
                 monitor.Error( $"{errorPrefix?.Invoke()}" +
-                               $"Unable to locate '{finalTypeName}' type from '{a1}'" +
-                               $"{(a2 != null ? $" and '{a2}'" : "")}." +
-                               $"{errorSuffix?.Invoke()}" );
+                                $"Unable to locate '{finalTypeName}' type from '{a1}'" +
+                                $"{(a2 != null ? $" and '{a2}'" : "")}." +
+                                $"{errorSuffix?.Invoke()}" );
             }
             return t;
 

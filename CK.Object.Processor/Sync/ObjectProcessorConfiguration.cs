@@ -13,7 +13,7 @@ namespace CK.Object.Processor
     /// This is a concrete type that handles an optional <see cref="Condition"/> and an optional <see cref="Transform"/>.
     /// </para>
     /// </summary>
-    public partial class ObjectProcessorConfiguration : IObjectProcessorConfiguration
+    public partial class ObjectProcessorConfiguration : IObjectProcessorConfiguration, ISyncObjectPredicateConfiguration, IObjectTransformConfiguration
     {
         readonly ImmutableConfigurationSection _configuration;
         readonly ObjectPredicateConfiguration? _condition;
@@ -65,6 +65,13 @@ namespace CK.Object.Processor
 
         /// <inheritdoc />
         public ImmutableConfigurationSection Configuration => _configuration;
+
+        ISyncObjectPredicateConfiguration? IObjectPredicateConfiguration.AsSync => this;
+
+        Func<object, bool>? ISyncObjectPredicateConfiguration.CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        {
+            return CreateCondition( monitor, services );
+        }
 
         /// <summary>
         /// Creates a synchronous processor function.

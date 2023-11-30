@@ -20,6 +20,7 @@ namespace CK.Core
             readonly bool _allowOtherNamespace;
             readonly string? _familyTypeNameSuffix;
             readonly string _typeNameSuffix;
+            readonly TypeResolver? _fallback;
             readonly Type? _compositeBaseType;
             readonly string _compositeItemsFieldName;
             readonly Func<IActivityMonitor, string, PolymorphicConfigurationTypeBuilder, ImmutableConfigurationSection, object?>? _tryCreateFromTypeName;
@@ -62,6 +63,9 @@ namespace CK.Core
             /// <param name="typeNameSuffix">
             /// Required type name suffix. This is automatically appended to the type name read from <paramref name="typeFieldName"/> if missing.
             /// </param>
+            /// <param name="fallback">
+            /// Optional fallback if the type cannot be resolved. This is an advanced usage.
+            /// </param>
             public StandardTypeResolver( Type baseType,
                                          string typeNamespace,
                                          bool allowOtherNamespace = false,
@@ -70,7 +74,8 @@ namespace CK.Core
                                          Type? compositeBaseType = null,
                                          string compositeItemsFieldName = "Items",
                                          string typeFieldName = "Type",
-                                         string typeNameSuffix = "Configuration" )
+                                         string typeNameSuffix = "Configuration",
+                                         TypeResolver? fallback = null )
                 : base( baseType )
             {
                 Throw.CheckNotNullArgument( baseType );
@@ -86,13 +91,14 @@ namespace CK.Core
                 _compositeBaseType = compositeBaseType;
                 _compositeItemsFieldName = compositeItemsFieldName;
                 _typeNameSuffix = typeNameSuffix;
+                _fallback = fallback;
             }
 
             internal protected override object? Create( IActivityMonitor monitor,
                                                         PolymorphicConfigurationTypeBuilder builder,
                                                         ImmutableConfigurationSection configuration )
             {
-                return DoCreate( monitor, builder, configuration, _compositeBaseType != null );
+                return DoCreateWithFallback( monitor, builder, configuration, _compositeBaseType != null );
             }
 
             internal protected override Array? CreateItems( IActivityMonitor monitor,
@@ -103,6 +109,25 @@ namespace CK.Core
             {
                 return DoCreateItems( monitor, builder, composite, null, alternateItemsFieldName, requiresItemsFieldName );
             }
+
+            object? DoCreateWithFallback( IActivityMonitor monitor,
+                                          PolymorphicConfigurationTypeBuilder builder,
+                                          ImmutableConfigurationSection configuration,
+                                          bool allowDefaultComposite )
+            {
+                object? o;
+                bool hasError = false;
+                using( monitor.OnError( () => hasError = true ) )
+                {
+                    o = DoCreate( monitor, builder, configuration, allowDefaultComposite );
+                }
+                if( o == null && !hasError && _fallback != null )
+                {
+                    o = _fallback.Create( monitor, builder, configuration );
+                }
+                return o;
+            }
+
 
             object? DoCreate( IActivityMonitor monitor,
                               PolymorphicConfigurationTypeBuilder builder,
@@ -150,6 +175,7 @@ namespace CK.Core
                 var type = builder.AssemblyConfiguration.TryResolveType( monitor,
                                                                          typeName,
                                                                          _typeNamespace,
+                                                                         _fallback != null,
                                                                          BaseType.Assembly,
                                                                          _allowOtherNamespace,
                                                                          _familyTypeNameSuffix,
@@ -334,7 +360,7 @@ namespace CK.Core
                 bool success = true;
                 for( int i = 0; i < a.Length; i++ )
                 {
-                    var o = DoCreate( monitor, builder, children[i], false );
+                    var o = DoCreateWithFallback( monitor, builder, children[i], false );
                     if( o == null ) success = false;
                     a.SetValue( o, i );
                 }

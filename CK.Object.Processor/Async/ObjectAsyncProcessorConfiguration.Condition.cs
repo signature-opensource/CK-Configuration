@@ -10,6 +10,13 @@ namespace CK.Object.Processor
     {
         IObjectPredicateConfiguration? IObjectProcessorConfiguration.Condition => _condition;
 
+        ISyncObjectPredicateConfiguration? IObjectPredicateConfiguration.AsSync => null;
+
+        Func<object, ValueTask<bool>>? IObjectPredicateConfiguration.CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
+        {
+            return CreateCondition( monitor, services );
+        }
+
         /// <inheritdoc />
         public ObjectAsyncPredicateConfiguration? Condition => _condition;
 
@@ -23,7 +30,7 @@ namespace CK.Object.Processor
         protected virtual Func<object, ValueTask<bool>>? CreateCondition( IActivityMonitor monitor, IServiceProvider services )
         {
             var intrinsic = CreateIntrinsicCondition( monitor, services );
-            var configured = _condition?.CreatePredicate( monitor, services );
+            var configured = _condition?.CreateAsyncPredicate( monitor, services );
             if( intrinsic != null )
             {
                 if( configured != null )
@@ -59,7 +66,7 @@ namespace CK.Object.Processor
                                                                          IServiceProvider services )
         {
             var intrinsic = CreateIntrisincConditionHook( monitor, context, services );
-            var configured = _condition?.CreateHook( monitor, context, services );
+            var configured = _condition?.CreateAsyncHook( monitor, context, services );
             if( intrinsic != null )
             {
                 if( configured != null )

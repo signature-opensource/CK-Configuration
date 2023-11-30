@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Object.Predicate;
 using System;
+using System.Threading.Tasks;
 
 namespace CK.Object.Processor
 {
@@ -10,6 +11,12 @@ namespace CK.Object.Processor
 
         /// <inheritdoc />
         public ObjectPredicateConfiguration? Condition => _condition;
+
+        Func<object, ValueTask<bool>>? IObjectPredicateConfiguration.CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
+        {
+            var p = CreateCondition( monitor, services );
+            return p != null ? o => ValueTask.FromResult( p( o ) ) : null;
+        }
 
         /// <summary>
         /// Creates the condition that combines the intrinsic and configured condition.

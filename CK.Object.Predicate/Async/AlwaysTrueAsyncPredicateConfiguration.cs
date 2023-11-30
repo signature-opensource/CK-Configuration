@@ -22,7 +22,7 @@ namespace CK.Object.Predicate
         {
         }
 
-        public override Func<object, ValueTask<bool>> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, ValueTask<bool>> CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
         {
             return static _ => ValueTask.FromResult( true );
         }

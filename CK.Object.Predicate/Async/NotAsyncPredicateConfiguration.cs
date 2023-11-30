@@ -42,9 +42,9 @@ namespace CK.Object.Predicate
         public ObjectAsyncPredicateConfiguration Operand => _operand;
 
         /// <inheritdoc />
-        public override Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, ValueTask<bool>>? CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
         {
-            var p = _operand.CreatePredicate( monitor, services );
+            var p = _operand.CreateAsyncPredicate( monitor, services );
             return p != null ? o => NegateAsync( o, p ) : null;
         }
 

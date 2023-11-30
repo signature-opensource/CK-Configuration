@@ -7,7 +7,7 @@ namespace CK.Object.Processor
     /// <summary>
     /// Generalizes <see cref="ObjectProcessorConfiguration"/> and <see cref="ObjectAsyncProcessorConfiguration"/>.
     /// </summary>
-    public interface IObjectProcessorConfiguration : IObjectPredicateConfiguration, IObjectTransformConfiguration
+    public interface IObjectProcessorConfiguration
     {
         /// <summary>
         /// Gets the optional configured condition.

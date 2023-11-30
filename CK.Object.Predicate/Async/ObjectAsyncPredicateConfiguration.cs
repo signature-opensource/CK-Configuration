@@ -28,17 +28,19 @@ namespace CK.Object.Predicate
         /// <inheritdoc />
         public ImmutableConfigurationSection Configuration => _configuration;
 
+        ISyncObjectPredicateConfiguration? IObjectPredicateConfiguration.AsSync => null;
+
         /// <summary>
         /// Creates an asynchronous predicate.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A configured predicate or null for an empty predicate.</returns>
-        public abstract Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services );
+        public abstract Func<object, ValueTask<bool>>? CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services );
 
         /// <summary>
         /// Creates a <see cref="ObjectPredicateHook"/> with this configuration and a predicate obtained by
-        /// calling <see cref="CreatePredicate(IActivityMonitor, IServiceProvider)"/>.
+        /// calling <see cref="CreateAsyncPredicate(IActivityMonitor, IServiceProvider)"/>.
         /// <para>
         /// This should be overridden if this predicate relies on other predicates in order to hook all of them.
         /// Failing to do so will hide some predicates to the evaluation hook.
@@ -48,29 +50,29 @@ namespace CK.Object.Predicate
         /// <param name="hook">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
-        public virtual ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook, IServiceProvider services )
+        public virtual ObjectAsyncPredicateHook? CreateAsyncHook( IActivityMonitor monitor, PredicateHookContext hook, IServiceProvider services )
         {
-            var p = CreatePredicate( monitor, services );
+            var p = CreateAsyncPredicate( monitor, services );
             return p != null ? new ObjectAsyncPredicateHook( hook, this, p ) : null;
         }
 
         /// <summary>
         /// Creates an asynchronous predicate that doesn't require any external service to do its job.
-        /// <see cref="CreatePredicate(IActivityMonitor, IServiceProvider)"/> is called with an empty <see cref="IServiceProvider"/>.
+        /// <see cref="CreateAsyncPredicate(IActivityMonitor, IServiceProvider)"/> is called with an empty <see cref="IServiceProvider"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <returns>A configured predicate or null for an empty predicate.</returns>
-        public Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor ) => CreatePredicate( monitor, ObjectPredicateConfiguration.EmptyServiceProvider.Instance );
+        public Func<object, ValueTask<bool>>? CreatePredicate( IActivityMonitor monitor ) => CreateAsyncPredicate( monitor, ObjectPredicateConfiguration.EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Creates an <see cref="ObjectAsyncPredicateHook"/> that doesn't require any external service to do its job.
-        /// <see cref="CreateHook(IActivityMonitor, PredicateHookContext, IServiceProvider)"/> is called with an
+        /// <see cref="CreateAsyncHook(IActivityMonitor, PredicateHookContext, IServiceProvider)"/> is called with an
         /// empty <see cref="IServiceProvider"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="hook">The hook context.</param>
         /// <returns>A configured wrapper bound to the hook context or null for an empty predicate.</returns>
-        public ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook ) => CreateHook( monitor, hook, ObjectPredicateConfiguration.EmptyServiceProvider.Instance );
+        public ObjectAsyncPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook ) => CreateAsyncHook( monitor, hook, ObjectPredicateConfiguration.EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Adds a <see cref="PolymorphicConfigurationTypeBuilder.TypeResolver"/> for asynchronous <see cref="ObjectAsyncPredicateConfiguration"/>.

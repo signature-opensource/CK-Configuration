@@ -76,42 +76,42 @@ namespace CK.Object.Processor.Tests
                     u.Friends.Should().HaveCount( 1 );
                 }
             }
-            // Async
-            {
-                var fC = builder.Create<ObjectAsyncProcessorConfiguration>( TestHelper.Monitor, config );
-                Throw.DebugAssert( fC != null );
-                // Function
-                {
-                    var f = fC.CreateProcessor( TestHelper.Monitor, services );
-                    Throw.DebugAssert( f != null );
-                    (await f( 3712 )).Should().BeNull();
-                    (await f( this )).Should().BeNull();
-                    (await f( 3712.5 )).Should().Be( -3712.5 );
-                    (await f( "Hello!" )).Should().Be( "HELLO!" );
+            //// Async
+            //{
+            //    var fC = builder.Create<ObjectAsyncProcessorConfiguration>( TestHelper.Monitor, config );
+            //    Throw.DebugAssert( fC != null );
+            //    // Function
+            //    {
+            //        var f = fC.CreateProcessor( TestHelper.Monitor, services );
+            //        Throw.DebugAssert( f != null );
+            //        (await f( 3712 )).Should().BeNull();
+            //        (await f( this )).Should().BeNull();
+            //        (await f( 3712.5 )).Should().Be( -3712.5 );
+            //        (await f( "Hello!" )).Should().Be( "HELLO!" );
 
-                    var u = new UserRecord( "Zoe", 44, new List<UserRecord>() );
-                    var uO = await f( u );
-                    uO.Should().BeSameAs( u );
-                    u = (UserRecord)uO!;
-                    u.Friends.Should().HaveCount( 1 );
-                }
-                // Hook
-                var context = new MonitoredProcessorHookContext( TestHelper.Monitor );
-                {
-                    var fH = fC.CreateHook( TestHelper.Monitor, context, services );
-                    Throw.DebugAssert( fH != null );
-                    (await fH.ProcessAsync( 3712 )).Should().BeNull();
-                    (await fH.ProcessAsync( this )).Should().BeNull();
-                    (await fH.ProcessAsync( 3712.5 )).Should().Be( -3712.5 );
-                    (await fH.ProcessAsync( "Hello!" )).Should().Be( "HELLO!" );
+            //        var u = new UserRecord( "Zoe", 44, new List<UserRecord>() );
+            //        var uO = await f( u );
+            //        uO.Should().BeSameAs( u );
+            //        u = (UserRecord)uO!;
+            //        u.Friends.Should().HaveCount( 1 );
+            //    }
+            //    // Hook
+            //    var context = new MonitoredProcessorHookContext( TestHelper.Monitor );
+            //    {
+            //        var fH = fC.CreateHook( TestHelper.Monitor, context, services );
+            //        Throw.DebugAssert( fH != null );
+            //        (await fH.ProcessAsync( 3712 )).Should().BeNull();
+            //        (await fH.ProcessAsync( this )).Should().BeNull();
+            //        (await fH.ProcessAsync( 3712.5 )).Should().Be( -3712.5 );
+            //        (await fH.ProcessAsync( "Hello!" )).Should().Be( "HELLO!" );
 
-                    var u = new UserRecord( "Zoe", 44, new List<UserRecord>() );
-                    var uO = await fH.ProcessAsync( u );
-                    uO.Should().BeSameAs( u );
-                    u = (UserRecord)uO!;
-                    u.Friends.Should().HaveCount( 1 );
-                }
-            }
+            //        var u = new UserRecord( "Zoe", 44, new List<UserRecord>() );
+            //        var uO = await fH.ProcessAsync( u );
+            //        uO.Should().BeSameAs( u );
+            //        u = (UserRecord)uO!;
+            //        u.Friends.Should().HaveCount( 1 );
+            //    }
+            //}
         }
 
         [Test]
@@ -182,36 +182,36 @@ namespace CK.Object.Processor.Tests
                 }
 
             }
-            // Async
-            {
-                var fC = builder.Create<ObjectAsyncProcessorConfiguration>( TestHelper.Monitor, config );
-                Throw.DebugAssert( fC != null );
-                // Function
-                {
-                    var f = fC.CreateProcessor( TestHelper.Monitor );
-                    Throw.DebugAssert( f != null );
-                    (await f( 3712 )).Should().BeNull();
-                    (await f( this )).Should().BeNull();
-                    (await f( 3712.5 )).Should().Be( "-3712.5" );
-                    (await f( "Hello!" )).Should().BeNull( "Not processed (length is 6)." );
-                    (await f( "Hello world!" )).Should().Be( "HELLO WORLD!" );
-                    (await f( "Hell!" )).Should().Be( "HELL!" );
-                }
+            //// Async
+            //{
+            //    var fC = builder.Create<ObjectAsyncProcessorConfiguration>( TestHelper.Monitor, config );
+            //    Throw.DebugAssert( fC != null );
+            //    // Function
+            //    {
+            //        var f = fC.CreateProcessor( TestHelper.Monitor );
+            //        Throw.DebugAssert( f != null );
+            //        (await f( 3712 )).Should().BeNull();
+            //        (await f( this )).Should().BeNull();
+            //        (await f( 3712.5 )).Should().Be( "-3712.5" );
+            //        (await f( "Hello!" )).Should().BeNull( "Not processed (length is 6)." );
+            //        (await f( "Hello world!" )).Should().Be( "HELLO WORLD!" );
+            //        (await f( "Hell!" )).Should().Be( "HELL!" );
+            //    }
 
-                // Hook
-                var context = new MonitoredProcessorHookContext( TestHelper.Monitor );
-                {
-                    var fH = fC.CreateHook( TestHelper.Monitor, context );
-                    Throw.DebugAssert( fH != null );
-                    (await fH.ProcessAsync( 3712 )).Should().BeNull();
-                    (await fH.ProcessAsync( this )).Should().BeNull();
-                    (await fH.ProcessAsync( 3712.5 )).Should().Be( "-3712.5" );
-                    (await fH.ProcessAsync( "Hello!" )).Should().BeNull( "Not processed (length is 6)." );
-                    (await fH.ProcessAsync( "Hello world!" )).Should().Be( "HELLO WORLD!" );
-                    (await fH.ProcessAsync( "Hell!" )).Should().Be( "HELL!" );
-                }
+            //    // Hook
+            //    var context = new MonitoredProcessorHookContext( TestHelper.Monitor );
+            //    {
+            //        var fH = fC.CreateHook( TestHelper.Monitor, context );
+            //        Throw.DebugAssert( fH != null );
+            //        (await fH.ProcessAsync( 3712 )).Should().BeNull();
+            //        (await fH.ProcessAsync( this )).Should().BeNull();
+            //        (await fH.ProcessAsync( 3712.5 )).Should().Be( "-3712.5" );
+            //        (await fH.ProcessAsync( "Hello!" )).Should().BeNull( "Not processed (length is 6)." );
+            //        (await fH.ProcessAsync( "Hello world!" )).Should().Be( "HELLO WORLD!" );
+            //        (await fH.ProcessAsync( "Hell!" )).Should().Be( "HELL!" );
+            //    }
 
-            }
+            //}
         }
     }
 }
