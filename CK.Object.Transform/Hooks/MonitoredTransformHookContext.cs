@@ -57,7 +57,7 @@ namespace CK.Object.Transform
             if( o is Exception ) return o;
             if( _level != LogLevel.None )
             {
-                _monitor.OpenGroup( _level, _tags, $"Evaluating '{source.Configuration.Configuration.Path}'." );
+                _monitor.OpenGroup( _level, _tags, $"Evaluating '{source.Configuration.ConfigurationPath}'." );
             }
             return null;
         }
@@ -74,7 +74,7 @@ namespace CK.Object.Transform
         internal protected override object? OnTransformError( IObjectTransformHook source, object o, Exception ex )
         {
             base.OnTransformError( source, o, ex );
-            using( _monitor.OpenError( _tags, $"Transform '{source.Configuration.Configuration.Path}' error while processing:", ex ) )
+            using( _monitor.OpenError( _tags, $"Transform '{source.Configuration.ConfigurationPath}' error while processing:", ex ) )
             {
                 _monitor.Trace( _tags, o?.ToString() ?? "<null>" );
             }

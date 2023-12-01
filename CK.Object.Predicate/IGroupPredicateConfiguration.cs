@@ -3,7 +3,8 @@ using System.Collections.Generic;
 namespace CK.Object.Predicate
 {
     /// <summary>
-    /// Generalizes <see cref="GroupPredicateConfiguration"/> and <see cref="GroupAsyncPredicateConfiguration"/>.
+    /// Minimal view of a predicate group configuration. <see cref="IGroupPredicateDescription"/>
+    /// exposes the constraints.
     /// </summary>
     public interface IGroupPredicateConfiguration : IObjectPredicateConfiguration, IGroupPredicateDescription
     {

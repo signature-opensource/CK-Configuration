@@ -50,6 +50,9 @@ namespace CK.Object.Transform
         /// <inheritdoc />
         public TransformHookContext Context => _context;
 
+        /// <inheritdoc />
+        public ObjectTransformHook? Synchronous => null;
+
         /// <summary>
         /// Applies the transformation.
         /// </summary>
@@ -64,7 +67,7 @@ namespace CK.Object.Transform
                 r = await DoTransformAsync( o ).ConfigureAwait( false );
                 if( r == null )
                 {
-                    Throw.InvalidOperationException( $"Transform '{_configuration.Configuration.Path}' returned a null reference." );
+                    Throw.InvalidOperationException( $"Transform '{_configuration.ConfigurationPath}' returned a null reference." );
                 }
                 return _context.OnAfterTransform( this, o, r ) ?? r;
             }

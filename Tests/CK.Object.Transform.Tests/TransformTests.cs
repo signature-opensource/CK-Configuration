@@ -69,7 +69,7 @@ namespace CK.Object.Transform.Tests
             var fC = builder.Create<ObjectAsyncTransformConfiguration>( TestHelper.Monitor, GetConfiguration() );
             Throw.DebugAssert( fC != null );
 
-            var f = fC.CreateTransform( TestHelper.Monitor );
+            var f = fC.CreateAsyncTransform( TestHelper.Monitor );
             Throw.DebugAssert( f != null );
             (await f( "Hello" )).Should().Be( "Before-Hello-After-OneMore" );
             (await f( 0 )).Should().Be( "Before-0-After-OneMore" );
@@ -146,7 +146,7 @@ namespace CK.Object.Transform.Tests
             ObjectAsyncTransformConfiguration.AddResolver( builder );
             var fC = builder.Create<ObjectAsyncTransformConfiguration>( TestHelper.Monitor, GetStringOnlyConfiguration() );
             Throw.DebugAssert( fC != null );
-            var f = fC.CreateTransform( TestHelper.Monitor );
+            var f = fC.CreateAsyncTransform( TestHelper.Monitor );
             Throw.DebugAssert( f != null );
 
             (await f( "Works with a string" )).Should().Be( "Before-Works with a string-After-OneMore" );
@@ -154,7 +154,7 @@ namespace CK.Object.Transform.Tests
             await FluentActions.Awaiting( async () => await f( 0 ) ).Should().ThrowAsync<ArgumentException>();
 
             var hook = new MonitoredTransformHookContext( TestHelper.Monitor );
-            var fH = fC.CreateHook( TestHelper.Monitor, hook );
+            var fH = fC.CreateAsyncHook( TestHelper.Monitor, hook );
             Throw.DebugAssert( fH != null );
 
             (await fH.TransformAsync( "Works with a string" ) ).Should().Be( "Before-Works with a string-After-OneMore" );

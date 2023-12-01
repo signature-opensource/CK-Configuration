@@ -11,6 +11,7 @@ namespace CK.Object.Transform
     /// </summary>
     public sealed class PlaceholderTransformConfiguration : ObjectTransformConfiguration
     {
+        readonly ImmutableConfigurationSection _configuration;
         readonly AssemblyConfiguration _assemblies;
         readonly ImmutableArray<PolymorphicConfigurationTypeBuilder.TypeResolver> _resolvers;
 
@@ -23,8 +24,9 @@ namespace CK.Object.Transform
         public PlaceholderTransformConfiguration( IActivityMonitor monitor,
                                                   PolymorphicConfigurationTypeBuilder builder,
                                                   ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
+            _configuration = configuration;
             _assemblies = builder.AssemblyConfiguration;
             _resolvers = builder.Resolvers.ToImmutableArray();
         }
@@ -53,12 +55,12 @@ namespace CK.Object.Transform
         public override ObjectTransformConfiguration SetPlaceholder( IActivityMonitor monitor,
                                                                      IConfigurationSection configuration )
         {
-            if( configuration.GetParentPath().Equals( Configuration.Path, StringComparison.OrdinalIgnoreCase ) )
+            if( configuration.GetParentPath().Equals( ConfigurationPath, StringComparison.OrdinalIgnoreCase ) )
             {
                 var builder = new PolymorphicConfigurationTypeBuilder( _assemblies, _resolvers );
                 if( configuration is not ImmutableConfigurationSection config )
                 {
-                    config = new ImmutableConfigurationSection( configuration, lookupParent: Configuration );
+                    config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
                 }
                 var newC = builder.Create<ObjectTransformConfiguration>( monitor, config );
                 if( newC != null ) return newC;

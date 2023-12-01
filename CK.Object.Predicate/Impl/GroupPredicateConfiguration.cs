@@ -103,19 +103,14 @@ namespace CK.Object.Predicate
             return (atLeast, atMost);
         }
 
-        /// <inheritdoc />
         public bool Any => _atLeast == 1 && _atMost == 0;
 
-        /// <inheritdoc />
         public bool All => _atLeast == 0 && _atMost == 0;
 
-        /// <inheritdoc />
         public bool Single => _atLeast == 0 && _atMost == 1;
 
-        /// <inheritdoc />
         public int AtLeast => _atLeast;
 
-        /// <inheritdoc />
         public int AtMost => _atMost;
 
         int IGroupPredicateDescription.PredicateCount => _predicates.Length;

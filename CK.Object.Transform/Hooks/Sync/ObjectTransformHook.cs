@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Threading.Tasks;
 
 namespace CK.Object.Transform
 {
@@ -49,6 +50,11 @@ namespace CK.Object.Transform
         /// <inheritdoc />
         public TransformHookContext Context => _context;
 
+        /// <inheritdoc />
+        public ObjectTransformHook? Synchronous => this;
+
+        ValueTask<object> IObjectTransformHook.TransformAsync( object o ) => ValueTask.FromResult( Transform( o ) );
+
         /// <summary>
         /// Applies the transformation.
         /// </summary>
@@ -63,7 +69,7 @@ namespace CK.Object.Transform
                 r = DoTransform( o );
                 if( r == null )
                 {
-                    Throw.InvalidOperationException( $"Transform '{_configuration.Configuration.Path}' returned a null reference." );
+                    Throw.InvalidOperationException( $"Transform '{_configuration.ConfigurationPath}' returned a null reference." );
                 }
                 return _context.OnAfterTransform( this, o, r ) ?? r;
             }

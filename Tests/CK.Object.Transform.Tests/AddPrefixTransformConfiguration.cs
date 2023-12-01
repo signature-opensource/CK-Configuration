@@ -10,7 +10,7 @@ namespace CK.Object.Transform
         public AddPrefixTransformConfiguration( IActivityMonitor monitor,
                                                 PolymorphicConfigurationTypeBuilder builder,
                                                 ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
             _prefix = configuration["Prefix"] ?? "";
         }

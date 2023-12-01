@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using System.Threading.Tasks;
 
 namespace CK.Object.Predicate
@@ -10,10 +10,10 @@ namespace CK.Object.Predicate
         readonly int _op;
 
         public AsyncPair( PredicateHookContext hook,
-                     IObjectPredicateConfiguration configuration,
-                     IObjectPredicateHook left,
-                     IObjectPredicateHook right,
-                     int op )
+                          IObjectPredicateConfiguration configuration,
+                          IObjectPredicateHook left,
+                          IObjectPredicateHook right,
+                          int op )
             : base( hook, configuration )
         {
             Throw.CheckNotNullArgument( left );

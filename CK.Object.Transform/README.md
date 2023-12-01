@@ -5,17 +5,16 @@ simpler.
 It enables composition of transform functions `Func<object,object>` (and `Func<object,ValueTask<object>>`)
 instead of object predicates (`Func<object,bool>` and `Func<object,ValueTask<bool>>`).
 
-Transforms are available in Sync and Async just like Predicates. The naming follows exactly the same pattern and
-a similar Async on Sync adapter [`AsyncTransformAdapterConfiguration<T>`](AsyncTransformAdapterConfiguration.cs) is
-available.
+Transforms are available in the same mixed Sync and Async just like Predicates. All synchronous
+transforms are also by design asynchronous ones.
 
 They both support Placeholder (see [ExtensibleConfiguration](../Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration/README.md]).
 
 The differences (other than the function signatures) are:
 - The `null` function for Transform is the identity function whereas it is the "empty predicate" for Predicate.
-- The composite for Transform is a simple [SequenceTransformConfiguration](Sync/SequenceTransformConfiguration.cs) of other
+- The composite for Transform is a simple [ISequenceTransformConfiguration](ISequenceTransformConfiguration.cs) of other
   transform functions acting as a pipeline of transfomations whereas for Predicate it is the bit more complex
-  `GroupPredicateConfiguration` with its `All`, `Any` and `AtLeast` configuration.
+  `IGroupPredicateConfiguration` with its `All`, `Any`, `Single` and `AtLeast`/`AtMost` configurations.
 - The default composite field name is "Transforms" (instead of "Predicates").
 - Transform has no equivalent of `AlwaysTruePredicateConfiguration` and `AlwaysFalsePredicateConfiguration`.
 - The [TransformHookContext](Hooks/TransformHookContext.cs) methods have different signatures that enable
@@ -32,6 +31,7 @@ a bad pattern: this should never occur.
 
 However, instead of throwing, simply returning the exception is also possible. Beacause there's
 little chance that exceptions be valid input type, a returned exception is an error. Actually the
-`TransformHookContext` handles this and let any exception bubbles up to the root.
+`TransformHookContext` handles this and let any returned or thrown exception bubbles up to the
+root.
 
 

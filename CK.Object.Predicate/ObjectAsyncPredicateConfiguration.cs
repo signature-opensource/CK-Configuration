@@ -77,7 +77,7 @@ namespace CK.Object.Predicate
         /// <param name="configuration">The configuration that should replace a placeholder.</param>
         /// <returns>A new configuration or null if an error occurred or the placeholder was not found.</returns>
         public ObjectAsyncPredicateConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
-                                                                 IConfigurationSection configuration )
+                                                                     IConfigurationSection configuration )
         {
             return TrySetPlaceholder( monitor, configuration, out var _ );
         }
@@ -91,8 +91,8 @@ namespace CK.Object.Predicate
         /// <param name="builderError">True if an error occurred while building the configuration, false if the placeholder was not found.</param>
         /// <returns>A new configuration or null if a <paramref name="builderError"/> occurred or the placeholder was not found.</returns>
         public ObjectAsyncPredicateConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
-                                                                 IConfigurationSection configuration,
-                                                                 out bool builderError )
+                                                                     IConfigurationSection configuration,
+                                                                     out bool builderError )
         {
             builderError = false;
             ObjectAsyncPredicateConfiguration? result = null;

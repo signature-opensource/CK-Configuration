@@ -10,7 +10,7 @@ namespace CK.Object.Transform
         public AddSuffixTransformConfiguration( IActivityMonitor monitor,
                                                 PolymorphicConfigurationTypeBuilder builder,
                                                 ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
             _suffix = configuration["Suffix"] ?? "";
         }

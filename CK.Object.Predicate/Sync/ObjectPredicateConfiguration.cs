@@ -10,6 +10,9 @@ namespace CK.Object.Predicate
     /// </summary>
     public abstract class ObjectPredicateConfiguration : ObjectAsyncPredicateConfiguration
     {
+        static readonly object _initDefaultLock = new object();
+        static PolymorphicConfigurationTypeBuilder.StandardTypeResolver? _defaultSyncResolver;
+
         /// <summary>
         /// Captures the configuration section's path (that must be valid, see <see cref="MutableConfigurationSection.IsValidPath(ReadOnlySpan{char})"/>).
         /// <para>
@@ -43,6 +46,13 @@ namespace CK.Object.Predicate
         /// <returns>A configured object predicate or null for an empty predicate.</returns>
         public abstract Func<object, bool>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services );
 
+        /// <summary>
+        /// Definite relay to <see cref="CreateHook(IActivityMonitor, PredicateHookContext, IServiceProvider)"/>.
+        /// </summary>
+        /// <param name="monitor">The monitor that must be used to signal errors.</param>
+        /// <param name="context">The hook context.</param>
+        /// <param name="services">Services that may be required for some (complex) predicates.</param>
+        /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
         public sealed override IObjectPredicateHook? CreateAsyncHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
         {
             return CreateHook( monitor, context, services );
@@ -66,18 +76,12 @@ namespace CK.Object.Predicate
             return p != null ? new ObjectPredicateHook( hook, this, p ) : null;
         }
 
-        static readonly object _initDefaultLock = new object();
-        static PolymorphicConfigurationTypeBuilder.StandardTypeResolver? _defaultSyncResolver;
-
         /// <summary>
         /// Adds a <see cref="PolymorphicConfigurationTypeBuilder.TypeResolver"/> for synchronous predicates only.
         /// <list type="bullet">
         /// <item>The predicates must be in the "CK.Object.Predicate" namespace.</item>
         /// <item>Their name must end with "PredicateConfiguration".</item>
         /// </list>
-        /// <para>
-        /// If asynchronous predicates must not be supported, use <see cref="ObjectPredicateConfiguration.AddSynchronousOnlyResolver"/>.
-        /// </para>
         /// </summary>
         /// <param name="builder">The builder.</param>
         /// <param name="allowOtherNamespace">True to allow other namespaces than "CK.Object.Predicate" to be specified.</param>
