@@ -14,10 +14,10 @@ namespace CK.Object.Processor
     /// This is a concrete type that handles an optional <see cref="Condition"/> and an optional <see cref="Transform"/>.
     /// </para>
     /// </summary>
-    public partial class ObjectAsyncProcessorConfiguration : IObjectProcessorConfiguration, ObjectPredicateConfiguration, IObjectTransformConfiguration
+    public partial class ObjectAsyncProcessorConfiguration : IObjectProcessorConfiguration
     {
-        readonly ImmutableConfigurationSection _configuration;
-        readonly ObjectPredicateConfiguration? _condition;
+        readonly string _configurationPath;
+        readonly ObjectAsyncPredicateConfiguration? _condition;
         readonly ObjectAsyncTransformConfiguration? _transform;
 
         /// <summary>
@@ -30,16 +30,20 @@ namespace CK.Object.Processor
                                                      PolymorphicConfigurationTypeBuilder builder,
                                                      ImmutableConfigurationSection configuration )
         {
-            _configuration = configuration;
+            _configurationPath = configuration.Path;
             var cCond = configuration.TryGetSection( "Condition" );
             if( cCond != null )
             {
-                _condition = builder.Create<ObjectPredicateConfiguration>( monitor, cCond );
+                _condition = builder.HasBaseType<ObjectAsyncPredicateConfiguration>()
+                                ? builder.Create<ObjectAsyncPredicateConfiguration>( monitor, cCond )
+                                : builder.Create<ObjectPredicateConfiguration>( monitor, cCond );
             }
             var cTrans = configuration.TryGetSection( "Transform" );
             if( cTrans != null )
             {
-                _transform = builder.Create<ObjectAsyncTransformConfiguration>( monitor, cTrans );
+                _transform = builder.HasBaseType<ObjectAsyncTransformConfiguration>()
+                                ? builder.Create<ObjectAsyncTransformConfiguration>( monitor, cTrans )
+                                : builder.Create<ObjectTransformConfiguration>( monitor, cTrans );
             }
         }
 
@@ -55,70 +59,61 @@ namespace CK.Object.Processor
         /// <param name="condition">The <see cref="Condition"/>.</param>
         /// <param name="transform">The <see cref="Transform"/>.</param>
         protected ObjectAsyncProcessorConfiguration( ObjectAsyncProcessorConfiguration source,
-                                                     ObjectPredicateConfiguration? condition,
+                                                     ObjectAsyncPredicateConfiguration? condition,
                                                      ObjectAsyncTransformConfiguration? transform )
         {
             Throw.CheckNotNullArgument( source );
-            _configuration = source._configuration;
+            _configurationPath = source._configurationPath;
             _condition = condition;
             _transform = transform;
         }
 
         /// <inheritdoc />
-        public ImmutableConfigurationSection Configuration => _configuration;
+        public string ConfigurationPath => _configurationPath;
 
         /// <summary>
-        /// Creates a synchronous processor function.
+        /// Gets this processor as a synchronous one if it is a synchronous one.
+        /// </summary>
+        public ObjectProcessorConfiguration? Synchronous => this as ObjectProcessorConfiguration;
+
+        /// <summary>
+        /// Creates an asynchronous processor function.
         /// <para>
         /// This base implementation creates a function based on <see cref="Condition"/> and <see cref="Transform"/>
         /// configurations.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="services">Services that may be required for some (complex) transform functions.</param>
+        /// <param name="services">Services that may be required for some (complex) processors.</param>
         /// <returns>A configured processor function or null for a void processor.</returns>
-        public virtual Func<object, ValueTask<object?>>? CreateProcessor( IActivityMonitor monitor, IServiceProvider services )
+        public virtual Func<object, ValueTask<object?>>? CreateAsyncProcessor( IActivityMonitor monitor, IServiceProvider services )
         {
-            Func<object, ValueTask<bool>>? c = CreateCondition( monitor, services );
-            Func<object, ValueTask<object>>? t = CreateTransform( monitor, services );
-            return CreateFromConditionAndTransform( c, t );
-        }
-
-        /// <summary>
-        /// Core helper that creates a processor function from optional predicate and transform function.
-        /// <para>
-        /// When predicate and transform function are both null, the (null) void processor is returned.
-        /// </para>
-        /// </summary>
-        /// <param name="c">The predicate.</param>
-        /// <param name="a">The transform function.</param>
-        /// <returns>A configured processor function or null for a void processor.</returns>
-        protected static Func<object, ValueTask<object?>>? CreateFromConditionAndTransform( Func<object, ValueTask<bool>>? c, Func<object, ValueTask<object>>? a )
-        {
+            Func<object, ValueTask<bool>>? c = CreateAsyncCondition( monitor, services );
+            Func<object, ValueTask<object>>? t = CreateAsyncTransform( monitor, services );
             if( c != null )
             {
-                if( a != null )
+                if( t != null )
                 {
                     // "Full processor" with its conditonned action.
-                    return async o => await c( o ).ConfigureAwait( false ) ? await a( o ).ConfigureAwait( false ) : null;
+                    return async o => await c( o ).ConfigureAwait( false ) ? await t( o ).ConfigureAwait( false ) : null;
                 }
                 // Condition only processor: the action is the identity function.
                 return async o => await c( o ).ConfigureAwait( false ) ? o : null;
             }
             // No condition...
-            if( a != null )
+            if( t != null )
             {
                 // The action is the process
                 // (it returns a non null object, that is compatible with a object?: use the bang operator).
-                return a!;
+                return t!;
             }
             // No condition, no action: void processor.
             return null;
         }
 
         /// <summary>
-        /// Creates a <see cref="ObjectProcessorHook"/> with this configuration and a function obtained by
-        /// calling <see cref="CreateProcessor(IActivityMonitor, IServiceProvider)"/>.
+        /// Creates a <see cref="IObjectProcessorHook"/> with this configuration and a function obtained by
+        /// calling <see cref="CreateAsyncProcessor(IActivityMonitor, IServiceProvider)"/>.
         /// <para>
         /// This should be overridden if this processor relies on other processors in order to hook all of them.
         /// Failing to do so will hide some processors to the evaluation hook.
@@ -128,36 +123,12 @@ namespace CK.Object.Processor
         /// <param name="hook">The hook context.</param>
         /// <param name="services">The services.</param>
         /// <returns>A wrapper bound to the hook context or null for a void processor.</returns>
-        public virtual ObjectAsyncProcessorHook? CreateHook( IActivityMonitor monitor, ProcessorHookContext hook, IServiceProvider services )
+        public virtual IObjectProcessorHook? CreateAsyncHook( IActivityMonitor monitor, ProcessorHookContext hook, IServiceProvider services )
         {
-            var c = CreateConditionHook( monitor, hook.ConditionHookContext, services );
-            var t = CreateTransformHook( monitor, hook.TransformHookContext, services );
+            var c = CreateAsyncConditionHook( monitor, hook.ConditionHookContext, services );
+            var t = CreateAsyncTransformHook( monitor, hook.TransformHookContext, services );
             return t != null || c != null ? new ObjectAsyncProcessorHook( hook, this, c, t ) : null;
         }
-
-        /// <summary>
-        /// Creates a synchronous processor that doesn't require any external service to do its job.
-        /// <see cref="CreateProcessor(IActivityMonitor, IServiceProvider)"/> is called with an empty <see cref="IServiceProvider"/>.
-        /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <returns>A configured processor or null for a void processor.</returns>
-        public Func<object, ValueTask<object?>>? CreateProcessor( IActivityMonitor monitor ) => CreateProcessor( monitor, EmptyServiceProvider.Instance );
-
-        internal sealed class EmptyServiceProvider : IServiceProvider
-        {
-            public static readonly EmptyServiceProvider Instance = new EmptyServiceProvider();
-            public object? GetService( Type serviceType ) => null;
-        }
-
-        /// <summary>
-        /// Creates a <see cref="ObjectProcessorHook"/> that doesn't require any external service to do its job.
-        /// <see cref="CreateHook(IActivityMonitor, ProcessorHookContext, IServiceProvider)"/> is called with an
-        /// empty <see cref="IServiceProvider"/>.
-        /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="context">The hook context.</param>
-        /// <returns>A wrapper bound to the hook context or null for a void processor.</returns>
-        public ObjectAsyncProcessorHook? CreateHook( IActivityMonitor monitor, ProcessorHookContext context ) => CreateHook( monitor, context, EmptyServiceProvider.Instance );
 
         /// <summary>
         /// Adds a <see cref="PolymorphicConfigurationTypeBuilder.TypeResolver"/> for synchronous <see cref="ObjectAsyncProcessorConfiguration"/>.

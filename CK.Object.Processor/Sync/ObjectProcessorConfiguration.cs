@@ -1,9 +1,7 @@
 using CK.Core;
 using CK.Object.Predicate;
 using CK.Object.Transform;
-using Microsoft.Extensions.Configuration;
 using System;
-using System.Security;
 
 namespace CK.Object.Processor
 {
@@ -13,12 +11,8 @@ namespace CK.Object.Processor
     /// This is a concrete type that handles an optional <see cref="Condition"/> and an optional <see cref="Transform"/>.
     /// </para>
     /// </summary>
-    public partial class ObjectProcessorConfiguration : IObjectProcessorConfiguration, IObjectPredicateConfiguration, IObjectTransformConfiguration
+    public partial class ObjectProcessorConfiguration : ObjectAsyncProcessorConfiguration
     {
-        readonly ImmutableConfigurationSection _configuration;
-        readonly ObjectSyncPredicateConfiguration? _condition;
-        readonly ObjectTransformConfiguration? _transform;
-
         /// <summary>
         /// Handles "Condition" and "Transform" from the configuration section.
         /// </summary>
@@ -28,18 +22,8 @@ namespace CK.Object.Processor
         protected ObjectProcessorConfiguration( IActivityMonitor monitor,
                                                 PolymorphicConfigurationTypeBuilder builder,
                                                 ImmutableConfigurationSection configuration )
+            : base( monitor, builder, configuration, isSync: true )
         {
-            _configuration = configuration;
-            var cCond = configuration.TryGetSection( "Condition" );
-            if( cCond != null )
-            {
-                _condition = builder.Create<ObjectSyncPredicateConfiguration>( monitor, cCond );
-            }
-            var cTrans = configuration.TryGetSection( "Transform" );
-            if( cTrans != null )
-            {
-                _transform = builder.Create<ObjectTransformConfiguration>( monitor, cTrans );
-            }
         }
 
         /// <summary>
@@ -54,23 +38,10 @@ namespace CK.Object.Processor
         /// <param name="condition">The <see cref="Condition"/>.</param>
         /// <param name="transform">The <see cref="Transform"/>.</param>
         protected ObjectProcessorConfiguration( ObjectProcessorConfiguration source,
-                                                ObjectSyncPredicateConfiguration? condition,
+                                                ObjectPredicateConfiguration? condition,
                                                 ObjectTransformConfiguration? transform )
+            : base( source, condition, transform ) 
         {
-            Throw.CheckNotNullArgument( source );
-            _configuration = source._configuration;
-            _condition = condition;
-            _transform = transform;
-        }
-
-        /// <inheritdoc />
-        public ImmutableConfigurationSection Configuration => _configuration;
-
-        ObjectSyncPredicateConfiguration? ObjectPredicateConfiguration.AsSync => this;
-
-        Func<object, bool>? ObjectSyncPredicateConfiguration.CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
-        {
-            return CreateCondition( monitor, services );
         }
 
         /// <summary>

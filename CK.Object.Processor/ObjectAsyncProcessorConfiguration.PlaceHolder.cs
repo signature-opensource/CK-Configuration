@@ -6,7 +6,7 @@ using System;
 
 namespace CK.Object.Processor
 {
-    public partial class ObjectProcessorConfiguration
+    public partial class ObjectAsyncProcessorConfiguration
     {
         /// <summary>
         /// Tries to replace a <see cref="PlaceholderProcessorConfiguration"/>.
@@ -17,8 +17,8 @@ namespace CK.Object.Processor
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that should replace a placeholder.</param>
         /// <returns>A new configuration or null if an error occurred or the placeholder was not found.</returns>
-        public ObjectProcessorConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
-                                                                IConfigurationSection configuration )
+        public ObjectAsyncProcessorConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
+                                                                     IConfigurationSection configuration )
         {
             return TrySetPlaceholder( monitor, configuration, out var _ );
         }
@@ -31,12 +31,12 @@ namespace CK.Object.Processor
         /// <param name="configuration">The configuration that should replace a placeholder.</param>
         /// <param name="builderError">True if an error occurred while building the configuration, false if the placeholder was not found.</param>
         /// <returns>A new configuration or null if a <paramref name="builderError"/> occurred or the placeholder was not found.</returns>
-        public ObjectProcessorConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
-                                                                IConfigurationSection configuration,
-                                                                out bool builderError )
+        public ObjectAsyncProcessorConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
+                                                                     IConfigurationSection configuration,
+                                                                     out bool builderError )
         {
             builderError = false;
-            ObjectProcessorConfiguration? result = null;
+            ObjectAsyncProcessorConfiguration? result = null;
             var buildError = false;
             using( monitor.OnError( () => buildError = true ) )
             {
@@ -60,12 +60,12 @@ namespace CK.Object.Processor
         /// <param name="monitor">The monitor to use to signal errors.</param>
         /// <param name="configuration">Configuration of the replaced placeholder.</param>
         /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
-        public ObjectProcessorConfiguration SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
+        public ObjectAsyncProcessorConfiguration SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
         {
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckNotNullArgument( configuration );
             // Bails out early if we are not concerned.
-            if( !Configuration.IsChildPath( configuration.Path ) )
+            if( !ConfigurationSectionExtension.IsChildPath( ConfigurationPath, configuration.Path ) )
             {
                 return this;
             }
@@ -93,13 +93,13 @@ namespace CK.Object.Processor
         /// <param name="condition">A new or the current <see cref="Condition"/>.</param>
         /// <param name="transform">A new or the current <see cref="Transform"/>.</param>
         /// <returns>A new configuration or this if nothing has changed or an error occurred.</returns>
-        protected virtual ObjectProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
-                                                                         IConfigurationSection configuration,
-                                                                         ObjectSyncPredicateConfiguration? condition,
-                                                                         ObjectTransformConfiguration? transform )
+        protected virtual ObjectAsyncProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
+                                                                              IConfigurationSection configuration,
+                                                                              ObjectAsyncPredicateConfiguration? condition,
+                                                                              ObjectAsyncTransformConfiguration? transform )
         {
             return condition != Condition || transform != Transform
-                    ? new ObjectProcessorConfiguration( this, condition, transform )
+                    ? new ObjectAsyncProcessorConfiguration( this, condition, transform )
                     : this;
         }
     }

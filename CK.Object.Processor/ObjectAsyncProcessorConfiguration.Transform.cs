@@ -6,29 +6,27 @@ using System.Threading.Tasks;
 
 namespace CK.Object.Processor
 {
-    public partial class ObjectAsyncProcessorConfiguration
+    public partial class ObjectAsyncProcessorConfiguration : IObjectTransformConfiguration
     {
-        IObjectTransformConfiguration? IObjectProcessorConfiguration.Transform => _transform;
-
         /// <inheritdoc />
         public ObjectAsyncTransformConfiguration? Transform => _transform;
 
         /// <summary>
-        /// Creates the transformation that applies first the <see cref="CreateIntrinsicTransform(IActivityMonitor, IServiceProvider)"/>
+        /// Creates the transformation that applies first the <see cref="CreateIntrinsicAsyncTransform(IActivityMonitor, IServiceProvider)"/>
         /// and then the configured <see cref="Transform"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">Services that may be required for some (complex) transform functions.</param>
         /// <returns>The transform function or null for the identity function.</returns>
-        protected virtual Func<object, ValueTask<object>>? CreateTransform( IActivityMonitor monitor, IServiceProvider services )
+        protected virtual Func<object, ValueTask<object>>? CreateAsyncTransform( IActivityMonitor monitor, IServiceProvider services )
         {
-            var intrinsic = CreateIntrinsicTransform( monitor, services );
-            var configured = _transform?.CreateTransform( monitor, services );
+            var intrinsic = CreateIntrinsicAsyncTransform( monitor, services );
+            var configured = _transform?.CreateAsyncTransform( monitor, services );
             if( intrinsic != null )
             {
                 if( configured != null )
                 {
-                    return o => configured( intrinsic( o ) );
+                    return async o => await configured( await intrinsic( o ).ConfigureAwait( false ) ).ConfigureAwait( false );
                 }
                 return intrinsic;
             }
@@ -37,12 +35,12 @@ namespace CK.Object.Processor
 
         /// <summary>
         /// Creates "this" transform (null by default) that is applied before the configured <see cref="Transform"/>
-        /// by <see cref="CreateTransform(IActivityMonitor, IServiceProvider)"/>.
+        /// by <see cref="CreateAsyncTransform(IActivityMonitor, IServiceProvider)"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A configured transform function or null for an identity function.</returns>
-        protected virtual Func<object, ValueTask<object>>? CreateIntrinsicTransform( IActivityMonitor monitor, IServiceProvider services )
+        protected virtual Func<object, ValueTask<object>>? CreateIntrinsicAsyncTransform( IActivityMonitor monitor, IServiceProvider services )
         {
             return null;
         }
@@ -54,12 +52,12 @@ namespace CK.Object.Processor
         /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) transform functions.</param>
         /// <returns>The transform hook or null for the identity function.</returns>
-        protected virtual ObjectAsyncTransformHook? CreateTransformHook( IActivityMonitor monitor,
-                                                                         TransformHookContext context,
-                                                                         IServiceProvider services )
+        protected virtual IObjectTransformHook? CreateAsyncTransformHook( IActivityMonitor monitor,
+                                                                          TransformHookContext context,
+                                                                          IServiceProvider services )
         {
-            var intrinsic = CreateIntrisincTransformHook( monitor, context, services );
-            var configured = _transform?.CreateHook( monitor, context, services );
+            var intrinsic = CreateIntrisincAsyncTransformHook( monitor, context, services );
+            var configured = _transform?.CreateAsyncHook( monitor, context, services );
             if( intrinsic != null )
             {
                 if( configured != null )
@@ -72,17 +70,17 @@ namespace CK.Object.Processor
         }
 
         /// <summary>
-        /// Creates a transform hook based on the transform function created by <see cref="CreateIntrinsicTransform(IActivityMonitor, IServiceProvider)"/>.
+        /// Creates a transform hook based on the transform function created by <see cref="CreateIntrinsicAsyncTransform(IActivityMonitor, IServiceProvider)"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) transform functions.</param>
         /// <returns>The hook predicate or null for the empty predicate.</returns>
-        protected virtual ObjectAsyncTransformHook? CreateIntrisincTransformHook( IActivityMonitor monitor,
-                                                                                  TransformHookContext context,
-                                                                                  IServiceProvider services )
+        protected virtual IObjectTransformHook? CreateIntrisincAsyncTransformHook( IActivityMonitor monitor,
+                                                                                   TransformHookContext context,
+                                                                                   IServiceProvider services )
         {
-            var t = CreateIntrinsicTransform( monitor, services );
+            var t = CreateIntrinsicAsyncTransform( monitor, services );
             return t != null ? new ObjectAsyncTransformHook( context, this, t ) : null;
         }
 

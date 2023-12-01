@@ -32,7 +32,9 @@ namespace CK.Object.Transform
         /// <inheritdoc />
         public string ConfigurationPath => _configurationPath;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Gets this transformation as a synchronous one if it is a synchronous one.
+        /// </summary>
         public ObjectTransformConfiguration? Synchronous => this as ObjectTransformConfiguration;
 
         /// <summary>

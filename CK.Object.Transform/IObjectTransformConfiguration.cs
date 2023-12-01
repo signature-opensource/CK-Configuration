@@ -11,10 +11,5 @@ namespace CK.Object.Transform
         /// Gets the configuration path.
         /// </summary>
         string ConfigurationPath { get; }
-
-        /// <summary>
-        /// Gets this transformation as a synchronous one if it is a synchronous one.
-        /// </summary>
-        ObjectTransformConfiguration? Synchronous { get; }
     }
 }

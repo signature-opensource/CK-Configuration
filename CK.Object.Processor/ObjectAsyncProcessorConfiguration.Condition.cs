@@ -6,19 +6,10 @@ using System.Threading.Tasks;
 
 namespace CK.Object.Processor
 {
-    public partial class ObjectAsyncProcessorConfiguration
+    public partial class ObjectAsyncProcessorConfiguration : IObjectPredicateConfiguration
     {
-        ObjectPredicateConfiguration? IObjectProcessorConfiguration.Condition => _condition;
-
-        ObjectSyncPredicateConfiguration? ObjectPredicateConfiguration.AsSync => null;
-
-        Func<object, ValueTask<bool>>? ObjectPredicateConfiguration.CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
-        {
-            return CreateCondition( monitor, services );
-        }
-
         /// <inheritdoc />
-        public ObjectPredicateConfiguration? Condition => _condition;
+        public ObjectAsyncPredicateConfiguration? Condition => _condition;
 
         /// <summary>
         /// Creates the condition that combines the intrinsic and configured condition.
@@ -27,9 +18,9 @@ namespace CK.Object.Processor
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>The predicate or null for the empty predicate.</returns>
-        protected virtual Func<object, ValueTask<bool>>? CreateCondition( IActivityMonitor monitor, IServiceProvider services )
+        protected virtual Func<object, ValueTask<bool>>? CreateAsyncCondition( IActivityMonitor monitor, IServiceProvider services )
         {
-            var intrinsic = CreateIntrinsicCondition( monitor, services );
+            var intrinsic = CreateIntrinsicAsyncCondition( monitor, services );
             var configured = _condition?.CreateAsyncPredicate( monitor, services );
             if( intrinsic != null )
             {
@@ -44,12 +35,12 @@ namespace CK.Object.Processor
 
         /// <summary>
         /// Creates "this" condition (null by default) that is combined with the configured <see cref="Condition"/>
-        /// by <see cref="CreateCondition(IActivityMonitor, IServiceProvider)"/>.
+        /// by <see cref="CreateAsyncCondition(IActivityMonitor, IServiceProvider)"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>The predicate or null for the empty predicate.</returns>
-        protected virtual Func<object, ValueTask<bool>>? CreateIntrinsicCondition( IActivityMonitor monitor, IServiceProvider services )
+        protected virtual Func<object, ValueTask<bool>>? CreateIntrinsicAsyncCondition( IActivityMonitor monitor, IServiceProvider services )
         {
             return null;
         }
@@ -61,17 +52,17 @@ namespace CK.Object.Processor
         /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>The hook predicate or null for the empty predicate.</returns>
-        protected virtual ObjectPredicateHook? CreateConditionHook( IActivityMonitor monitor,
-                                                                         PredicateHookContext context,
-                                                                         IServiceProvider services )
+        protected virtual IObjectPredicateHook? CreateAsyncConditionHook( IActivityMonitor monitor,
+                                                                          PredicateHookContext context,
+                                                                          IServiceProvider services )
         {
-            var intrinsic = CreateIntrisincConditionHook( monitor, context, services );
+            var intrinsic = CreateIntrisincAsyncConditionHook( monitor, context, services );
             var configured = _condition?.CreateAsyncHook( monitor, context, services );
             if( intrinsic != null )
             {
                 if( configured != null )
                 {
-                    return ObjectPredicateHook.CreateAndHook( context, this, intrinsic, configured );
+                    return ObjectAsyncPredicateHook.CreateAndHook( context, this, intrinsic, configured );
                 }
                 return intrinsic;
             }
@@ -79,18 +70,18 @@ namespace CK.Object.Processor
         }
 
         /// <summary>
-        /// Creates a predicate hook based on the predicate created by <see cref="CreateIntrinsicCondition(IActivityMonitor, IServiceProvider)"/>.
+        /// Creates a predicate hook based on the predicate created by <see cref="CreateIntrinsicAsyncCondition(IActivityMonitor, IServiceProvider)"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>The hook predicate or null for the empty predicate.</returns>
-        protected virtual ObjectPredicateHook? CreateIntrisincConditionHook( IActivityMonitor monitor,
-                                                                                  PredicateHookContext context,
-                                                                                  IServiceProvider services )
+        protected virtual IObjectPredicateHook? CreateIntrisincAsyncConditionHook( IActivityMonitor monitor,
+                                                                                   PredicateHookContext context,
+                                                                                   IServiceProvider services )
         {
-            var p = CreateIntrinsicCondition( monitor, services );
-            return p != null ? new ObjectPredicateHook( context, this, p ) : null;
+            var p = CreateIntrinsicAsyncCondition( monitor, services );
+            return p != null ? new ObjectAsyncPredicateHook( context, this, p ) : null;
         }
 
     }

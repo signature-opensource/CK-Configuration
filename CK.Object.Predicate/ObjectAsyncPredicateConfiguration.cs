@@ -38,7 +38,9 @@ namespace CK.Object.Predicate
         /// <inheritdoc />
         public string ConfigurationPath => _configurationPath;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Gets this predicate as a synchronous one if it is a synchronous predicate.
+        /// </summary>
         public ObjectPredicateConfiguration? Synchronous => this as ObjectPredicateConfiguration;
 
         /// <summary>

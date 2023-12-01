@@ -16,6 +16,7 @@ namespace CK.Object.Processor
     /// </summary>
     public sealed class PlaceholderProcessorConfiguration : ObjectProcessorConfiguration
     {
+        readonly ImmutableConfigurationSection _configuration;
         readonly AssemblyConfiguration _assemblies;
         readonly ImmutableArray<PolymorphicConfigurationTypeBuilder.TypeResolver> _resolvers;
 
@@ -33,8 +34,9 @@ namespace CK.Object.Processor
         {
             if( Condition != null || Transform != null )
             {
-                monitor.Error( $"A processor Placeholder cannot define a 'Condition' or an 'Transform' (Configuration '{configuration.Path}')." );
+                monitor.Error( $"A processor Placeholder cannot define a 'Condition' or a 'Transform' (Configuration '{configuration.Path}')." );
             }
+            _configuration = configuration;
             _assemblies = builder.AssemblyConfiguration;
             _resolvers = builder.Resolvers.ToImmutableArray();
         }
@@ -60,18 +62,18 @@ namespace CK.Object.Processor
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that will potentially replaces this placeholder.</param>
         /// <returns>A new processor configuration or this if the section is not a child or if an error occurred.</returns>
-        protected override ObjectProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
-                                                                          IConfigurationSection configuration,
-                                                                          ObjectSyncPredicateConfiguration? condition,
-                                                                          ObjectTransformConfiguration? action )
+        protected override ObjectAsyncProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
+                                                                               IConfigurationSection configuration,
+                                                                               ObjectAsyncPredicateConfiguration? condition,
+                                                                               ObjectAsyncTransformConfiguration? action )
         {
             Throw.DebugAssert( condition == null && action == null ); 
-            if( configuration.GetParentPath().Equals( Configuration.Path, StringComparison.OrdinalIgnoreCase ) )
+            if( configuration.GetParentPath().Equals( ConfigurationPath, StringComparison.OrdinalIgnoreCase ) )
             {
                 var builder = new PolymorphicConfigurationTypeBuilder( _assemblies, _resolvers );
                 if( configuration is not ImmutableConfigurationSection config )
                 {
-                    config = new ImmutableConfigurationSection( configuration, lookupParent: Configuration );
+                    config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
                 }
                 var newC = builder.Create<ObjectProcessorConfiguration>( monitor, config );
                 if( newC != null ) return newC;

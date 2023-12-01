@@ -9,7 +9,7 @@ namespace CK.Object.Transform
         public ToStringTransformConfiguration( IActivityMonitor monitor,
                                                PolymorphicConfigurationTypeBuilder builder,
                                                ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
         }
 

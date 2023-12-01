@@ -25,6 +25,22 @@ namespace CK.Object.Predicate
         }
 
         /// <summary>
+        /// Creates a synchronous "And" hook.
+        /// </summary>
+        /// <param name="context">The hook context.</param>
+        /// <param name="configuration">The configuration that defines both left and right.</param>
+        /// <param name="left">The left hook.</param>
+        /// <param name="right">The right hook.</param>
+        /// <returns>Left && right hook.</returns>
+        public static ObjectPredicateHook CreateAndHook( PredicateHookContext context,
+                                                         IObjectPredicateConfiguration configuration,
+                                                         ObjectPredicateHook left,
+                                                         ObjectPredicateHook right )
+        {
+            return new Pair( context, configuration, left, right, 0 );
+        }
+
+        /// <summary>
         /// Creates a "Or" hook.
         /// </summary>
         /// <param name="context">The hook context.</param>

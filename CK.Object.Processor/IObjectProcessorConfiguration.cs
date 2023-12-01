@@ -5,18 +5,23 @@ using CK.Object.Transform;
 namespace CK.Object.Processor
 {
     /// <summary>
-    /// Generalizes <see cref="ObjectProcessorConfiguration"/> and <see cref="ObjectAsyncProcessorConfiguration"/>.
+    /// Minimal view of a processor configuration.
     /// </summary>
     public interface IObjectProcessorConfiguration
     {
         /// <summary>
+        /// Gets the configuration path.
+        /// </summary>
+        string ConfigurationPath { get; }
+
+        /// <summary>
         /// Gets the optional configured condition.
         /// </summary>
-        IObjectPredicateConfiguration? Condition { get; }
+        ObjectAsyncPredicateConfiguration? Condition { get; }
 
         /// <summary>
         /// Gets the optional configured transformation.
         /// </summary>
-        IObjectTransformConfiguration? Transform { get; }
+        ObjectAsyncTransformConfiguration? Transform { get; }
     }
 }

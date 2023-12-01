@@ -50,7 +50,7 @@ namespace CK.Object.Processor
         /// <param name="transform">The transform.</param>
         /// <param name="processors">The processors.</param>
         internal SequenceProcessorConfiguration( SequenceProcessorConfiguration source,
-                                                 ObjectSyncPredicateConfiguration? condition,
+                                                 ObjectPredicateConfiguration? condition,
                                                  ObjectTransformConfiguration? transform,
                                                  ImmutableArray<ObjectProcessorConfiguration> processors )
             : base( source, condition, transform )

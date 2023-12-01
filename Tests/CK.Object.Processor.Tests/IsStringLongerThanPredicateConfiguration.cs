@@ -3,12 +3,12 @@ using System;
 
 namespace CK.Object.Predicate
 {
-    public sealed class IsStringLongerThanPredicateConfiguration : ObjectSyncPredicateConfiguration
+    public sealed class IsStringLongerThanPredicateConfiguration : ObjectPredicateConfiguration
     {
         readonly int _len;
 
         public IsStringLongerThanPredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
             _len = ReadLength( monitor, configuration );
         }

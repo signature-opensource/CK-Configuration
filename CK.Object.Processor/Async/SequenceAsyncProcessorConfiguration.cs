@@ -64,33 +64,33 @@ namespace CK.Object.Processor
         public IReadOnlyList<ObjectAsyncProcessorConfiguration> Processors => _processors;
 
         /// <inheritdoc />
-        public sealed override ObjectAsyncProcessorHook? CreateHook( IActivityMonitor monitor, ProcessorHookContext hook, IServiceProvider services )
+        public sealed override IObjectProcessorHook? CreateAsyncHook( IActivityMonitor monitor, ProcessorHookContext hook, IServiceProvider services )
         {
-            ImmutableArray<ObjectAsyncProcessorHook> processors = _processors.Select( c => c.CreateHook( monitor, hook, services ) )
+            ImmutableArray<IObjectProcessorHook> processors = _processors.Select( c => c.CreateAsyncHook( monitor, hook, services ) )
                                                                              .Where( s => s != null )
                                                                              .ToImmutableArray()!;
             // Trivial case: not a composite. Base implementation handles the Condition and the Transform.
-            if( processors.Length == 0 ) return base.CreateHook( monitor, hook, services );
+            if( processors.Length == 0 ) return base.CreateAsyncHook( monitor, hook, services );
 
-            var thisCondition = CreateConditionHook( monitor, hook.ConditionHookContext, services );
-            var thisTransform = CreateTransformHook( monitor, hook.TransformHookContext, services );
+            var thisCondition = CreateAsyncConditionHook( monitor, hook.ConditionHookContext, services );
+            var thisTransform = CreateAsyncTransformHook( monitor, hook.TransformHookContext, services );
             return new SequenceAsyncProcessorHook( hook, this, thisCondition, thisTransform, processors );
         }
 
         /// <inheritdoc />
-        public sealed override Func<object, ValueTask<object?>>? CreateProcessor( IActivityMonitor monitor, IServiceProvider services )
+        public sealed override Func<object, ValueTask<object?>>? CreateAsyncProcessor( IActivityMonitor monitor, IServiceProvider services )
         {
-            ImmutableArray<Func<object, ValueTask<object?>>> processors = _processors.Select( c => c.CreateProcessor( monitor, services ) )
+            ImmutableArray<Func<object, ValueTask<object?>>> processors = _processors.Select( c => c.CreateAsyncProcessor( monitor, services ) )
                                                                                      .Where( f => f != null )
                                                                                      .ToImmutableArray()!;
             // Trivial case: not a composite. Base implementation handles the Condition and the Transform.
-            if( processors.Length == 0 ) return base.CreateProcessor( monitor, services );
+            if( processors.Length == 0 ) return base.CreateAsyncProcessor( monitor, services );
             // Regular case: we have one or more processors.
             var innerProcessor = processors.Length == 1
                                     ? processors[0]
                                     : o => ApplyAsync( processors, o );
-            var thisCondition = CreateCondition( monitor, services );
-            var thisTransform = CreateTransform( monitor, services );
+            var thisCondition = CreateAsyncCondition( monitor, services );
+            var thisTransform = CreateAsyncTransform( monitor, services );
             if( thisCondition != null )
             {
                 if( thisTransform != null )
@@ -100,7 +100,9 @@ namespace CK.Object.Processor
                     // processed the input object.
                     object? r = null;
                     return async o => await thisCondition( o ).ConfigureAwait( false )
-                                        ? ((r = await innerProcessor( o ).ConfigureAwait( false )) != null ? await thisTransform( r ).ConfigureAwait( false ) : null)
+                                        ? ((r = await innerProcessor( o ).ConfigureAwait( false )) != null
+                                            ? await thisTransform( r ).ConfigureAwait( false )
+                                            : null)
                                         : null;
                 }
                 // No action at this level, only this condition must be challenged before submitting it to the inner processor.

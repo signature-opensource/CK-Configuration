@@ -131,6 +131,13 @@ namespace CK.Core
         }
 
         /// <summary>
+        /// Gets whether the resolver for the given <see cref="TypeResolver.BaseType"/> is registered.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public bool HasBaseType<T>() => _resolvers.Any( r => r.BaseType ==  typeof( T ) );
+
+        /// <summary>
         /// Typed version of the <see cref="Create(IActivityMonitor, Type, IConfigurationSection)"/> method.
         /// </summary>
         /// <typeparam name="T">Type of the expected instance.</typeparam>

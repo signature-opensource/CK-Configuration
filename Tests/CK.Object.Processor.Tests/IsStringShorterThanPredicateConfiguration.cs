@@ -1,14 +1,14 @@
-﻿using CK.Core;
+using CK.Core;
 using System;
 
 namespace CK.Object.Predicate
 {
-    public sealed class IsStringShorterThanPredicateConfiguration : ObjectSyncPredicateConfiguration
+    public sealed class IsStringShorterThanPredicateConfiguration : ObjectPredicateConfiguration
     {
         readonly int _len;
 
         public IsStringShorterThanPredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
             _len = IsStringLongerThanPredicateConfiguration.ReadLength( monitor, configuration );
         }
