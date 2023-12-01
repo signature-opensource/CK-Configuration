@@ -22,7 +22,7 @@ namespace CK.Object.Processor
         /// <param name="processors">The subordinated processors.</param>
         public SequenceProcessorHook( ProcessorHookContext hook,
                                       ISequenceProcessorConfiguration configuration,
-                                      Predicate.ObjectPredicateHook? condition,
+                                      Predicate.SyncObjectPredicateHook? condition,
                                       Transform.ObjectTransformHook? transform,
                                       ImmutableArray<ObjectProcessorHook> processors )
             : base( hook, configuration, condition, transform )

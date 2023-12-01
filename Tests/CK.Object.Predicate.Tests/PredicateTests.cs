@@ -2,12 +2,12 @@ using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
+using System;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Object.Predicate.Tests
 {
-
 
     [TestFixture]
     public class PredicateTests
@@ -18,7 +18,7 @@ namespace CK.Object.Predicate.Tests
             var config = new MutableConfigurationSection( "Root" );
 
             var builder = new PolymorphicConfigurationTypeBuilder();
-            ObjectPredicateConfiguration.AddResolver( builder );
+            ObjectPredicateConfiguration.AddSynchronousOnlyResolver( builder );
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
                 var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config );
@@ -34,7 +34,6 @@ namespace CK.Object.Predicate.Tests
             var config = new MutableConfigurationSection( "Root" );
             config["Condition"] = always.ToString();
             var builder = new PolymorphicConfigurationTypeBuilder();
-            ObjectPredicateConfiguration.AddResolver( builder );
             ObjectAsyncPredicateConfiguration.AddResolver( builder );
 
             {
@@ -47,7 +46,7 @@ namespace CK.Object.Predicate.Tests
             {
                 var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
                 Throw.DebugAssert( fC != null );
-                var f = fC.CreatePredicate( TestHelper.Monitor );
+                var f = fC.CreateAsyncPredicate( TestHelper.Monitor );
                 Throw.DebugAssert( f != null );
                 (await f( this )).Should().Be( always );
             }
@@ -60,28 +59,27 @@ namespace CK.Object.Predicate.Tests
             var config = new MutableConfigurationSection( "Root" );
             config["Condition"] = t;
             var builder = new PolymorphicConfigurationTypeBuilder();
-            ObjectPredicateConfiguration.AddResolver( builder );
             ObjectAsyncPredicateConfiguration.AddResolver( builder );
 
             {
                 var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
                 Throw.DebugAssert( fC != null );
 
-                fC.Should().BeAssignableTo<GroupPredicateConfiguration>();
-                ((GroupPredicateConfiguration)fC).Predicates.Should().BeEmpty();
-                ((GroupPredicateConfiguration)fC).All.Should().Be( t == "All" );
-                ((GroupPredicateConfiguration)fC).Any.Should().Be( t == "Any" );
-                ((GroupPredicateConfiguration)fC).AtLeast.Should().Be( t == "All" ? 0 : 1 );
+                fC.Should().BeAssignableTo<IGroupPredicateConfiguration>();
+                ((IGroupPredicateConfiguration)fC).Predicates.Should().BeEmpty();
+                ((IGroupPredicateConfiguration)fC).All.Should().Be( t == "All" );
+                ((IGroupPredicateConfiguration)fC).Any.Should().Be( t == "Any" );
+                ((IGroupPredicateConfiguration)fC).AtLeast.Should().Be( t == "All" ? 0 : 1 );
             }
             {
                 var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "Condition" ) );
                 Throw.DebugAssert( fC != null );
 
-                fC.Should().BeAssignableTo<GroupAsyncPredicateConfiguration>();
-                ((GroupAsyncPredicateConfiguration)fC).Predicates.Should().BeEmpty();
-                ((GroupAsyncPredicateConfiguration)fC).All.Should().Be( t == "All" );
-                ((GroupAsyncPredicateConfiguration)fC).Any.Should().Be( t == "Any" );
-                ((GroupAsyncPredicateConfiguration)fC).AtLeast.Should().Be( t == "All" ? 0 : 1 );
+                fC.Should().BeAssignableTo<IGroupPredicateConfiguration>();
+                ((IGroupPredicateConfiguration)fC).Predicates.Should().BeEmpty();
+                ((IGroupPredicateConfiguration)fC).All.Should().Be( t == "All" );
+                ((IGroupPredicateConfiguration)fC).Any.Should().Be( t == "Any" );
+                ((IGroupPredicateConfiguration)fC).AtLeast.Should().Be( t == "All" ? 0 : 1 );
             }
         }
 
@@ -92,34 +90,39 @@ namespace CK.Object.Predicate.Tests
             config["Conditions:0:Type"] = "true";
             var builder = new PolymorphicConfigurationTypeBuilder();
             // Relaces default "Predicates" by "Conditions".
-            ObjectPredicateConfiguration.AddResolver( builder, compositeItemsFieldName: "Conditions" );
             ObjectAsyncPredicateConfiguration.AddResolver( builder, compositeItemsFieldName: "Conditions" );
 
+            // Sync
             {
                 var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config );
                 Throw.DebugAssert( fC != null );
-                fC.Should().BeAssignableTo<GroupPredicateConfiguration>();
-                ((GroupPredicateConfiguration)fC).Predicates.Should().HaveCount( 1 );
-                ((GroupPredicateConfiguration)fC).All.Should().BeTrue();
-                ((GroupPredicateConfiguration)fC).Any.Should().BeFalse();
-                ((GroupPredicateConfiguration)fC).AtLeast.Should().Be( 0 );
-                ((GroupPredicateConfiguration)fC).Predicates[0].Should().BeAssignableTo<AlwaysTruePredicateConfiguration>();
+                fC.Should().BeAssignableTo<IGroupPredicateConfiguration>();
+                ((IGroupPredicateConfiguration)fC).Predicates.Should().HaveCount( 1 );
+                ((IGroupPredicateConfiguration)fC).All.Should().BeTrue();
+                ((IGroupPredicateConfiguration)fC).Any.Should().BeFalse();
+                ((IGroupPredicateConfiguration)fC).AtLeast.Should().Be( 0 );
+                ((IGroupPredicateConfiguration)fC).Predicates[0].Should().BeAssignableTo<AlwaysTruePredicateConfiguration>();
+
+                fC.GetType().Name.Should().Be( "GroupPredicateConfiguration", "Synchronous group." );
 
                 var f = fC.CreatePredicate( TestHelper.Monitor );
                 Throw.DebugAssert( f != null );
                 f( this ).Should().BeTrue();
             }
+            // Async
             {
                 var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config );
                 Throw.DebugAssert( fC != null );
-                fC.Should().BeAssignableTo<GroupAsyncPredicateConfiguration>();
-                ((GroupAsyncPredicateConfiguration)fC).Predicates.Should().HaveCount( 1 );
-                ((GroupAsyncPredicateConfiguration)fC).All.Should().BeTrue();
-                ((GroupAsyncPredicateConfiguration)fC).Any.Should().BeFalse();
-                ((GroupAsyncPredicateConfiguration)fC).AtLeast.Should().Be( 0 );
-                ((GroupAsyncPredicateConfiguration)fC).Predicates[0].Should().BeAssignableTo<AlwaysTrueAsyncPredicateConfiguration>();
+                fC.Should().BeAssignableTo<IGroupPredicateConfiguration>();
+                ((IGroupPredicateConfiguration)fC).Predicates.Should().HaveCount( 1 );
+                ((IGroupPredicateConfiguration)fC).All.Should().BeTrue();
+                ((IGroupPredicateConfiguration)fC).Any.Should().BeFalse();
+                ((IGroupPredicateConfiguration)fC).AtLeast.Should().Be( 0 );
+                ((IGroupPredicateConfiguration)fC).Predicates[0].Should().BeAssignableTo<AlwaysTruePredicateConfiguration>();
 
-                var f = fC.CreatePredicate( TestHelper.Monitor );
+                fC.GetType().Name.Should().Be( "GroupPredicateConfiguration", "Also the synchronous group because its predicate is sync." );
+
+                var f = fC.CreateAsyncPredicate( TestHelper.Monitor );
                 Throw.DebugAssert( f != null );
                 (await f( this )).Should().BeTrue();
             }
@@ -197,7 +200,7 @@ namespace CK.Object.Predicate.Tests
         {
             MutableConfigurationSection config = GetComplexConfiguration();
             var builder = new PolymorphicConfigurationTypeBuilder();
-            ObjectPredicateConfiguration.AddResolver( builder );
+            ObjectAsyncPredicateConfiguration.AddResolver( builder );
 
             var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( fC != null );
@@ -221,7 +224,7 @@ namespace CK.Object.Predicate.Tests
             var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( fC != null );
 
-            var f = fC.CreatePredicate( TestHelper.Monitor );
+            var f = fC.CreateAsyncPredicate( TestHelper.Monitor );
             Throw.DebugAssert( f != null );
             (await f( 0 )).Should().Be( false );
             (await f( "Ax" )).Should().Be( false );
@@ -235,7 +238,7 @@ namespace CK.Object.Predicate.Tests
         {
             MutableConfigurationSection config = GetComplexConfiguration();
             var builder = new PolymorphicConfigurationTypeBuilder();
-            ObjectPredicateConfiguration.AddResolver( builder );
+            ObjectAsyncPredicateConfiguration.AddResolver( builder );
 
             var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( fC != null );
@@ -263,7 +266,7 @@ namespace CK.Object.Predicate.Tests
 
             var hook = new MonitoredPredicateHookContext( TestHelper.Monitor );
 
-            var f = fC.CreateHook( TestHelper.Monitor, hook );
+            var f = fC.CreateAsyncHook( TestHelper.Monitor, hook );
             Throw.DebugAssert( f != null );
             (await f.EvaluateAsync( 0 )).Should().Be( false );
             (await f.EvaluateAsync( "Ax" )).Should().Be( false );
@@ -289,7 +292,6 @@ namespace CK.Object.Predicate.Tests
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
             ObjectAsyncPredicateConfiguration.AddResolver( builder );
-            ObjectPredicateConfiguration.AddResolver( builder );
 
             {
                 var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config );
@@ -302,7 +304,7 @@ namespace CK.Object.Predicate.Tests
             {
                 var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config );
                 Throw.DebugAssert( fC != null );
-                var f = fC.CreatePredicate( TestHelper.Monitor );
+                var f = fC.CreateAsyncPredicate( TestHelper.Monitor );
                 Throw.DebugAssert( f != null );
                 (await f( "With Hello! fails." )).Should().BeFalse();
                 (await f( "Without succeeds." )).Should().BeTrue();
@@ -329,8 +331,8 @@ namespace CK.Object.Predicate.Tests
                 """ );
             var builder = new PolymorphicConfigurationTypeBuilder();
             ObjectAsyncPredicateConfiguration.AddResolver( builder );
-            ObjectPredicateConfiguration.AddResolver( builder );
 
+            // Sync
             {
                 var fC = builder.Create<ObjectPredicateConfiguration>( TestHelper.Monitor, config );
                 Throw.DebugAssert( fC != null );
@@ -341,10 +343,11 @@ namespace CK.Object.Predicate.Tests
                 f( 0.0 ).Should().BeTrue();
                 f( "Hello" ).Should().BeTrue();
             }
+            // Async
             {
                 var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config );
                 Throw.DebugAssert( fC != null );
-                var f = fC.CreatePredicate( TestHelper.Monitor );
+                var f = fC.CreateAsyncPredicate( TestHelper.Monitor );
                 Throw.DebugAssert( f != null );
                 (await f( this )).Should().BeFalse();
                 (await f( 0 )).Should().BeFalse();

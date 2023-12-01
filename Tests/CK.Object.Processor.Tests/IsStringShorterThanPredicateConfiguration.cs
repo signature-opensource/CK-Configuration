@@ -3,7 +3,7 @@ using System;
 
 namespace CK.Object.Predicate
 {
-    public sealed class IsStringShorterThanPredicateConfiguration : ObjectPredicateConfiguration
+    public sealed class IsStringShorterThanPredicateConfiguration : ObjectSyncPredicateConfiguration
     {
         readonly int _len;
 

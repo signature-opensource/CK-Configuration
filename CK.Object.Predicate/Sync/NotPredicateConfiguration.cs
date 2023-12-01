@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using System;
 using System.Diagnostics.CodeAnalysis;
 
@@ -21,7 +21,7 @@ namespace CK.Object.Predicate
         public NotPredicateConfiguration( IActivityMonitor monitor,
                                           PolymorphicConfigurationTypeBuilder builder,
                                           ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
             var cOperand = configuration.TryGetSection( "Operand" );
             if( cOperand == null )

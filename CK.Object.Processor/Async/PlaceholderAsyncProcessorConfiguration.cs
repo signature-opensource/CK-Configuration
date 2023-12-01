@@ -63,7 +63,7 @@ namespace CK.Object.Processor
         /// <returns>A new processor configuration or this if the section is not a child or if an error occurred.</returns>
         protected override ObjectAsyncProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
                                                                                IConfigurationSection configuration,
-                                                                               ObjectAsyncPredicateConfiguration? condition,
+                                                                               ObjectPredicateConfiguration? condition,
                                                                                ObjectAsyncTransformConfiguration? action )
         {
             Throw.DebugAssert( condition == null && action == null ); 

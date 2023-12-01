@@ -8,17 +8,17 @@ namespace CK.Object.Processor
 {
     public partial class ObjectAsyncProcessorConfiguration
     {
-        IObjectPredicateConfiguration? IObjectProcessorConfiguration.Condition => _condition;
+        ObjectPredicateConfiguration? IObjectProcessorConfiguration.Condition => _condition;
 
-        ISyncObjectPredicateConfiguration? IObjectPredicateConfiguration.AsSync => null;
+        ObjectSyncPredicateConfiguration? ObjectPredicateConfiguration.AsSync => null;
 
-        Func<object, ValueTask<bool>>? IObjectPredicateConfiguration.CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
+        Func<object, ValueTask<bool>>? ObjectPredicateConfiguration.CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
         {
             return CreateCondition( monitor, services );
         }
 
         /// <inheritdoc />
-        public ObjectAsyncPredicateConfiguration? Condition => _condition;
+        public ObjectPredicateConfiguration? Condition => _condition;
 
         /// <summary>
         /// Creates the condition that combines the intrinsic and configured condition.
@@ -61,7 +61,7 @@ namespace CK.Object.Processor
         /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>The hook predicate or null for the empty predicate.</returns>
-        protected virtual ObjectAsyncPredicateHook? CreateConditionHook( IActivityMonitor monitor,
+        protected virtual ObjectPredicateHook? CreateConditionHook( IActivityMonitor monitor,
                                                                          PredicateHookContext context,
                                                                          IServiceProvider services )
         {
@@ -71,7 +71,7 @@ namespace CK.Object.Processor
             {
                 if( configured != null )
                 {
-                    return ObjectAsyncPredicateHook.CreateAndHook( context, this, intrinsic, configured );
+                    return ObjectPredicateHook.CreateAndHook( context, this, intrinsic, configured );
                 }
                 return intrinsic;
             }
@@ -85,12 +85,12 @@ namespace CK.Object.Processor
         /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>The hook predicate or null for the empty predicate.</returns>
-        protected virtual ObjectAsyncPredicateHook? CreateIntrisincConditionHook( IActivityMonitor monitor,
+        protected virtual ObjectPredicateHook? CreateIntrisincConditionHook( IActivityMonitor monitor,
                                                                                   PredicateHookContext context,
                                                                                   IServiceProvider services )
         {
             var p = CreateIntrinsicCondition( monitor, services );
-            return p != null ? new ObjectAsyncPredicateHook( context, this, p ) : null;
+            return p != null ? new ObjectPredicateHook( context, this, p ) : null;
         }
 
     }

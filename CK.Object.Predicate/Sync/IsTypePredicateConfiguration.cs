@@ -17,7 +17,7 @@ namespace CK.Object.Predicate
         /// <param name="builder">Unused builder.</param>
         /// <param name="configuration">Captured configuration.</param>
         protected IsTypePredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
         }
 

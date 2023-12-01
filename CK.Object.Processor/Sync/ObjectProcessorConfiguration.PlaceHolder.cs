@@ -95,7 +95,7 @@ namespace CK.Object.Processor
         /// <returns>A new configuration or this if nothing has changed or an error occurred.</returns>
         protected virtual ObjectProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
                                                                          IConfigurationSection configuration,
-                                                                         ObjectPredicateConfiguration? condition,
+                                                                         ObjectSyncPredicateConfiguration? condition,
                                                                          ObjectTransformConfiguration? transform )
         {
             return condition != Condition || transform != Transform

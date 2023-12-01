@@ -50,7 +50,7 @@ namespace CK.Object.Processor
         /// <param name="transform">The transform.</param>
         /// <param name="processors">The processors.</param>
         internal SequenceAsyncProcessorConfiguration( SequenceAsyncProcessorConfiguration source,
-                                                      ObjectAsyncPredicateConfiguration? condition,
+                                                      ObjectPredicateConfiguration? condition,
                                                       ObjectAsyncTransformConfiguration? transform,
                                                       ImmutableArray<ObjectAsyncProcessorConfiguration> processors )
             : base( source, condition, transform )
@@ -142,7 +142,7 @@ namespace CK.Object.Processor
         /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
         protected sealed  override ObjectAsyncProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
                                                                                        IConfigurationSection configuration,
-                                                                                       ObjectAsyncPredicateConfiguration? condition,
+                                                                                       ObjectPredicateConfiguration? condition,
                                                                                        ObjectAsyncTransformConfiguration? action )
         {
             // Handles placeholder inside Processors.

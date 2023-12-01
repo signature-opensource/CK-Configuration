@@ -51,7 +51,7 @@ namespace StrategyPlugin
                                         typeNamespace: "Plugin.Strategy",
                                         allowOtherNamespace: false,
                                         familyTypeNameSuffix: "Strategy",
-                                        compositeBaseType: typeof( CompositeStrategyConfiguration ),
+                                        defaultCompositeBaseType: typeof( CompositeStrategyConfiguration ),
                                         compositeItemsFieldName: "Strategies" ) );
         }
     }

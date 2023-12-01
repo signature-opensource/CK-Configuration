@@ -3,9 +3,9 @@ using System.Collections.Immutable;
 namespace CK.Object.Predicate
 {
     /// <summary>
-    /// Generalizes <see cref="GroupPredicateHook"/> and <see cref="GroupAsyncPredicateHook"/> wrappers.
+    /// Group hook.
     /// </summary>
-    public interface IGroupPredicateHook : IObjectPredicateHook
+    public interface IGroupPredicateHook : IObjectPredicateHook, IGroupPredicateDescription
     {
         /// <summary>
         /// Gets the subordinated predicates.

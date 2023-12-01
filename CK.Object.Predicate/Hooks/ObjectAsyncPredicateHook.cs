@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace CK.Object.Predicate
 {
     /// <summary>
-    /// Hook implementation for asynchronous predicates.
+    /// Hook implementation for predicates.
     /// </summary>
     public partial class ObjectAsyncPredicateHook : IObjectPredicateHook
     {
@@ -30,8 +30,9 @@ namespace CK.Object.Predicate
         }
 
         /// <summary>
-        /// Constructor used by <see cref="GroupAsyncPredicateHook"/>. Must be used by specialized hook when the predicate contains
-        /// other <see cref="ObjectAsyncPredicateConfiguration"/> to expose the internal predicate structure.
+        /// Constructor that must be used by specialized hook when the predicate contains
+        /// other <see cref="ObjectAsyncPredicateConfiguration"/> to expose the internal predicate structure (and <see cref="DoEvaluateAsync(object)"/>
+        /// must be overridden).
         /// </summary>
         /// <param name="context">The hook context.</param>
         /// <param name="configuration">This configuration.</param>
@@ -46,6 +47,9 @@ namespace CK.Object.Predicate
 
         /// <inheritdoc />
         public IObjectPredicateConfiguration Configuration => _configuration;
+
+        /// <inheritdoc />
+        public ObjectPredicateHook? Synchronous => null;
 
         /// <inheritdoc />
         public PredicateHookContext Context => _context;

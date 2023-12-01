@@ -24,14 +24,17 @@ namespace CK.Core
         AssemblyConfiguration _assemblyConfiguration;
         int _createDepth;
         List<(int Depth, int Index, TypeResolver Resolver)>? _hiddenResolvers;
+        // Takes no risk: a factory is identified by the resolver's base type and the type
+        // to resolve.
+        internal sealed record class FactoryKey( Type BaseType, Type Type );
+        readonly Dictionary<FactoryKey, Factory?> _factories;
 
         /// <summary>
         /// Initializes a new <see cref="PolymorphicConfigurationTypeBuilder"/>.
         /// </summary>
         public PolymorphicConfigurationTypeBuilder()
+            : this( AssemblyConfiguration.Empty, ImmutableArray<TypeResolver>.Empty )
         {
-            _resolvers = new List<TypeResolver>();
-            _assemblyConfiguration = AssemblyConfiguration.Empty;
         }
 
         /// <summary>
@@ -48,6 +51,7 @@ namespace CK.Core
         {
             _resolvers = resolvers.ToList();
             _assemblyConfiguration = assemblyConfiguration;
+            _factories = new Dictionary<FactoryKey, Factory?>();
         }
 
         /// <summary>
@@ -101,7 +105,7 @@ namespace CK.Core
         public void AddResolver( TypeResolver resolver )
         {
             Throw.CheckNotNullArgument( resolver );
-            int idx = _resolvers.IndexOf( b => resolver.BaseType.IsAssignableFrom( b.BaseType ) );
+            int idx = _resolvers.IndexOf( b => b.BaseType.IsAssignableFrom( resolver.BaseType ) );
             if( idx < 0 )
             {
                 // No conflict: always append the resolver, Create will truncate the list at its initial length.
@@ -159,7 +163,7 @@ namespace CK.Core
                                                  string? alternateItemsFieldName = null )
         {
             Throw.CheckNotNullArgument( configuration );
-            TypeResolver resolver = FindRequiredResolver( monitor, typeof(T) );
+            TypeResolver resolver = FindResolver( monitor, typeof(T) );
             return (IReadOnlyList<T>?)resolver.CreateItems( monitor, this, configuration, requiresItemsFieldName, alternateItemsFieldName );
         }
 
@@ -186,7 +190,7 @@ namespace CK.Core
                                                    string? alternateItemsFieldName = null )
         {
             Throw.CheckNotNullArgument( configuration );
-            TypeResolver resolver = FindRequiredResolver( monitor, baseType );
+            TypeResolver resolver = FindResolver( monitor, baseType );
             return (IReadOnlyList<object>?)resolver.CreateItems( monitor, this, configuration, requiresItemsFieldName, alternateItemsFieldName );
         }
 
@@ -204,7 +208,10 @@ namespace CK.Core
         public object? Create( IActivityMonitor monitor, Type type, IConfigurationSection configuration )
         {
             Throw.CheckNotNullArgument( configuration );
-            TypeResolver resolver = FindRequiredResolver( monitor, type );
+
+            TypeResolver? resolver = FindResolver( monitor, type );
+            if( resolver == null ) return null;
+
             if( configuration is not ImmutableConfigurationSection config )
             {
                 config = new ImmutableConfigurationSection( configuration );
@@ -256,16 +263,16 @@ namespace CK.Core
             }
         }
 
-        private TypeResolver FindRequiredResolver( IActivityMonitor monitor, Type type )
+        TypeResolver? FindResolver( IActivityMonitor monitor, Type type )
         {
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckNotNullArgument( type );
             var resolver = _resolvers.FirstOrDefault( r => r.BaseType.IsAssignableFrom( type ) );
             if( resolver == null )
             {
-                Throw.ArgumentException( nameof( type ), $"Unable to find a resolver for '{type:C}' ({_resolvers.Count} resolvers)." );
+                var available = _resolvers.Select( r => r.BaseType.ToCSharpName() ).Concatenate( "', '" );
+                monitor.Error( $"Unable to find a resolver for '{type:C}' (Registered resolvers Base Types are: '{available}')." );
             }
-
             return resolver;
         }
     }

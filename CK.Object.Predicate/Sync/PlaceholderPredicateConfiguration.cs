@@ -11,6 +11,7 @@ namespace CK.Object.Predicate
     /// </summary>
     public sealed class PlaceholderPredicateConfiguration : ObjectPredicateConfiguration
     {
+        readonly ImmutableConfigurationSection _configuration;
         readonly AssemblyConfiguration _assemblies;
         readonly ImmutableArray<PolymorphicConfigurationTypeBuilder.TypeResolver> _resolvers;
 
@@ -23,8 +24,9 @@ namespace CK.Object.Predicate
         public PlaceholderPredicateConfiguration( IActivityMonitor monitor,
                                                   PolymorphicConfigurationTypeBuilder builder,
                                                   ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
+            _configuration = configuration;
             _assemblies = builder.AssemblyConfiguration;
             _resolvers = builder.Resolvers.ToImmutableArray();
         }
@@ -51,14 +53,14 @@ namespace CK.Object.Predicate
         /// <param name="configuration">The configuration that will potentially replaces this placeholder.</param>
         /// <returns>A new predicate configuration or this if the section is not a child or if an error occurred.</returns>
         public override ObjectPredicateConfiguration SetPlaceholder( IActivityMonitor monitor,
-                                                                     IConfigurationSection configuration )
+                                                                         IConfigurationSection configuration )
         {
-            if( configuration.GetParentPath().Equals( Configuration.Path, StringComparison.OrdinalIgnoreCase ) )
+            if( configuration.GetParentPath().Equals( ConfigurationPath, StringComparison.OrdinalIgnoreCase ) )
             {
                 var builder = new PolymorphicConfigurationTypeBuilder( _assemblies, _resolvers );
                 if( configuration is not ImmutableConfigurationSection config )
                 {
-                    config = new ImmutableConfigurationSection( configuration, lookupParent: Configuration );
+                    config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
                 }
                 var newC = builder.Create<ObjectPredicateConfiguration>( monitor, config );
                 if( newC != null ) return newC;

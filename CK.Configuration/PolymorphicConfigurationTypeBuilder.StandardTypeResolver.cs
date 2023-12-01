@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -21,7 +20,7 @@ namespace CK.Core
             readonly string? _familyTypeNameSuffix;
             readonly string _typeNameSuffix;
             readonly TypeResolver? _fallback;
-            readonly Type? _compositeBaseType;
+            readonly Type? _defaultCompositeBaseType;
             readonly string _compositeItemsFieldName;
             readonly Func<IActivityMonitor, string, PolymorphicConfigurationTypeBuilder, ImmutableConfigurationSection, object?>? _tryCreateFromTypeName;
 
@@ -57,7 +56,7 @@ namespace CK.Core
             /// </list>
             /// </para>
             /// </param>
-            /// <param name="compositeBaseType">Optional specialized type that is the default composite.</param>
+            /// <param name="defaultCompositeBaseType">Optional specialized type that is the default composite.</param>
             /// <param name="compositeItemsFieldName">Required field name of a composite items.</param>
             /// <param name="typeFieldName">The name of the "Type" field.</param>
             /// <param name="typeNameSuffix">
@@ -71,7 +70,7 @@ namespace CK.Core
                                          bool allowOtherNamespace = false,
                                          string? familyTypeNameSuffix = null,
                                          Func<IActivityMonitor, string, PolymorphicConfigurationTypeBuilder, ImmutableConfigurationSection, object?>? tryCreateFromTypeName = null,
-                                         Type? compositeBaseType = null,
+                                         Type? defaultCompositeBaseType = null,
                                          string compositeItemsFieldName = "Items",
                                          string typeFieldName = "Type",
                                          string typeNameSuffix = "Configuration",
@@ -81,14 +80,14 @@ namespace CK.Core
                 Throw.CheckNotNullArgument( baseType );
                 Throw.CheckNotNullOrWhiteSpaceArgument( typeFieldName );
                 Throw.CheckNotNullOrWhiteSpaceArgument( typeNamespace );
-                Throw.CheckArgument( compositeBaseType == null || (compositeBaseType.IsClass && !compositeBaseType.IsAbstract && baseType.IsAssignableFrom( compositeBaseType )) );
+                Throw.CheckArgument( defaultCompositeBaseType == null || (defaultCompositeBaseType.IsClass && !defaultCompositeBaseType.IsAbstract && baseType.IsAssignableFrom( defaultCompositeBaseType )) );
                 Throw.CheckNotNullOrWhiteSpaceArgument( compositeItemsFieldName );
                 _typeFieldName = typeFieldName;
                 _typeNamespace = typeNamespace;
                 _allowOtherNamespace = allowOtherNamespace;
                 _familyTypeNameSuffix = familyTypeNameSuffix;
                 _tryCreateFromTypeName = tryCreateFromTypeName;
-                _compositeBaseType = compositeBaseType;
+                _defaultCompositeBaseType = defaultCompositeBaseType;
                 _compositeItemsFieldName = compositeItemsFieldName;
                 _typeNameSuffix = typeNameSuffix;
                 _fallback = fallback;
@@ -98,7 +97,7 @@ namespace CK.Core
                                                         PolymorphicConfigurationTypeBuilder builder,
                                                         ImmutableConfigurationSection configuration )
             {
-                return DoCreateWithFallback( monitor, builder, configuration, _compositeBaseType != null );
+                return DoCreateWithFallback( monitor, builder, configuration, _defaultCompositeBaseType != null );
             }
 
             internal protected override Array? CreateItems( IActivityMonitor monitor,
@@ -150,9 +149,9 @@ namespace CK.Core
                     // If it exists and the optional tryCreateFromTypeName exists then give it a try.
                     if( typeName != null && _tryCreateFromTypeName != null )
                     {
-                        object? result = TryCreateFromTypeName( monitor, builder, configuration, typeName );
-                        // If the result has been created, we're done.
-                        if( result != null ) return result;
+                        object? result = TryCreateFromTypeName( monitor, builder, configuration, typeName, out bool hasError );
+                        // If the result has been created or an error occurred, we're done.
+                        if( result != null || hasError ) return result;
                     }
                     if( typeName == null )
                     {
@@ -187,16 +186,20 @@ namespace CK.Core
                 {
                     monitor.Error( ActivityMonitor.Tags.ToBeInvestigated,
                                    $"The '{typeName}' type name resolved to '{type:N}' but this type is not compatible with '{BaseType:N}'. " +
-                                   $" (Configuration '{configuration.Path}:{_typeFieldName}'.)" );
+                                   $"(Configuration '{configuration.Path}:{_typeFieldName}'.)" );
                     return null;
                 }
                 try
                 {
-                    if( _compositeBaseType != null && _compositeBaseType.IsAssignableFrom( type ) )
+                    var f = builder.GetInstanceFactory( monitor, BaseType, type );
+                    if( f == null ) return null;
+                    if( f.IsComposite )
                     {
-                        return DoCreateComposite( monitor, builder, configuration, type, null );
+                        var a = DoCreateItems( monitor, builder, configuration, null, null, false );
+                        if( a == null ) return null;
+                        return f.CreateComposite( monitor, builder, configuration, a );
                     }
-                    return Activator.CreateInstance( type, monitor, builder, configuration );
+                    return f.Create( monitor, builder, configuration );
                 }
                 catch( Exception ex )
                 {
@@ -210,9 +213,8 @@ namespace CK.Core
                                           ImmutableConfigurationSection configuration,
                                           bool allowDefaultComposite )
             {
-                if( _compositeBaseType != null )
+                if( _defaultCompositeBaseType != null )
                 {
-                    Throw.DebugAssert( _compositeBaseType != null );
                     // When allowDefaultComposite (root Create call), if there's no "Items" field
                     // we consider the configuration itself to be the composite items.
                     // This allows array (or even keyed objects) to be handled. This trick is safe
@@ -223,7 +225,7 @@ namespace CK.Core
                     {
                         if( !configuration.HasChildren )
                         {
-                            monitor.Error( $"Configuration '{configuration.Path}' must have children to be considered a default '{_compositeBaseType:C}'." );
+                            monitor.Error( $"Configuration '{configuration.Path}' must have children to be considered a default '{_defaultCompositeBaseType:C}'." );
                             return null;
                         }
                         itemsField = configuration;
@@ -232,11 +234,11 @@ namespace CK.Core
                     {
                         try
                         {
-                            return DoCreateComposite( monitor, builder, configuration, _compositeBaseType, itemsField );
+                            return DoCreateComposite( monitor, builder, configuration, _defaultCompositeBaseType, itemsField );
                         }
                         catch( Exception ex )
                         {
-                            monitor.Error( $"While instantiating '{_compositeBaseType:C}' from '{configuration.Path}'.", ex );
+                            monitor.Error( $"While instantiating '{_defaultCompositeBaseType:C}' from '{configuration.Path}'.", ex );
                             return null;
                         }
                     }
@@ -249,16 +251,18 @@ namespace CK.Core
             object? TryCreateFromTypeName( IActivityMonitor monitor,
                                            PolymorphicConfigurationTypeBuilder builder,
                                            ImmutableConfigurationSection configuration,
-                                           string typeName )
+                                           string typeName,
+                                           out bool hasError )
             {
                 object? result;
-                bool success = true;
-                using( monitor.OnError( () => success = false ) )
+                bool error = false;
+                using( monitor.OnError( () => error = true ) )
                 {
                     result = DoTryCreateFromTypeName( monitor, builder, typeName, configuration );
                 }
+                hasError = error;
                 // If an error has been raised, forgets the result (even if it is not null).
-                if( !success )
+                if( error )
                 {
                     if( result != null )
                     {
@@ -304,7 +308,7 @@ namespace CK.Core
                 {
                     monitor.Error( ActivityMonitor.Tags.ToBeInvestigated,
                                    $"The '{typeName}' type name resolved to '{result.GetType():N}' but this type is not compatible with '{BaseType:N}'. " +
-                                   $" (Configuration '{(configuration.Value != null
+                                   $"(Configuration '{(configuration.Value != null
                                                         ? configuration.Path
                                                         : $"{configuration.Path}:{_typeFieldName}")}'.)" );
                     return null;
@@ -319,7 +323,10 @@ namespace CK.Core
                                        ImmutableConfigurationSection? itemsField )
             {
                 Array? a = DoCreateItems( monitor, builder, configuration, itemsField, null, false );
-                return a != null ? Activator.CreateInstance( type, monitor, builder, configuration, a ) : null;
+                if( a == null ) return null;
+                var f = builder.GetInstanceFactory( monitor, BaseType, type );
+                if( f == null ) return null;
+                return f.CreateComposite( monitor, builder, configuration, a );
             }
 
             Array? DoCreateItems( IActivityMonitor monitor,

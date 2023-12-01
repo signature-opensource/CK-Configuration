@@ -9,12 +9,4 @@ namespace CK.Object.Predicate
         {
         }
     }
-
-    public sealed class IsDoubleAsyncPredicateConfiguration : IsTypeAsyncPredicateConfiguration<double>
-    {
-        public IsDoubleAsyncPredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
-            : base( monitor, builder, configuration )
-        {
-        }
-    }
 }

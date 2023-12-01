@@ -89,8 +89,8 @@ namespace CK.Object.Predicate.Tests
             fix1["Type"] = "StringContains, P";
             fix1["Content"] = "K";
             var fC2 = fC.TrySetPlaceholder( TestHelper.Monitor, fix1, out var builderError );
-            Throw.DebugAssert( fC2 != null && !builderError );
-            var f2 = fC2.CreatePredicate( TestHelper.Monitor );
+            Throw.DebugAssert( fC2 != null && !builderError && fC2.Synchronous != null );
+            var f2 = fC2.Synchronous.CreatePredicate( TestHelper.Monitor );
             Throw.DebugAssert( f2 != null );
 
             f2( "AxK" ).Should().Be( true, "Fixed" );
@@ -101,8 +101,8 @@ namespace CK.Object.Predicate.Tests
             var fix2 = new MutableConfigurationSection( "Root:Predicates:1:Predicates:2", "<Dynamic>" );
             fix2["Type"] = "true";
             var fC3 = fC2.TrySetPlaceholder( TestHelper.Monitor, fix2, out builderError );
-            Throw.DebugAssert( fC3 != null && !builderError );
-            var f3 = fC3.CreatePredicate( TestHelper.Monitor );
+            Throw.DebugAssert( fC3 != null && !builderError && fC3.Synchronous != null );
+            var f3 = fC3.Synchronous.CreatePredicate( TestHelper.Monitor );
             Throw.DebugAssert( f3 != null );
 
             f3( "xK" ).Should().Be( true, "Fixed." );
@@ -117,7 +117,7 @@ namespace CK.Object.Predicate.Tests
 
             var fC = builder.Create<ObjectAsyncPredicateConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( fC != null );
-            var f = fC.CreatePredicate( TestHelper.Monitor );
+            var f = fC.CreateAsyncPredicate( TestHelper.Monitor );
             Throw.DebugAssert( f != null );
 
             (await f( "AxK" )).Should().Be( false, "There must 'A' or 'B' and at least 2 of 'x', 'y', 'z'." );
@@ -128,7 +128,7 @@ namespace CK.Object.Predicate.Tests
             fix1["Content"] = "K";
             var fC2 = fC.TrySetPlaceholder( TestHelper.Monitor, fix1, out var builderError );
             Throw.DebugAssert( fC2 != null && !builderError );
-            var f2 = fC2.CreatePredicate( TestHelper.Monitor );
+            var f2 = fC2.CreateAsyncPredicate( TestHelper.Monitor );
             Throw.DebugAssert( f2 != null );
 
             (await f2( "AxK" )).Should().Be( true, "Fixed" );
@@ -140,7 +140,7 @@ namespace CK.Object.Predicate.Tests
             fix2["Type"] = "true";
             var fC3 = fC2.TrySetPlaceholder( TestHelper.Monitor, fix2, out builderError );
             Throw.DebugAssert( fC3 != null && !builderError );
-            var f3 = fC3.CreatePredicate( TestHelper.Monitor );
+            var f3 = fC3.CreateAsyncPredicate( TestHelper.Monitor );
             Throw.DebugAssert( f3 != null );
 
             (await f3( "xK" )).Should().Be( true, "Fixed." );

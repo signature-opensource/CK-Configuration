@@ -54,7 +54,7 @@ namespace CK.Object.Predicate
             if( HasError ) return false;
             if( _level != LogLevel.None )
             {
-                _monitor.OpenGroup( _level, _tags, $"Evaluating '{source.Configuration.Configuration.Path}'." );
+                _monitor.OpenGroup( _level, _tags, $"Evaluating '{source.Configuration.ConfigurationPath}'." );
             }
             return true;
         }
@@ -71,7 +71,7 @@ namespace CK.Object.Predicate
         internal protected override bool OnPredicateError( IObjectPredicateHook source, object o, Exception ex )
         {
             base.OnPredicateError( source, o, ex );
-            using( _monitor.OpenError( _tags, $"Predicate '{source.Configuration.Configuration.Path}' error while processing:", ex ) )
+            using( _monitor.OpenError( _tags, $"Predicate '{source.Configuration.ConfigurationPath}' error while processing:", ex ) )
             {
                 _monitor.Trace( _tags, o?.ToString() ?? "<null>" );
             }

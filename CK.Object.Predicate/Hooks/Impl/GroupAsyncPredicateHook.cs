@@ -5,35 +5,33 @@ using System.Threading.Tasks;
 
 namespace CK.Object.Predicate
 {
-    /// <summary>
-    /// Hook implementation for group of asynchronous predicates.
-    /// </summary>
-    public class GroupAsyncPredicateHook : ObjectAsyncPredicateHook, IGroupPredicateHook
+    sealed class GroupAsyncPredicateHook : ObjectAsyncPredicateHook, IGroupPredicateHook
     {
-        readonly ImmutableArray<ObjectAsyncPredicateHook> _predicates;
+        readonly ImmutableArray<IObjectPredicateHook> _predicates;
 
-        /// <summary>
-        /// Initializes a new hook.
-        /// </summary>
-        /// <param name="context">The hook context.</param>
-        /// <param name="configuration">The predicate configuration.</param>
-        /// <param name="predicates">The subordinated predicates.</param>
-        public GroupAsyncPredicateHook( PredicateHookContext context, IGroupPredicateConfiguration configuration, ImmutableArray<ObjectAsyncPredicateHook> predicates )
+        public GroupAsyncPredicateHook( PredicateHookContext context, IGroupPredicateConfiguration configuration, ImmutableArray<IObjectPredicateHook> predicates )
             : base( context, configuration )
         {
             Throw.CheckNotNullArgument( predicates );
             _predicates = predicates;
         }
 
-        /// <inheritdoc />
         public new IGroupPredicateConfiguration Configuration => Unsafe.As<IGroupPredicateConfiguration>( base.Configuration );
 
-        ImmutableArray<IObjectPredicateHook> IGroupPredicateHook.Predicates => ImmutableArray<IObjectPredicateHook>.CastUp( _predicates );
+        public ImmutableArray<IObjectPredicateHook> Predicates => _predicates;
 
-        /// <inheritdoc cref="IGroupPredicateHook.Predicates" />
-        public ImmutableArray<ObjectAsyncPredicateHook> Predicates => _predicates;
+        public bool All => Configuration.All;
 
-        /// <inheritdoc />
+        public bool Any => Configuration.Any;
+
+        public bool Single => Configuration.Single;
+
+        public int AtLeast => Configuration.AtLeast;
+
+        public int AtMost => Configuration.AtMost;
+
+        public int PredicateCount => _predicates.Length;
+
         protected override ValueTask<bool> DoEvaluateAsync( object o )
         {
             var atLeast = Configuration.AtLeast;
@@ -50,7 +48,7 @@ namespace CK.Object.Predicate
             return MatchBetweenAsync( _predicates, o, atLeast, atMost );
         }
 
-        static async ValueTask<bool> AllAsync( ImmutableArray<ObjectAsyncPredicateHook> items, object o )
+        static async ValueTask<bool> AllAsync( ImmutableArray<IObjectPredicateHook> items, object o )
         {
             foreach( var p in items )
             {
@@ -59,7 +57,7 @@ namespace CK.Object.Predicate
             return true;
         }
 
-        static async ValueTask<bool> AnyAsync( ImmutableArray<ObjectAsyncPredicateHook> items, object o )
+        static async ValueTask<bool> AnyAsync( ImmutableArray<IObjectPredicateHook> items, object o )
         {
             foreach( var p in items )
             {
@@ -68,7 +66,7 @@ namespace CK.Object.Predicate
             return false;
         }
 
-        static async ValueTask<bool> AtLeastAsync( ImmutableArray<ObjectAsyncPredicateHook> items, object o, int atLeast )
+        static async ValueTask<bool> AtLeastAsync( ImmutableArray<IObjectPredicateHook> items, object o, int atLeast )
         {
             int c = 0;
             foreach( var p in items )
@@ -81,7 +79,7 @@ namespace CK.Object.Predicate
             return false;
         }
 
-        static async ValueTask<bool> MatchBetweenAsync( ImmutableArray<ObjectAsyncPredicateHook> items, object o, int atLeast, int atMost )
+        static async ValueTask<bool> MatchBetweenAsync( ImmutableArray<IObjectPredicateHook> items, object o, int atLeast, int atMost )
         {
             int c = 0;
             foreach( var p in items )

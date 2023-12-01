@@ -13,7 +13,7 @@ namespace CK.Object.Processor
     {
         readonly ProcessorHookContext _context;
         readonly IObjectProcessorConfiguration _configuration;
-        readonly ObjectAsyncPredicateHook? _condition;
+        readonly ObjectPredicateHook? _condition;
         readonly ObjectAsyncTransformHook? _action;
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace CK.Object.Processor
         /// <param name="configuration">The processor configuration.</param>
         public ObjectAsyncProcessorHook( ProcessorHookContext context,
                                          IObjectProcessorConfiguration configuration,
-                                         ObjectAsyncPredicateHook? condition,
+                                         ObjectPredicateHook? condition,
                                          ObjectAsyncTransformHook? action )
         {
             Throw.CheckNotNullArgument( context );
@@ -40,7 +40,7 @@ namespace CK.Object.Processor
         IObjectPredicateHook? IObjectProcessorHook.Condition => _condition;
 
         /// <inheritdoc />
-        public ObjectAsyncPredicateHook? Condition => _condition;
+        public ObjectPredicateHook? Condition => _condition;
 
         IObjectTransformHook? IObjectProcessorHook.Transform => _action;
 

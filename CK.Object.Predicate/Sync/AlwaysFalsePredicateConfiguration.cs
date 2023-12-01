@@ -17,7 +17,7 @@ namespace CK.Object.Predicate
         public AlwaysFalsePredicateConfiguration( IActivityMonitor monitor,
                                                   PolymorphicConfigurationTypeBuilder builder,
                                                   ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
         }
 

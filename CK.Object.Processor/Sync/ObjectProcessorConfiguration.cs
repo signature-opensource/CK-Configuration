@@ -13,10 +13,10 @@ namespace CK.Object.Processor
     /// This is a concrete type that handles an optional <see cref="Condition"/> and an optional <see cref="Transform"/>.
     /// </para>
     /// </summary>
-    public partial class ObjectProcessorConfiguration : IObjectProcessorConfiguration, ISyncObjectPredicateConfiguration, IObjectTransformConfiguration
+    public partial class ObjectProcessorConfiguration : IObjectProcessorConfiguration, IObjectPredicateConfiguration, IObjectTransformConfiguration
     {
         readonly ImmutableConfigurationSection _configuration;
-        readonly ObjectPredicateConfiguration? _condition;
+        readonly ObjectSyncPredicateConfiguration? _condition;
         readonly ObjectTransformConfiguration? _transform;
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace CK.Object.Processor
             var cCond = configuration.TryGetSection( "Condition" );
             if( cCond != null )
             {
-                _condition = builder.Create<ObjectPredicateConfiguration>( monitor, cCond );
+                _condition = builder.Create<ObjectSyncPredicateConfiguration>( monitor, cCond );
             }
             var cTrans = configuration.TryGetSection( "Transform" );
             if( cTrans != null )
@@ -54,7 +54,7 @@ namespace CK.Object.Processor
         /// <param name="condition">The <see cref="Condition"/>.</param>
         /// <param name="transform">The <see cref="Transform"/>.</param>
         protected ObjectProcessorConfiguration( ObjectProcessorConfiguration source,
-                                                ObjectPredicateConfiguration? condition,
+                                                ObjectSyncPredicateConfiguration? condition,
                                                 ObjectTransformConfiguration? transform )
         {
             Throw.CheckNotNullArgument( source );
@@ -66,9 +66,9 @@ namespace CK.Object.Processor
         /// <inheritdoc />
         public ImmutableConfigurationSection Configuration => _configuration;
 
-        ISyncObjectPredicateConfiguration? IObjectPredicateConfiguration.AsSync => this;
+        ObjectSyncPredicateConfiguration? ObjectPredicateConfiguration.AsSync => this;
 
-        Func<object, bool>? ISyncObjectPredicateConfiguration.CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        Func<object, bool>? ObjectSyncPredicateConfiguration.CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
         {
             return CreateCondition( monitor, services );
         }
@@ -170,7 +170,7 @@ namespace CK.Object.Processor
         /// <item>The processors must be in the "CK.Object.Processor" namespace.</item>
         /// <item>Their name must end with "ProcessorConfiguration".</item>
         /// </list>
-        /// This also calls <see cref="ObjectPredicateConfiguration.AddResolver(PolymorphicConfigurationTypeBuilder, bool, string)"/>
+        /// This also calls <see cref="ObjectSyncPredicateConfiguration.AddResolver(PolymorphicConfigurationTypeBuilder, bool, string)"/>
         /// and <see cref="ObjectTransformConfiguration.AddResolver(PolymorphicConfigurationTypeBuilder, bool, string)"/>.
         /// </summary>
         /// <param name="builder">The builder.</param>
@@ -179,7 +179,7 @@ namespace CK.Object.Processor
         public static void AddResolver( PolymorphicConfigurationTypeBuilder builder, bool allowOtherNamespace = false, string compositeItemsFieldName = "Processors" )
         {
             // Add the resolvers for Predicates and Transforms.
-            ObjectPredicateConfiguration.AddResolver( builder, allowOtherNamespace );
+            ObjectSyncPredicateConfiguration.AddResolver( builder, allowOtherNamespace );
             ObjectTransformConfiguration.AddResolver( builder, allowOtherNamespace );
             builder.AddResolver( new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
                                              baseType: typeof( ObjectProcessorConfiguration ),

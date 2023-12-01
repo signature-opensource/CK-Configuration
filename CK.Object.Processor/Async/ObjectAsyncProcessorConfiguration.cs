@@ -14,10 +14,10 @@ namespace CK.Object.Processor
     /// This is a concrete type that handles an optional <see cref="Condition"/> and an optional <see cref="Transform"/>.
     /// </para>
     /// </summary>
-    public partial class ObjectAsyncProcessorConfiguration : IObjectProcessorConfiguration, IObjectPredicateConfiguration, IObjectTransformConfiguration
+    public partial class ObjectAsyncProcessorConfiguration : IObjectProcessorConfiguration, ObjectPredicateConfiguration, IObjectTransformConfiguration
     {
         readonly ImmutableConfigurationSection _configuration;
-        readonly ObjectAsyncPredicateConfiguration? _condition;
+        readonly ObjectPredicateConfiguration? _condition;
         readonly ObjectAsyncTransformConfiguration? _transform;
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace CK.Object.Processor
             var cCond = configuration.TryGetSection( "Condition" );
             if( cCond != null )
             {
-                _condition = builder.Create<ObjectAsyncPredicateConfiguration>( monitor, cCond );
+                _condition = builder.Create<ObjectPredicateConfiguration>( monitor, cCond );
             }
             var cTrans = configuration.TryGetSection( "Transform" );
             if( cTrans != null )
@@ -55,7 +55,7 @@ namespace CK.Object.Processor
         /// <param name="condition">The <see cref="Condition"/>.</param>
         /// <param name="transform">The <see cref="Transform"/>.</param>
         protected ObjectAsyncProcessorConfiguration( ObjectAsyncProcessorConfiguration source,
-                                                     ObjectAsyncPredicateConfiguration? condition,
+                                                     ObjectPredicateConfiguration? condition,
                                                      ObjectAsyncTransformConfiguration? transform )
         {
             Throw.CheckNotNullArgument( source );
@@ -165,7 +165,7 @@ namespace CK.Object.Processor
         /// <item>The processors must be in the "CK.Object.Processor" namespace.</item>
         /// <item>Their name must end with "AsyncProcessorConfiguration".</item>
         /// </list>
-        /// This also calls <see cref="ObjectAsyncPredicateConfiguration.AddResolver(PolymorphicConfigurationTypeBuilder, bool, string)"/>
+        /// This also calls <see cref="ObjectPredicateConfiguration.AddResolver(PolymorphicConfigurationTypeBuilder, bool, string)"/>
         /// and <see cref="ObjectAsyncTransformConfiguration.AddResolver(PolymorphicConfigurationTypeBuilder, bool, string)"/>.
         /// </summary>
         /// <param name="builder">The builder.</param>
@@ -174,7 +174,7 @@ namespace CK.Object.Processor
         public static void AddResolver( PolymorphicConfigurationTypeBuilder builder, bool allowOtherNamespace = false, string compositeItemsFieldName = "Processors" )
         {
             // Add the resolvers for Predicates and Transforms.
-            ObjectAsyncPredicateConfiguration.AddResolver( builder, allowOtherNamespace );
+            ObjectPredicateConfiguration.AddResolver( builder, allowOtherNamespace );
             ObjectAsyncTransformConfiguration.AddResolver( builder, allowOtherNamespace );
             builder.AddResolver( new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
                                              baseType: typeof( ObjectAsyncProcessorConfiguration ),

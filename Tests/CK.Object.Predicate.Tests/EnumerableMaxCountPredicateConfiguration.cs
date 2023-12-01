@@ -12,7 +12,7 @@ namespace CK.Object.Predicate
         readonly int _maxCount;
 
         public EnumerableMaxCountPredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
-            : base( configuration )
+            : base( configuration.Path )
         {
             var c = configuration.TryGetIntValue( monitor, "MaxCount" );
             if( !c.HasValue )
@@ -44,4 +44,5 @@ namespace CK.Object.Predicate
             return false;
         }
     }
+
 }

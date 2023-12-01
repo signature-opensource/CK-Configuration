@@ -5,19 +5,10 @@ using System.Runtime.CompilerServices;
 
 namespace CK.Object.Predicate
 {
-    /// <summary>
-    /// Hook implementation for group of synchronous predicates.
-    /// </summary>
-    public class GroupPredicateHook : ObjectPredicateHook, IGroupPredicateHook
+    sealed class GroupPredicateHook : ObjectPredicateHook, IGroupPredicateHook
     {
         readonly ImmutableArray<ObjectPredicateHook> _predicates;
 
-        /// <summary>
-        /// Initializes a new hook.
-        /// </summary>
-        /// <param name="configuration">The predicate configuration.</param>
-        /// <param name="context">The hook context.</param>
-        /// <param name="predicates">The subordinated predicates.</param>
         public GroupPredicateHook( PredicateHookContext context,
                                    IGroupPredicateConfiguration configuration,
                                    ImmutableArray<ObjectPredicateHook> predicates )
@@ -27,15 +18,24 @@ namespace CK.Object.Predicate
             _predicates = predicates;
         }
 
-        /// <inheritdoc />
         public new IGroupPredicateConfiguration Configuration => Unsafe.As<IGroupPredicateConfiguration>( base.Configuration );
 
         ImmutableArray<IObjectPredicateHook> IGroupPredicateHook.Predicates => ImmutableArray<IObjectPredicateHook>.CastUp( _predicates );
 
-        /// <inheritdoc cref="IGroupPredicateHook.Predicates" />
         public ImmutableArray<ObjectPredicateHook> Predicates => _predicates;
 
-        /// <inheritdoc />
+        public bool All => Configuration.All;
+
+        public bool Any => Configuration.Any;
+
+        public bool Single => Configuration.Single;
+
+        public int AtLeast => Configuration.AtLeast;
+
+        public int AtMost => Configuration.AtMost;
+
+        public int PredicateCount => _predicates.Length;
+
         protected override bool DoEvaluate( object o )
         {
             var atLeast = Configuration.AtLeast;

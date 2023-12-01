@@ -7,8 +7,10 @@ namespace CK.Object.Predicate
     {
         readonly string _content;
 
-        public StringContainsPredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
-            : base( configuration )
+        public StringContainsPredicateConfiguration( IActivityMonitor monitor,
+                                                     PolymorphicConfigurationTypeBuilder builder,
+                                                     ImmutableConfigurationSection configuration )
+            : base( configuration.Path )
         {
             var c = configuration["Content"];
             if( c == null )
@@ -23,4 +25,5 @@ namespace CK.Object.Predicate
             return o => o is string s && s.Contains( _content );
         }
     }
+
 }

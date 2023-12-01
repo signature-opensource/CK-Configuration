@@ -101,10 +101,10 @@ A family is defined by a root configuration type that is almost always abstract.
 API of the family. A typical member of this API is a factory of actual "strategy" that is fully
 configured and operational. There is absolutely no constraint on this final type and there can be more than one
 kind of factories: [CK.Object.Predicate](../CK.Object.Predicate.README.md) for instance defines 2 configuration
-families, both of them producing 2 types of objects:
-  - The SyncPredicate family produces `Func<object,bool>` (and `IObjectPredicateHook` that can be inspected).
-  - The AsyncPredicate family produces `Func<object,ValueTask<bool>>` (and also `IObjectPredicateHook`).
-
+families, producing 2 types of objects:
+  - ObjectAsyncPredicate produce `Func<object,ValueTask<bool>>`.
+  - ObjectPredicate (that are ObjectAsyncPredicate) can in addition produce more efficient `Func<object,bool>`.
+  
 The complicated stuff is done by the `PolymorphicConfigurationTypeBuilder` and its resolvers.
 A configuration can contain multiple families simply by registering the family resolvers that
 must be handled: families are composable, hence configurations are composable.

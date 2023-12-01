@@ -91,7 +91,7 @@ namespace CK.Object.Transform
                                              typeNamespace: "CK.Object.Transform",
                                              allowOtherNamespace: allowOtherNamespace,
                                              familyTypeNameSuffix: "AsyncTransform",
-                                             compositeBaseType: typeof( SequenceAsyncTransformConfiguration ),
+                                             defaultCompositeBaseType: typeof( SequenceAsyncTransformConfiguration ),
                                              compositeItemsFieldName: compositeItemsFieldName ) );
         }
 

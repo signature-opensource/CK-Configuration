@@ -9,27 +9,22 @@ using System.Threading.Tasks;
 namespace CK.Object.Predicate
 {
     /// <summary>
-    /// Composite for synchronous predicates. Defaults to "And" connector but can be "Or" or specify
-    /// a "AtLeast" count (for n among at least 3 conditions).
+    /// This is not exposed: the base predicate and interface for the group are enough.
+    /// The required constructor must be let public: it is called by reflection for the default composite of the family
+    /// and for the regular "Group" type name.
     /// </summary>
-    public sealed class GroupPredicateConfiguration : ObjectPredicateConfiguration, IGroupPredicateConfiguration
+    sealed class GroupPredicateConfiguration : ObjectPredicateConfiguration, IGroupPredicateConfiguration
     {
         readonly ImmutableArray<ObjectPredicateConfiguration> _predicates;
         readonly int _atLeast;
         readonly int _atMost;
 
-        /// <summary>
-        /// Required constructor.
-        /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors and warnings.</param>
-        /// <param name="builder">The builder. (Unused but required by the builder).</param>
-        /// <param name="configuration">The configuration for this object.</param>
-        /// <param name="predicates">The subordinated items.</param>
+        // Called by reflection when resolving the default composite type of the Sync family and for the "Group" type name.
         public GroupPredicateConfiguration( IActivityMonitor monitor,
                                             PolymorphicConfigurationTypeBuilder builder,
                                             ImmutableConfigurationSection configuration,
                                             IReadOnlyList<ObjectPredicateConfiguration> predicates )
-            : base( configuration )
+            : base( configuration.Path )
         {
             _predicates = predicates.ToImmutableArray();
             (_atLeast,_atMost) = ReadAtLeastAtMost( monitor, configuration, predicates.Count );
@@ -37,9 +32,9 @@ namespace CK.Object.Predicate
 
         internal GroupPredicateConfiguration( int knownAtLeast,
                                               int knownAtMost,
-                                              ImmutableConfigurationSection configuration,
+                                              string configurationPath,
                                               ImmutableArray<ObjectPredicateConfiguration> predicates )
-            : base( configuration )
+            : base( configurationPath )
         {
             Throw.DebugAssert( knownAtLeast >= 0 && (predicates.Length < 2 || knownAtLeast < predicates.Length) );
             Throw.DebugAssert( knownAtMost == 0 || knownAtMost >= knownAtLeast );
@@ -48,6 +43,9 @@ namespace CK.Object.Predicate
             _atMost = knownAtMost;
         }
 
+        /// <summary>
+        /// This only emits warnings, not errors.
+        /// </summary>
         internal static (int, int) ReadAtLeastAtMost( IActivityMonitor monitor, ImmutableConfigurationSection configuration, int predicatesCount )
         {
             int atLeast = 0;
@@ -120,7 +118,9 @@ namespace CK.Object.Predicate
         /// <inheritdoc />
         public int AtMost => _atMost;
 
-        IReadOnlyList<IObjectPredicateConfiguration> IGroupPredicateConfiguration.Predicates => _predicates;
+        int IGroupPredicateDescription.PredicateCount => _predicates.Length;
+
+        IReadOnlyList<ObjectAsyncPredicateConfiguration> IGroupPredicateConfiguration.Predicates => _predicates;
 
         /// <inheritdoc cref="IGroupPredicateConfiguration.Predicates" />
         public IReadOnlyList<ObjectPredicateConfiguration> Predicates => _predicates;
@@ -133,6 +133,7 @@ namespace CK.Object.Predicate
                                                                    .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
             if( items.Length == 1 ) return items[0];
+            if( items.Length == 2 ) return new Pair( hook, this, items[0], items[1], Single ? 2 : Any ? 1 : 0 );
             return new GroupPredicateHook( hook, this, items );
         }
 
@@ -140,8 +141,8 @@ namespace CK.Object.Predicate
         public override Func<object, bool>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
         {
             ImmutableArray<Func<object, bool>> items = _predicates.Select( c => c.CreatePredicate( monitor, services ) )
-                                                               .Where( f => f != null )
-                                                               .ToImmutableArray()!;
+                                                                  .Where( f => f != null )
+                                                                  .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
             if( items.Length == 1 ) return items[0];
             // Easy case.
@@ -186,44 +187,10 @@ namespace CK.Object.Predicate
             }
         }
 
-        /// <summary>
-        /// Composite mutator.
-        /// <para>
-        /// Errors are emitted in the monitor. On error, this instance is returned. 
-        /// </para>
-        /// </summary>
-        /// <param name="monitor">The monitor to use to signal errors.</param>
-        /// <param name="configuration">Configuration of the replaced placeholder.</param>
-        /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
-        public override ObjectPredicateConfiguration SetPlaceholder( IActivityMonitor monitor,
+        public override ObjectAsyncPredicateConfiguration SetPlaceholder( IActivityMonitor monitor,
                                                                      IConfigurationSection configuration )
         {
-            Throw.CheckNotNullArgument( monitor );
-            Throw.CheckNotNullArgument( configuration );
-
-            // Bails out early if we are not concerned.
-            if( !Configuration.IsChildPath( configuration.Path ) )
-            {
-                return this;
-            }
-            ImmutableArray<ObjectPredicateConfiguration>.Builder? newItems = null;
-            for( int i = 0; i < _predicates.Length; i++ )
-            {
-                var item = _predicates[i];
-                var r = item.SetPlaceholder( monitor, configuration );
-                if( r != item )
-                {
-                    if( newItems == null )
-                    {
-                        newItems = ImmutableArray.CreateBuilder<ObjectPredicateConfiguration>( _predicates.Length );
-                        newItems.AddRange( _predicates, i );
-                    }
-                }
-                newItems?.Add( r );
-            }
-            return newItems != null
-                    ? new GroupPredicateConfiguration( _atLeast, _atMost, Configuration, newItems.ToImmutable() )
-                    : this;
+            return GroupAsyncPredicateConfiguration.DoSetPlaceholder( monitor, configuration, this, _predicates, _atLeast, _atMost, ConfigurationPath );
         }
 
     }

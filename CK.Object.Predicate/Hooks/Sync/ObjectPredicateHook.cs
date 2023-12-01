@@ -1,12 +1,13 @@
 using CK.Core;
 using System;
+using System.Threading.Tasks;
 
 namespace CK.Object.Predicate
 {
     /// <summary>
     /// Hook implementation for synchronous predicate.
     /// </summary>
-    public partial class ObjectPredicateHook : IObjectPredicateHook
+    public class ObjectPredicateHook : IObjectPredicateHook
     {
         readonly PredicateHookContext _context;
         readonly IObjectPredicateConfiguration _configuration;
@@ -29,7 +30,7 @@ namespace CK.Object.Predicate
         }
 
         /// <summary>
-        /// Constructor used by <see cref="GroupPredicateHook"/>. Must be used by specialized hook when the predicate contains
+        /// Constructor that must be used by specialized hook when the predicate contains
         /// other <see cref="ObjectPredicateConfiguration"/> to expose the internal predicate structure (and <see cref="DoEvaluate(object)"/>
         /// must be overridden).
         /// </summary>
@@ -49,6 +50,11 @@ namespace CK.Object.Predicate
 
         /// <inheritdoc />
         public PredicateHookContext Context => _context;
+
+        /// <inheritdoc />
+        public ObjectPredicateHook? Synchronous => this;
+
+        ValueTask<bool> IObjectPredicateHook.EvaluateAsync( object o ) => ValueTask.FromResult( Evaluate( o ) );
 
         /// <summary>
         /// Evaluates the predicate. 

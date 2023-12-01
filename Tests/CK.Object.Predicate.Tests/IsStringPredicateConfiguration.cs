@@ -10,11 +10,4 @@ namespace CK.Object.Predicate
         }
     }
 
-    public sealed class IsStringAsyncPredicateConfiguration : IsTypeAsyncPredicateConfiguration<string>
-    {
-        public IsStringAsyncPredicateConfiguration( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )
-            : base( monitor, builder, configuration )
-        {
-        }
-    }
 }
