@@ -52,8 +52,8 @@ namespace CK.Object.Transform
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that will potentially replaces this placeholder.</param>
         /// <returns>A new transform configuration or this if the section is not a child or if an error occurred.</returns>
-        public override ObjectTransformConfiguration SetPlaceholder( IActivityMonitor monitor,
-                                                                     IConfigurationSection configuration )
+        public override ObjectAsyncTransformConfiguration SetPlaceholder( IActivityMonitor monitor,
+                                                                          IConfigurationSection configuration )
         {
             if( configuration.GetParentPath().Equals( ConfigurationPath, StringComparison.OrdinalIgnoreCase ) )
             {
@@ -62,7 +62,9 @@ namespace CK.Object.Transform
                 {
                     config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
                 }
-                var newC = builder.Create<ObjectTransformConfiguration>( monitor, config );
+                var newC = builder.HasBaseType<ObjectAsyncTransformConfiguration>()
+                                ? builder.Create<ObjectAsyncTransformConfiguration>( monitor, config )
+                                : builder.Create<ObjectTransformConfiguration>( monitor, config );
                 if( newC != null ) return newC;
             }
             return this;

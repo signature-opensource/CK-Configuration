@@ -68,13 +68,13 @@ namespace CK.Object.Transform
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The hook context.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) transform functions.</param>
         /// <returns>A wrapper bound to the hook context or null for an identity function.</returns>
-        public virtual ObjectTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext hook, IServiceProvider services )
+        public virtual ObjectTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext context, IServiceProvider services )
         {
             var p = CreateTransform( monitor, services );
-            return p != null ? new ObjectTransformHook( hook, this, p ) : null;
+            return p != null ? new ObjectTransformHook( context, this, p ) : null;
         }
 
         /// <summary>

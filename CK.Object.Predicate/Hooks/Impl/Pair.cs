@@ -8,12 +8,12 @@ namespace CK.Object.Predicate
         readonly ObjectPredicateHook _right;
         readonly int _op;
 
-        public Pair( PredicateHookContext hook,
+        public Pair( PredicateHookContext context,
                      IObjectPredicateConfiguration configuration,
                      ObjectPredicateHook left,
                      ObjectPredicateHook right,
                      int op )
-            : base( hook, configuration )
+            : base( context, configuration )
         {
             Throw.CheckNotNullArgument( left );
             Throw.CheckNotNullArgument( right );

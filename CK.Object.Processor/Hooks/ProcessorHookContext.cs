@@ -9,7 +9,7 @@ using System.Runtime.ExceptionServices;
 namespace CK.Object.Processor
 {
     /// <summary>
-    /// Hook that can track each object process accross a <see cref="ObjectProcessorHook"/> or <see cref="ObjectAsyncProcessorHook"/>.
+    /// Hook that can track each object process accross a <see cref="ObjectProcessorHook"/> or <see cref="ObjectProcessorHook"/>.
     /// <para>
     /// There is no tracking of processors: tracking conditions and transforms is verbose enough.
     /// </para>
@@ -33,12 +33,12 @@ namespace CK.Object.Processor
         }
 
         /// <summary>
-        /// Gets the hook context that will be used when evaluating <see cref="IObjectProcessorConfiguration.Condition"/>.
+        /// Gets the hook context that will be used when evaluating <see cref="ObjectProcessorConfiguration.ConfiguredCondition"/>.
         /// </summary>
         public PredicateHookContext ConditionHookContext => _conditionHookContext;
 
         /// <summary>
-        /// Gets the hook context that will be used when evaluating <see cref="IObjectProcessorConfiguration.Transform"/>.
+        /// Gets the hook context that will be used when evaluating <see cref="ObjectProcessorConfiguration.ConfiguredTransform"/>.
         /// </summary>
         public TransformHookContext TransformHookContext => _transformHookContext;
 

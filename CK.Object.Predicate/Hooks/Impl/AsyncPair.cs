@@ -9,12 +9,12 @@ namespace CK.Object.Predicate
         readonly IObjectPredicateHook _right;
         readonly int _op;
 
-        public AsyncPair( PredicateHookContext hook,
+        public AsyncPair( PredicateHookContext context,
                           IObjectPredicateConfiguration configuration,
                           IObjectPredicateHook left,
                           IObjectPredicateHook right,
                           int op )
-            : base( hook, configuration )
+            : base( context, configuration )
         {
             Throw.CheckNotNullArgument( left );
             Throw.CheckNotNullArgument( right );
@@ -47,4 +47,5 @@ namespace CK.Object.Predicate
 #pragma warning restore CS8509
         }
     }
+
 }

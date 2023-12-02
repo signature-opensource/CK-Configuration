@@ -25,7 +25,7 @@ namespace CK.Object.Transform
             _transforms = transforms;
         }
 
-        // Called by reflection when resolving the default composite type of the Sync family and for the "Sequence" type name..
+        // Called by reflection when resolving the default composite type of the Sync family and for the "Sequence" type name.
         public static ObjectAsyncTransformConfiguration Create( IActivityMonitor monitor,
                                                                 PolymorphicConfigurationTypeBuilder builder,
                                                                 ImmutableConfigurationSection configuration,
@@ -87,15 +87,15 @@ namespace CK.Object.Transform
 
 
         /// <inheritdoc />
-        public override IObjectTransformHook? CreateAsyncHook( IActivityMonitor monitor, TransformHookContext hook, IServiceProvider services )
+        public override IObjectTransformHook? CreateAsyncHook( IActivityMonitor monitor, TransformHookContext context, IServiceProvider services )
         {
-            ImmutableArray<IObjectTransformHook> items = _transforms.Select( c => c.CreateAsyncHook( monitor, hook, services ) )
+            ImmutableArray<IObjectTransformHook> items = _transforms.Select( c => c.CreateAsyncHook( monitor, context, services ) )
                                                                     .Where( s => s != null )
                                                                     .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
             if( items.Length == 1 ) return items[0];
-            if( items.Length == 2 ) return new AsyncPair( hook, this, items[0], items[1] );
-            return new SequenceAsyncTransformHook( hook, this, items );
+            if( items.Length == 2 ) return new TwoHookAsync( context, this, items[0], items[1] );
+            return new SequenceAsyncTransformHook( context, this, items );
         }
 
         /// <inheritdoc />

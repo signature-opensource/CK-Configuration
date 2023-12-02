@@ -1,11 +1,11 @@
-﻿namespace CK.Object.Transform
+namespace CK.Object.Transform
 {
-    sealed class Pair : ObjectTransformHook
+    sealed class TwoHookSync : ObjectTransformHook
     {
         readonly ObjectTransformHook _first;
         readonly ObjectTransformHook _second;
 
-        public Pair( TransformHookContext context,
+        public TwoHookSync( TransformHookContext context,
                      IObjectTransformConfiguration configuration,
                      ObjectTransformHook first,
                      ObjectTransformHook second )

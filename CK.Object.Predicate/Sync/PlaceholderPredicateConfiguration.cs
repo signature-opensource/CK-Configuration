@@ -52,8 +52,8 @@ namespace CK.Object.Predicate
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that will potentially replaces this placeholder.</param>
         /// <returns>A new predicate configuration or this if the section is not a child or if an error occurred.</returns>
-        public override ObjectPredicateConfiguration SetPlaceholder( IActivityMonitor monitor,
-                                                                         IConfigurationSection configuration )
+        public override ObjectAsyncPredicateConfiguration SetPlaceholder( IActivityMonitor monitor,
+                                                                          IConfigurationSection configuration )
         {
             if( configuration.GetParentPath().Equals( ConfigurationPath, StringComparison.OrdinalIgnoreCase ) )
             {
@@ -62,7 +62,9 @@ namespace CK.Object.Predicate
                 {
                     config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
                 }
-                var newC = builder.Create<ObjectPredicateConfiguration>( monitor, config );
+                var newC = builder.HasBaseType<ObjectAsyncPredicateConfiguration>()
+                            ? builder.Create<ObjectAsyncPredicateConfiguration>( monitor, config )
+                            : builder.Create<ObjectPredicateConfiguration>( monitor, config );
                 if( newC != null ) return newC;
             }
             return this;

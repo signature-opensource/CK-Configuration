@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 
 namespace CK.Object.Processor
 {
@@ -7,17 +8,20 @@ namespace CK.Object.Processor
     {
         public ToUpperCaseProcessorConfiguration( IActivityMonitor monitor,
                                                   PolymorphicConfigurationTypeBuilder builder,
-                                                  ImmutableConfigurationSection configuration )
-            : base( monitor, builder, configuration )
+                                                  ImmutableConfigurationSection configuration,
+                                                  IReadOnlyList<ObjectProcessorConfiguration> processors )
+            : base( monitor, builder, configuration, processors )
         {
+            SetIntrinsicCondition( Condition );
+            SetIntrinsicTransform( Transform );
         }
 
-        protected override Func<object, bool>? CreateIntrinsicCondition( IActivityMonitor monitor, IServiceProvider services )
+        Func<object, bool>? Condition( IActivityMonitor monitor, IServiceProvider services )
         {
             return static o => o is string;
         }
 
-        protected override Func<object, object>? CreateIntrinsicTransform( IActivityMonitor monitor, IServiceProvider services )
+        Func<object, object>? Transform( IActivityMonitor monitor, IServiceProvider services )
         {
             return static o => ((string)o).ToUpperInvariant();
         }

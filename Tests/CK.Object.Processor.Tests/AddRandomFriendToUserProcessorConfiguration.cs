@@ -1,7 +1,8 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.Object.Processor.Tests;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 
 namespace CK.Object.Processor
 {
@@ -11,18 +12,21 @@ namespace CK.Object.Processor
 
         public AddRandomFriendToUserProcessorConfiguration( IActivityMonitor monitor,
                                                             PolymorphicConfigurationTypeBuilder builder,
-                                                            ImmutableConfigurationSection configuration )
-            : base( monitor, builder, configuration )
+                                                            ImmutableConfigurationSection configuration,
+                                                            IReadOnlyList<ObjectProcessorConfiguration> processors )
+            : base( monitor, builder, configuration, processors )
         {
             _minAge = configuration.TryGetIntValue( monitor, "MinAge", 1, 99 ) ?? 0;
+            SetIntrinsicCondition( Condition );
+            SetIntrinsicTransform( Transform );
         }
 
-        protected override Func<object, bool>? CreateIntrinsicCondition( IActivityMonitor monitor, IServiceProvider services )
+        Func<object, bool>? Condition( IActivityMonitor monitor, IServiceProvider services )
         {
             return o => o is UserRecord u && u.Age >= _minAge;
         }
 
-        protected override Func<object, object>? CreateIntrinsicTransform( IActivityMonitor monitor, IServiceProvider services )
+        Func<object, object>? Transform( IActivityMonitor monitor, IServiceProvider services )
         {
             var userServices = services.GetRequiredService<UserService>();
             return o =>

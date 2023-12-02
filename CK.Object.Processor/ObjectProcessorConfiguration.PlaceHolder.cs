@@ -3,10 +3,12 @@ using CK.Object.Predicate;
 using CK.Object.Transform;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Immutable;
+using System.Linq;
 
 namespace CK.Object.Processor
 {
-    public partial class ObjectAsyncProcessorConfiguration
+    public partial class ObjectProcessorConfiguration
     {
         /// <summary>
         /// Tries to replace a <see cref="PlaceholderProcessorConfiguration"/>.
@@ -17,8 +19,8 @@ namespace CK.Object.Processor
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that should replace a placeholder.</param>
         /// <returns>A new configuration or null if an error occurred or the placeholder was not found.</returns>
-        public ObjectAsyncProcessorConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
-                                                                     IConfigurationSection configuration )
+        public ObjectProcessorConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
+                                                                IConfigurationSection configuration )
         {
             return TrySetPlaceholder( monitor, configuration, out var _ );
         }
@@ -31,12 +33,12 @@ namespace CK.Object.Processor
         /// <param name="configuration">The configuration that should replace a placeholder.</param>
         /// <param name="builderError">True if an error occurred while building the configuration, false if the placeholder was not found.</param>
         /// <returns>A new configuration or null if a <paramref name="builderError"/> occurred or the placeholder was not found.</returns>
-        public ObjectAsyncProcessorConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
+        public ObjectProcessorConfiguration? TrySetPlaceholder( IActivityMonitor monitor,
                                                                      IConfigurationSection configuration,
                                                                      out bool builderError )
         {
             builderError = false;
-            ObjectAsyncProcessorConfiguration? result = null;
+            ObjectProcessorConfiguration? result = null;
             var buildError = false;
             using( monitor.OnError( () => buildError = true ) )
             {
@@ -52,7 +54,7 @@ namespace CK.Object.Processor
         }
 
         /// <summary>
-        /// Mutator default implementation handles "Condition" and "Transform" mutations.
+        /// Mutator default implementation handles "Condition", "Transform" and "Processors" mutations.
         /// <para>
         /// Errors are emitted in the monitor. On error, this instance is returned. 
         /// </para>
@@ -60,7 +62,7 @@ namespace CK.Object.Processor
         /// <param name="monitor">The monitor to use to signal errors.</param>
         /// <param name="configuration">Configuration of the replaced placeholder.</param>
         /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
-        public ObjectAsyncProcessorConfiguration SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
+        public virtual ObjectProcessorConfiguration SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
         {
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckNotNullArgument( configuration );
@@ -70,36 +72,36 @@ namespace CK.Object.Processor
                 return this;
             }
             // Handles placeholder in Condition.
-            var condition = Condition;
+            var condition = ConfiguredCondition;
             if( condition != null )
             {
                 condition = condition.SetPlaceholder( monitor, configuration );
             }
             // Handles placeholder in Transform.
-            var transform = Transform;
+            var transform = ConfiguredTransform;
             if( transform != null )
             {
                 transform = transform.SetPlaceholder( monitor, configuration );
             }
-            return DoSetPlaceholder( monitor, configuration, condition, transform );
-        }
-
-        /// <summary>
-        /// Actual placeholder replacement implementation: "Condition" and "Transform" are already
-        /// handled.
-        /// </summary>
-        /// <param name="monitor">The monitor.</param>
-        /// <param name="configuration">The placeholder configuration.</param>
-        /// <param name="condition">A new or the current <see cref="Condition"/>.</param>
-        /// <param name="transform">A new or the current <see cref="Transform"/>.</param>
-        /// <returns>A new configuration or this if nothing has changed or an error occurred.</returns>
-        protected virtual ObjectAsyncProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
-                                                                              IConfigurationSection configuration,
-                                                                              ObjectAsyncPredicateConfiguration? condition,
-                                                                              ObjectAsyncTransformConfiguration? transform )
-        {
-            return condition != Condition || transform != Transform
-                    ? new ObjectAsyncProcessorConfiguration( this, condition, transform )
+            // Handles placeholder inside Processors.
+            ImmutableArray<ObjectProcessorConfiguration>.Builder? newItems = null;
+            for( int i = 0; i < _processors.Length; i++ )
+            {
+                var item = _processors[i];
+                var r = item.SetPlaceholder( monitor, configuration );
+                if( r != item )
+                {
+                    if( newItems == null )
+                    {
+                        newItems = ImmutableArray.CreateBuilder<ObjectProcessorConfiguration>( _processors.Length );
+                        newItems.AddRange( _processors, i );
+                    }
+                }
+                newItems?.Add( r );
+            } 
+            var processors = newItems?.ToImmutableArray() ?? _processors;
+            return condition != ConfiguredCondition || transform != ConfiguredTransform || processors != _processors
+                    ? Clone( condition, transform, processors )
                     : this;
         }
     }

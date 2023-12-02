@@ -149,8 +149,8 @@ Or even simpler, the type name can be "All", "Any" or "Single":
 
 When there is no subordinated predicates, what should a 'All' or 'Any' group answer? 
 Linq `All`/`Any` extension methods answer are:
-- An empty 'All' evaluates to false.
-- An empty 'Any' evaluates to true.
+- An empty 'All' evaluates to true.
+- An empty 'Any' evaluates to false.
 
 This is a convention (that actually is the result of the code). One could have implemented this but instead
 we rely on the fact that our `IGroupPredicateConfiguration` is not the predicate itself but a factory

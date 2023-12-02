@@ -121,15 +121,15 @@ namespace CK.Object.Predicate
         public IReadOnlyList<ObjectPredicateConfiguration> Predicates => _predicates;
 
         /// <inheritdoc />
-        public override ObjectPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext hook, IServiceProvider services )
+        public override ObjectPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
         {
-            ImmutableArray<ObjectPredicateHook> items = _predicates.Select( c => c.CreateHook( monitor, hook, services ) )
+            ImmutableArray<ObjectPredicateHook> items = _predicates.Select( c => c.CreateHook( monitor, context, services ) )
                                                                    .Where( s => s != null )
                                                                    .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
             if( items.Length == 1 ) return items[0];
-            if( items.Length == 2 ) return new Pair( hook, this, items[0], items[1], Single ? 2 : Any ? 1 : 0 );
-            return new GroupPredicateHook( hook, this, items );
+            if( items.Length == 2 ) return new Pair( context, this, items[0], items[1], Single ? 2 : Any ? 1 : 0 );
+            return new GroupPredicateHook( context, this, items );
         }
 
         /// <inheritdoc />
@@ -183,11 +183,10 @@ namespace CK.Object.Predicate
         }
 
         public override ObjectAsyncPredicateConfiguration SetPlaceholder( IActivityMonitor monitor,
-                                                                     IConfigurationSection configuration )
+                                                                          IConfigurationSection configuration )
         {
             return GroupAsyncPredicateConfiguration.DoSetPlaceholder( monitor, configuration, this, _predicates, _atLeast, _atMost, ConfigurationPath );
         }
-
     }
 
 }

@@ -60,13 +60,13 @@ namespace CK.Object.Predicate
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The hook context.</param>
+        /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
-        public virtual IObjectPredicateHook? CreateAsyncHook( IActivityMonitor monitor, PredicateHookContext hook, IServiceProvider services )
+        public virtual IObjectPredicateHook? CreateAsyncHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
         {
             var p = CreateAsyncPredicate( monitor, services );
-            return p != null ? new ObjectAsyncPredicateHook( hook, this, p ) : null;
+            return p != null ? new ObjectAsyncPredicateHook( context, this, p ) : null;
         }
 
         /// <summary>

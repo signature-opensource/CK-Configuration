@@ -38,5 +38,44 @@ namespace CK.Object.Predicate
             //
             return new GroupAsyncPredicateConfiguration( knownAtLeast, knownAtMost, configurationPath, predicates.ToImmutableArray() );
         }
+
+        /// <summary>
+        /// Optimally combines 2 optional predicate configuration into a "And" group that will execute as synchronously as possible.
+        /// <para>
+        /// The order is preserved: <paramref name="left"/> will always be evaluated before <paramref name="right"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="configurationPath">A required configuration path for the combination.</param>
+        /// <param name="left">Optional left predicate.</param>
+        /// <param name="right">Optional right predicate.</param>
+        /// <returns>A "And" group.</returns>
+        public static ObjectAsyncPredicateConfiguration? Combine( string configurationPath, ObjectAsyncPredicateConfiguration? left, ObjectAsyncPredicateConfiguration? right )
+        {
+            if( left != null )
+            {
+                if( right != null )
+                {
+                    ObjectPredicateConfiguration? sRight;
+                    var sLeft = left.Synchronous;
+                    if( sLeft != null )
+                    {
+                        sRight = right.Synchronous;
+                        if( sRight != null )
+                        {
+                            return new AndSyncPredicate( configurationPath, sLeft, sRight );
+                        }
+                        return new AndHybridPredicate( configurationPath, sLeft, right, false );
+                    }
+                    sRight = right.Synchronous;
+                    if( sRight != null )
+                    {
+                        return new AndHybridPredicate( configurationPath, sRight, left, true );
+                    }
+                    return new AndAsyncPredicate( configurationPath, left, right );
+                }
+                return left;
+            }
+            return right;
+        }
     }
 }

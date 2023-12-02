@@ -3,13 +3,14 @@ using CK.Object.Predicate;
 using CK.Object.Transform;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace CK.Object.Processor
 {
     /// <summary>
-    /// Processor placeholder. A placholder is not allowed to have a <see cref="ObjectProcessorConfiguration.Condition"/>
-    /// or a <see cref="ObjectProcessorConfiguration.Transform"/>.
+    /// Processor placeholder. A placholder is not allowed to have a <see cref="ObjectProcessorConfiguration.ConfiguredCondition"/>
+    /// a <see cref="ObjectProcessorConfiguration.ConfiguredTransform"/> or sunbordinated <see cref="ObjectProcessorConfiguration.Processors"/>.
     /// <para>
     /// This always generates a null processor (the void processor).
     /// </para>
@@ -29,27 +30,17 @@ namespace CK.Object.Processor
         /// <param name="configuration">The placeholder configuration.</param>
         public PlaceholderProcessorConfiguration( IActivityMonitor monitor,
                                                   PolymorphicConfigurationTypeBuilder builder,
-                                                  ImmutableConfigurationSection configuration )
-            : base( monitor, builder, configuration )
+                                                  ImmutableConfigurationSection configuration,
+                                                  IReadOnlyList<ObjectProcessorConfiguration> processors )
+            : base( monitor, builder, configuration, processors )
         {
-            if( Condition != null || Transform != null )
+            if( ConfiguredCondition != null || ConfiguredTransform != null || processors.Count > 0 )
             {
-                monitor.Error( $"A processor Placeholder cannot define a 'Condition' or a 'Transform' (Configuration '{configuration.Path}')." );
+                monitor.Error( $"A processor Placeholder cannot define a 'Condition', a 'Transform'  or 'Processors' (Configuration '{configuration.Path}')." );
             }
             _configuration = configuration;
             _assemblies = builder.AssemblyConfiguration;
             _resolvers = builder.Resolvers.ToImmutableArray();
-        }
-
-        /// <summary>
-        /// Always creates the (null) void processor.
-        /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="services">The services.</param>
-        /// <returns>The void processor (null).</returns>
-        public override Func<object, object>? CreateProcessor( IActivityMonitor monitor, IServiceProvider services )
-        {
-            return null;
         }
 
         /// <summary>
@@ -62,12 +53,8 @@ namespace CK.Object.Processor
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that will potentially replaces this placeholder.</param>
         /// <returns>A new processor configuration or this if the section is not a child or if an error occurred.</returns>
-        protected override ObjectAsyncProcessorConfiguration DoSetPlaceholder( IActivityMonitor monitor,
-                                                                               IConfigurationSection configuration,
-                                                                               ObjectAsyncPredicateConfiguration? condition,
-                                                                               ObjectAsyncTransformConfiguration? action )
+        public override ObjectProcessorConfiguration SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
         {
-            Throw.DebugAssert( condition == null && action == null ); 
             if( configuration.GetParentPath().Equals( ConfigurationPath, StringComparison.OrdinalIgnoreCase ) )
             {
                 var builder = new PolymorphicConfigurationTypeBuilder( _assemblies, _resolvers );

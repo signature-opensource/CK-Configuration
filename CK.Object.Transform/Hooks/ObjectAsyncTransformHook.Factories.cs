@@ -17,9 +17,9 @@ namespace CK.Object.Transform
         {
             if( first is ObjectTransformHook sFirst && second is ObjectTransformHook sSecond )
             {
-                return new Pair( context, configuration, sFirst, sSecond );
+                return new TwoHookSync( context, configuration, sFirst, sSecond );
             }
-            return new AsyncPair( context, configuration, first, second );
+            return new TwoHookAsync( context, configuration, first, second );
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace CK.Object.Transform
                                                       ObjectTransformHook first,
                                                       ObjectTransformHook second )
         {
-            return new Pair( context, configuration, first, second );
+            return new TwoHookSync( context, configuration, first, second );
         }
 
     }

@@ -24,8 +24,8 @@
     </Compartments>
     <AssociationLine Name="Synchronous" Type="CK.Object.Predicate.ObjectPredicateConfiguration" ManuallyRouted="true" FixedFromPoint="true" FixedToPoint="true">
       <Path>
-        <Point X="3" Y="1.562" />
-        <Point X="3.733" Y="1.562" />
+        <Point X="3" Y="1.667" />
+        <Point X="3.733" Y="1.667" />
         <Point X="3.733" Y="3.688" />
         <Point X="3" Y="3.688" />
       </Path>
@@ -34,7 +34,7 @@
       </MemberNameLabel>
     </AssociationLine>
     <TypeIdentifier>
-      <HashCode>BAAEAAAAAAAIAAAAEBAAABAAAEAAADAAAACAYAQwAAg=</HashCode>
+      <HashCode>BAAEAAAAAAAIAAAAEBAAABAAAEAAADAAAACBYAQwAAg=</HashCode>
       <FileName>ObjectAsyncPredicateConfiguration.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
@@ -47,18 +47,18 @@
     <Members>
       <Field Name="_defaultSyncResolver" Hidden="true" />
       <Field Name="_initDefaultLock" Hidden="true" />
-      <Method Name="AddSynchronousOnly" Hidden="true" />
+      <Method Name="AddSynchronousOnlyResolver" Hidden="true" />
       <Method Name="ObjectPredicateConfiguration" Hidden="true" />
     </Members>
     <TypeIdentifier>
-      <HashCode>AEAAAAAAAAAAAAAAAAAAAAAAAAAhACAAAACAAAAkAAA=</HashCode>
+      <HashCode>AEAAAAAAAAAAAAAAAAAAAAAAAAABACAAAACAAAAkAAQ=</HashCode>
       <FileName>Sync\ObjectPredicateConfiguration.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Interface Name="CK.Object.Predicate.IObjectPredicateConfiguration">
     <Position X="4.25" Y="0.5" Width="2.25" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAg=</HashCode>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg=</HashCode>
       <FileName>IObjectPredicateConfiguration.cs</FileName>
     </TypeIdentifier>
   </Interface>

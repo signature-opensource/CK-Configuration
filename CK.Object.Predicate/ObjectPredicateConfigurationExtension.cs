@@ -50,11 +50,11 @@ namespace CK.Object.Predicate
         /// called with an empty <see cref="IServiceProvider"/>.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The hook context.</param>
+        /// <param name="context">The hook context.</param>
         /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
-        public static ObjectPredicateHook? CreateHook( this ObjectPredicateConfiguration @this, IActivityMonitor monitor, PredicateHookContext hook )
+        public static ObjectPredicateHook? CreateHook( this ObjectPredicateConfiguration @this, IActivityMonitor monitor, PredicateHookContext context )
         {
-            return @this.CreateHook( monitor, hook, EmptyServiceProvider.Instance );
+            return @this.CreateHook( monitor, context, EmptyServiceProvider.Instance );
         }
 
         internal sealed class EmptyServiceProvider : IServiceProvider

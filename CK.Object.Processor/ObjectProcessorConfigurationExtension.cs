@@ -9,54 +9,47 @@ namespace CK.Object.Processor
     {
         /// <summary>
         /// Creates an asynchronous transform that doesn't require any external service to do its job.
-        /// <see cref="ObjectAsyncProcessorConfiguration.CreateAsyncProcessor(IActivityMonitor, IServiceProvider)"/> is called
+        /// <para>
+        /// <see cref="ObjectProcessorConfiguration.CreateProcessor(IActivityMonitor, IServiceProvider)"/> is called
         /// with an empty <see cref="IServiceProvider"/>.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <returns>A configured processor or null for the void processor.</returns>
-        public static Func<object, ValueTask<object?>>? CreateAsyncProcessor( this ObjectAsyncProcessorConfiguration @this, IActivityMonitor monitor )
+        public static Func<object, ValueTask<object?>>? CreateAsyncProcessor( this ObjectProcessorConfiguration @this, IActivityMonitor monitor )
         {
             return @this.CreateAsyncProcessor( monitor, EmptyServiceProvider.Instance );
         }
 
         /// <summary>
-        /// Creates an <see cref="IObjectProcessorHook"/> that doesn't require any external service to do its job.
-        /// <see cref="ObjectAsyncProcessorConfiguration.CreateAsyncHook(IActivityMonitor, ProcessorHookContext, IServiceProvider)"/>
-        /// is called with an empty <see cref="IServiceProvider"/>.
-        /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="context">The hook context.</param>
-        /// <returns>A configured wrapper bound to the hook context or null for the void processor.</returns>
-        public static IObjectProcessorHook? CreateAsyncHook( this ObjectAsyncProcessorConfiguration @this, IActivityMonitor monitor, ProcessorHookContext context )
-        {
-            return @this.CreateAsyncHook( monitor, context, EmptyServiceProvider.Instance );
-        }
-
-
-        /// <summary>
-        /// Creates a synchronous Processor that doesn't require any external service to do its job.
+        /// Creates a synchronous processor function that doesn't require any external service to do its job.
+        /// <para>
         /// <see cref="ObjectProcessorConfiguration.CreateProcessor(IActivityMonitor, IServiceProvider)"/> is called
         /// with an empty <see cref="IServiceProvider"/>.
+        /// </para>
+        /// <para>
+        /// Must be called only if <see cref="ObjectProcessorConfiguration.IsSynchronous"/> is true otherwise an <see cref="InvalidOperationException"/> is thrown.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <returns>A configured object Processor or null for the void processor.</returns>
-        public static Func<object, object>? CreateProcessor( this ObjectProcessorConfiguration @this, IActivityMonitor monitor )
+        public static Func<object, object?>? CreateProcessor( this ObjectProcessorConfiguration @this, IActivityMonitor monitor )
         {
             return @this.CreateProcessor( monitor, EmptyServiceProvider.Instance );
         }
 
         /// <summary>
-        /// Creates an <see cref="ObjectProcessorHook"/> that doesn't require any external service to do its job.
-        /// <see cref="ObjectProcessorConfiguration.CreateHook(IActivityMonitor, ProcessorHookContext, IServiceProvider)"/> is
-        /// called with an empty <see cref="IServiceProvider"/>.
+        /// Creates a <see cref="ObjectProcessorHook"/> that doesn't require any external service to do its job.
         /// </summary>
         /// <param name="monitor">The monitor that must be used to signal errors.</param>
-        /// <param name="hook">The hook context.</param>
-        /// <returns>A wrapper bound to the hook context or null for the void processor.</returns>
-        public static ObjectProcessorHook? CreateHook( this ObjectProcessorConfiguration @this, IActivityMonitor monitor, ProcessorHookContext hook )
+        /// <param name="context">The hook context.</param>
+        /// <param name="services">Services that may be required for some (complex) transform functions.</param>
+        /// <returns>A configured processor hook or null for a void processor.</returns>
+        public static ObjectProcessorHook? CreateHook( this ObjectProcessorConfiguration @this, IActivityMonitor monitor, ProcessorHookContext context )
         {
-            return @this.CreateHook( monitor, hook, EmptyServiceProvider.Instance );
+            return @this.CreateHook( monitor, context, EmptyServiceProvider.Instance );
         }
+
 
         internal sealed class EmptyServiceProvider : IServiceProvider
         {
