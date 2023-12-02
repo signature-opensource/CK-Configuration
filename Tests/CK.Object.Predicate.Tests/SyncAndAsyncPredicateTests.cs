@@ -1,10 +1,6 @@
 using CK.Core;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
-using System;
-using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
@@ -13,7 +9,7 @@ namespace CK.Object.Predicate.Tests
     [TestFixture]
     public class SyncAndAsyncPredicateTests
     {
-        static NormalizedPath ThisFile( [CallerFilePath] string path = "" ) => path; 
+        static NormalizedPath ThisFile => TestHelper.TestProjectFolder.AppendPart( "SyncAndAsyncPredicateTests.cs" ); 
 
         [Test]
         public async Task sync_or_async_predicate_Async()
@@ -28,12 +24,12 @@ namespace CK.Object.Predicate.Tests
                             // This one will be the Async (if Async resolver has been registered AND an async predicate is resolved),
                             // or the Sync (if only sync resolver has been registered OR a sync predicate is resolved).
                             "Type": "IsInTextFile, Test",
-                            "FileName": "{{ThisFile()}}"
+                            "FileName": "{{ThisFile}}"
                         },
                         {
                             // This one will always be the Sync one.
                             "Type": "IsInTextFilePredicate, Test",
-                            "FileName": "{{ThisFile()}}"
+                            "FileName": "{{ThisFile}}"
                         }
                     ]
                 }
@@ -106,7 +102,7 @@ namespace CK.Object.Predicate.Tests
                             // This one will always be the Async one.
                             // If only sync resolver has been registered, it is an error.
                             "Type": "IsInTextFileAsyncPredicate, Test",
-                            "FileName": "{{ThisFile()}}"
+                            "FileName": "{{ThisFile}}"
                         },
                     ]
                 }
