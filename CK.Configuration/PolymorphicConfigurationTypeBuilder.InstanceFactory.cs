@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 
 namespace CK.Core
@@ -18,13 +20,15 @@ namespace CK.Core
         {
             readonly FactoryKey _key;
             readonly MethodInfo? _createMethod;
-            readonly bool _isComposite;
+            readonly Type? _itemType;
+            readonly string? _itemsFieldName;
 
-            internal Factory( FactoryKey key, MethodInfo? method, bool isComposite )
+            internal Factory( FactoryKey key, MethodInfo? method, string? itemsFieldName, Type? itemType )
             {
                 _key = key;
                 _createMethod = method;
-                _isComposite = isComposite;
+                _itemsFieldName = itemsFieldName;
+                _itemType = itemType;
             }
 
             /// <summary>
@@ -43,9 +47,26 @@ namespace CK.Core
             public bool UseCreateMethod => _createMethod != null;
 
             /// <summary>
-            /// Gets whether this <see cref="Type"/> is a composite.
+            /// Gets whether the call to instantiate <see cref="Type"/> requires
+            /// subordinated items to be provided.
+            /// <para>
+            /// When false, this doesn't imply that the Type is not a composite. The constructor
+            /// or Create method can resolves as many subordinates items fields as they want.
+            /// </para>
             /// </summary>
-            public bool IsComposite => _isComposite;
+            [MemberNotNullWhen( true, nameof( ItemType ), nameof( ItemsFieldName ) )]
+            public bool IsCallWithComposite => _itemType != null;
+
+            /// <summary>
+            /// Gets the composite item type.
+            /// </summary>
+            public Type? ItemType => _itemType;
+
+            /// <summary>
+            /// Gets the "Items" field name: this is the parameter names of the subordinated
+            /// items name in the constructor or Create factory method.
+            /// </summary>
+            public string? ItemsFieldName => _itemsFieldName;
 
             /// <summary>
             /// Creates a non composite object.
@@ -58,7 +79,7 @@ namespace CK.Core
                                    PolymorphicConfigurationTypeBuilder builder,
                                    ImmutableConfigurationSection configuration )
             {
-                Throw.CheckState( !IsComposite );
+                Throw.CheckState( !IsCallWithComposite );
                 return DoCreate( monitor, new object[] { monitor, builder, configuration } );
             }
 
@@ -75,7 +96,7 @@ namespace CK.Core
                                             ImmutableConfigurationSection configuration,
                                             Array items )
             {
-                Throw.CheckState( IsComposite );
+                Throw.CheckState( IsCallWithComposite );
                 return DoCreate( monitor, new object[] { monitor, builder, configuration, items } );
             }
 
@@ -115,41 +136,84 @@ namespace CK.Core
         Factory? CreateFactory( IActivityMonitor monitor, Type baseType, FactoryKey key )
         {
             var t = key.Type;
-            var ctor = t.GetConstructor( _argTypes );
+            var (ctor, itemsFieldName, itemType) = FindCtor( monitor, baseType, t );
             if( ctor != null )
             {
-                monitor.Trace( $"Using public constructor for non composite '{t:N}'." );
-                return new Factory( key, null, false );
+                monitor.Trace( $"Using public constructor for {(itemType != null ? "composite " : "")}'{t:N}'." );
+                return new Factory( key, null, itemsFieldName, itemType );
             }
-            var method = t.GetMethod( "Create", BindingFlags.Public| BindingFlags.Static, _argTypes );
+            MethodInfo? method;
+            (method, itemsFieldName, itemType) = FindCreate( monitor, baseType, t );
             if( method != null )
             {
-                monitor.Trace( $"Using public Create factory method for non composite '{t:N}'." );
-                return new Factory( key, method, false );
+                monitor.Trace( $"Using public static Create factory method for {(itemType != null ? "composite " : "")} '{t:N}'." );
+                return new Factory( key, method, itemsFieldName, itemType );
             }
 
-            var composite = typeof(IReadOnlyList<>).MakeGenericType( baseType );
-            var args = new Type[4];
-            _argTypes.CopyTo( args, 0 );
-            args[3] = composite;
-
-            ctor = t.GetConstructor( args );
-            if( ctor != null )
-            {
-                monitor.Trace( $"Using public constructor for composite '{t:N}'." );
-                return new Factory( key, null, true );
-            }
-            method = t.GetMethod( "Create", BindingFlags.Public | BindingFlags.Static, args );
-            if( method != null )
-            {
-                monitor.Trace( $"Using public Create factory method for composite '{t:N}'." );
-                return new Factory( key, method, true);
-            }
-
-            monitor.Error( $"Unable to find a public constructor or static Create factory method. Expected:{Environment.NewLine}" +
-                            $"'public {t.Name}( IActiviyMonitor monitor, {nameof(PolymorphicConfigurationTypeBuilder)} builder, ImmutableConfigurationSection configuration[, {composite:C} items ])'{Environment.NewLine}" +
+            monitor.Error( $"Unable to find a public constructor or public static Create factory method. Expected:{Environment.NewLine}" +
+                            $"'public {t.Name}( IActiviyMonitor monitor, {nameof(PolymorphicConfigurationTypeBuilder)} builder, ImmutableConfigurationSection configuration[, IReadOnlyList<{baseType:C}> items ])'{Environment.NewLine}" +
                             $" or 'public static object? Create( ... )' in type '{t:N}'." );
             return null;
         }
+
+        (ConstructorInfo?, string?, Type?) FindCtor( IActivityMonitor monitor, Type baseType, Type t )
+        {
+            var ctors = t.GetConstructors();
+            foreach( var c in ctors )
+            {
+                if( ExtractItemType( monitor, c, baseType, out var itemsFieldName, out var itemType ) )
+                {
+                    return (c, itemsFieldName, itemType);
+                }
+            }
+            return (null, null, null);
+        }
+
+        (MethodInfo?, string?, Type?) FindCreate( IActivityMonitor monitor, Type baseType, Type t )
+        {
+            var creates = t.GetMethods(BindingFlags.Public|BindingFlags.Static).Where( m => m.Name == "Create" );
+            foreach( var m in creates )
+            {
+                if( ExtractItemType( monitor, m, baseType, out var itemsFieldName, out var itemType ) )
+                {
+                    return (m, itemsFieldName, itemType);
+                }
+            }
+            return (null, null, null);
+        }
+
+        bool ExtractItemType( IActivityMonitor monitor, MethodBase m, Type baseType, out string? itemsFieldName, out Type? itemType )
+        {
+            var parameters = m.GetParameters();
+            if( (parameters.Length == 3 || parameters.Length == 4)
+                && parameters[0].ParameterType == typeof( IActivityMonitor )
+                && parameters[1].ParameterType == typeof( PolymorphicConfigurationTypeBuilder )
+                && parameters[2].ParameterType == typeof( ImmutableConfigurationSection ) )
+            {
+                if( parameters.Length == 3 )
+                {
+                    itemsFieldName = null;
+                    itemType = null;
+                    return true;
+                }
+                var list = parameters[3].ParameterType;
+                if( list.IsGenericType
+                    && list.GetGenericTypeDefinition() == typeof( IReadOnlyList<> )
+                    && baseType.IsAssignableFrom( itemType = list.GenericTypeArguments[0] ) )
+                {
+                    itemsFieldName = parameters[3].Name;
+                    return true;
+                }
+                bool isCtor = m is ConstructorInfo;
+                monitor.Warn( $"{(isCtor ? "Constructor" : "Factory method")} '{m.DeclaringType:N}{(isCtor ? "" : m.Name)}( " +
+                              $"IActivityMonitor, {nameof( PolymorphicConfigurationTypeBuilder )}, ImmutableConfigurationSection, {list:C} {parameters[3].Name} )' " +
+                              $"has invalid 4th parameter. It must be a IReadOnlyList<{baseType:C}>.{Environment.NewLine}" +
+                              $"This is ignored." );
+            }
+            itemsFieldName = null;
+            itemType = null;
+            return false;
+        }
+
     }
 }

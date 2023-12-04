@@ -142,7 +142,7 @@ namespace CK.Core
         /// </summary>
         /// <typeparam name="T">Type of the expected instance.</typeparam>
         /// <param name="monitor">The monitor that will be used to signal errors and warnings.</param>
-        /// <param name="configuration">The configuration to process.</param>
+        /// <param name="configuration">The configuration section.</param>
         /// <returns>The configured object or null if any error occurred.</returns>
         public T? Create<T>( IActivityMonitor monitor, IConfigurationSection configuration )
         {
@@ -150,55 +150,127 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Typed version of the <see cref="CreateItems(IActivityMonitor, Type, ImmutableConfigurationSection)"/> method.
+        /// Creates a list of items from the <paramref name="itemsSection"/>'s children.
+        /// If the configuration has no children, an empty list is returned.
         /// </summary>
-        /// <typeparam name="T">Base type of the expected instances.</typeparam>
         /// <param name="monitor">The monitor that will be used to signal errors and warnings.</param>
-        /// <param name="configuration">The composite configuration.</param>
-        /// <param name="requiresItemsFieldName">
-        /// True to requires the "Items" (or <paramref name="alternateItemsFieldName"/>) field name.
-        /// By default even if no "Items" appears in the <paramref name="configuration"/>, an empty list is returned.
-        /// </param>
-        /// <param name="alternateItemsFieldName">
-        /// Optional "Items" field names with the subordinated items. When let to null or when not found, the default composite "Items" field name
-        /// used by this resolver must be used.
-        /// </param>
+        /// <param name="itemsSection">The "Items" section from which the items will be created.</param>
         /// <returns>The resulting list or null if any error occurred.</returns>
         public IReadOnlyList<T>? CreateItems<T>( IActivityMonitor monitor,
-                                                 ImmutableConfigurationSection configuration,
-                                                 bool requiresItemsFieldName = false,
-                                                 string? alternateItemsFieldName = null )
+                                                 ImmutableConfigurationSection itemsSection )
         {
-            Throw.CheckNotNullArgument( configuration );
-            TypeResolver resolver = FindResolver( monitor, typeof(T) );
-            return (IReadOnlyList<T>?)resolver.CreateItems( monitor, this, configuration, requiresItemsFieldName, alternateItemsFieldName );
+            return (IReadOnlyList<T>?)CreateItems( monitor, typeof(T), itemsSection );
         }
 
         /// <summary>
-        /// Attempts to instantiate items of the composite type based on the <see cref="Resolvers"/> and
-        /// the <paramref name="configuration"/> configuration.
+        /// Creates a list of items from a <paramref name="configuration"/>'s "Items" child.
+        /// If the configuration has no children, an empty list is returned.
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors and warnings.</param>
-        /// <param name="baseType">The items base type.</param>
-        /// <param name="configuration">The items configuration.</param>
-        /// <param name="requiresItemsFieldName">
-        /// True to requires the "Items" (or <paramref name="alternateItemsFieldName"/>) field name.
-        /// By default even if no "Items" appears in the <paramref name="configuration"/>, an empty list is returned.
+        /// <typeparam name="T">The type of the item.</typeparam>
+        /// <param name="monitor">The monitor that will be used to signal errors and warnings.</param>
+        /// <param name="configuration">The composite configuration.</param>
+        /// <param name="overrideItemsFieldName">
+        /// Optional "Items" field name with the subordinated items.
+        /// When let to null or when not found, the default composite "<see cref="TypeResolver.CompositeItemsFieldName"/>" field name
+        /// defined for this resolver is used.
         /// </param>
-        /// <param name="alternateItemsFieldName">
-        /// Optional "Items" field names with the subordinated items. When let to null or when not found, the default composite "Items" field name
-        /// used by this resolver must be used.
+        /// <param name="requiresItemsFieldName">
+        /// True to requires the "<paramref name="overrideItemsFieldName"/>" (or "<see cref="TypeResolver.CompositeItemsFieldName"/>") field name.
+        /// By default even if no such "Items" field appears in the <paramref name="configuration"/>, an empty list is returned.
         /// </param>
         /// <returns>The resulting list or null if any error occurred.</returns>
-        public IReadOnlyList<object>? CreateItems( IActivityMonitor monitor,
-                                                   Type baseType,
-                                                   ImmutableConfigurationSection configuration,
-                                                   bool requiresItemsFieldName = false,
-                                                   string? alternateItemsFieldName = null )
+        public IReadOnlyList<T>? FindItemsSectionAndCreateItems<T>( IActivityMonitor monitor,
+                                                                    ImmutableConfigurationSection configuration,
+                                                                    string? overrideItemsFieldName = null,
+                                                                    bool requiresItemsFieldName = false )
+        {
+            return (IReadOnlyList<T>?)FindItemsSectionAndCreateItems( monitor, configuration, typeof( T ), overrideItemsFieldName, requiresItemsFieldName );
+        }
+
+
+        /// <summary>
+        /// Creates a list of items from the <paramref name="itemsSection"/>'s children.
+        /// If the configuration has no children, an empty list is returned.
+        /// </summary>
+        /// <param name="monitor">The monitor that will be used to signal errors and warnings.</param>
+        /// <param name="itemType">The type of the items.</param>
+        /// <param name="itemsSection">The "Items" section from which the items will be created.</param>
+        /// <returns>The resulting list or null if any error occurred.</returns>
+        public Array? CreateItems( IActivityMonitor monitor,
+                                   Type itemType,
+                                   ImmutableConfigurationSection itemsSection )
+        {
+            Throw.CheckNotNullArgument( itemsSection );
+            TypeResolver? resolver = FindResolver( monitor, itemType );
+            if( resolver == null ) return null;
+            return DoCreateItems( monitor, itemType, resolver, itemsSection );
+        }
+
+        /// <summary>
+        /// Creates a list of items from a <paramref name="configuration"/>'s "Items" child.
+        /// If the configuration has no children, an empty list is returned.
+        /// </summary>
+        /// <param name="monitor">The monitor that will be used to signal errors and warnings.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="itemType">The type of the items.</param>
+        /// <param name="overrideItemsFieldName">
+        /// Optional "Items" field name with the subordinated items.
+        /// When let to null or when not found, the default composite "<see cref="TypeResolver.CompositeItemsFieldName"/>" field name
+        /// defined for this resolver is used.
+        /// </param>
+        /// <param name="requiresItemsFieldName">
+        /// True to requires the "<paramref name="overrideItemsFieldName"/>" (or "<see cref="TypeResolver.CompositeItemsFieldName"/>") field name.
+        /// By default even if no such "Items" field appears in the <paramref name="configuration"/>, an empty list is returned.
+        /// </param>
+        /// <returns>The resulting list or null if any error occurred.</returns>
+        public Array? FindItemsSectionAndCreateItems( IActivityMonitor monitor,
+                                   ImmutableConfigurationSection configuration,
+                                   Type itemType,
+                                   string? overrideItemsFieldName = null,
+                                   bool requiresItemsFieldName = false )
         {
             Throw.CheckNotNullArgument( configuration );
-            TypeResolver resolver = FindResolver( monitor, baseType );
-            return (IReadOnlyList<object>?)resolver.CreateItems( monitor, this, configuration, requiresItemsFieldName, alternateItemsFieldName );
+            TypeResolver? resolver = FindResolver( monitor, itemType );
+            if( resolver == null ) return null;
+            ImmutableConfigurationSection? knownItemsField = null;
+            if( overrideItemsFieldName != null )
+            {
+                knownItemsField = configuration.TryGetSection( overrideItemsFieldName );
+            }
+            knownItemsField ??= configuration.TryGetSection( resolver.CompositeItemsFieldName );
+
+            if( knownItemsField == null )
+            {
+                if( requiresItemsFieldName )
+                {
+                    if( overrideItemsFieldName != null )
+                    {
+                        monitor.Error( $"Missing composite required items '{configuration.Path}:{overrideItemsFieldName}' or ':{resolver.CompositeItemsFieldName}'." );
+                    }
+                    else
+                    {
+                        monitor.Error( $"Missing composite required items '{configuration.Path}:{resolver.CompositeItemsFieldName}'." );
+                    }
+                    return null;
+                }
+                // Empty array (but correctly typed).
+                return Array.CreateInstance( itemType, 0 );
+            }
+            return DoCreateItems( monitor, itemType, resolver, knownItemsField );
+        }
+
+        Array? DoCreateItems( IActivityMonitor monitor, Type itemType, TypeResolver resolver, ImmutableConfigurationSection knownItemsField )
+        {
+            var children = knownItemsField.GetChildren();
+            var a = Array.CreateInstance( itemType, children.Count );
+            bool success = true;
+            for( int i = 0; i < a.Length; i++ )
+            {
+                var o = DoCreate( monitor, resolver, children[i], itemType );
+                if( o == null ) success = false;
+                a.SetValue( o, i );
+            }
+            return success ? a : null;
         }
 
         /// <summary>
@@ -223,6 +295,11 @@ namespace CK.Core
             {
                 config = new ImmutableConfigurationSection( configuration );
             }
+            return DoCreate( monitor, resolver, config, type );
+        }
+
+        object? DoCreate( IActivityMonitor monitor, TypeResolver resolver, ImmutableConfigurationSection config, Type type )
+        {
             var initialAssembly = _assemblyConfiguration;
             var initialResolverCount = _resolvers.Count;
             ++_createDepth;
@@ -259,7 +336,7 @@ namespace CK.Core
                 {
                     for( int i = _hiddenResolvers.Count - 1; i >= 0; i-- )
                     {
-                        var (depth, index, previous) = _hiddenResolvers[ i ];
+                        var (depth, index, previous) = _hiddenResolvers[i];
                         Throw.DebugAssert( depth <= _createDepth );
                         if( depth < _createDepth ) break;
                         _resolvers[index] = previous;

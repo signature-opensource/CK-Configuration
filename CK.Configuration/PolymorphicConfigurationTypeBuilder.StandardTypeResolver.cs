@@ -21,7 +21,6 @@ namespace CK.Core
             readonly string _typeNameSuffix;
             readonly TypeResolver? _fallback;
             readonly Type? _defaultCompositeBaseType;
-            readonly string _compositeItemsFieldName;
             readonly Func<IActivityMonitor, string, PolymorphicConfigurationTypeBuilder, ImmutableConfigurationSection, object?>? _tryCreateFromTypeName;
 
             /// <summary>
@@ -75,20 +74,18 @@ namespace CK.Core
                                          string typeFieldName = "Type",
                                          string typeNameSuffix = "Configuration",
                                          TypeResolver? fallback = null )
-                : base( baseType )
+                : base( baseType, compositeItemsFieldName )
             {
                 Throw.CheckNotNullArgument( baseType );
                 Throw.CheckNotNullOrWhiteSpaceArgument( typeFieldName );
                 Throw.CheckNotNullOrWhiteSpaceArgument( typeNamespace );
                 Throw.CheckArgument( defaultCompositeBaseType == null || (defaultCompositeBaseType.IsClass && !defaultCompositeBaseType.IsAbstract && baseType.IsAssignableFrom( defaultCompositeBaseType )) );
-                Throw.CheckNotNullOrWhiteSpaceArgument( compositeItemsFieldName );
                 _typeFieldName = typeFieldName;
                 _typeNamespace = typeNamespace;
                 _allowOtherNamespace = allowOtherNamespace;
                 _familyTypeNameSuffix = familyTypeNameSuffix;
                 _tryCreateFromTypeName = tryCreateFromTypeName;
                 _defaultCompositeBaseType = defaultCompositeBaseType;
-                _compositeItemsFieldName = compositeItemsFieldName;
                 _typeNameSuffix = typeNameSuffix;
                 _fallback = fallback;
             }
@@ -98,15 +95,6 @@ namespace CK.Core
                                                         ImmutableConfigurationSection configuration )
             {
                 return DoCreateWithFallback( monitor, builder, configuration, _defaultCompositeBaseType != null );
-            }
-
-            internal protected override Array? CreateItems( IActivityMonitor monitor,
-                                                            PolymorphicConfigurationTypeBuilder builder,
-                                                            ImmutableConfigurationSection composite,
-                                                            bool requiresItemsFieldName,
-                                                            string? alternateItemsFieldName )
-            {
-                return DoCreateItems( monitor, builder, composite, null, alternateItemsFieldName, requiresItemsFieldName );
             }
 
             object? DoCreateWithFallback( IActivityMonitor monitor,
@@ -127,24 +115,23 @@ namespace CK.Core
                 return o;
             }
 
-
             object? DoCreate( IActivityMonitor monitor,
                               PolymorphicConfigurationTypeBuilder builder,
                               ImmutableConfigurationSection configuration,
                               bool allowDefaultComposite )
             {
-                // First, check if the configuration is a value and if it is the case, we have no other choice
-                // to use the optional tryCreateFromTypeName. 
-                if( configuration.Value != null )
-                {
-                    return CreateFromValue( monitor, builder, configuration, configuration.Value );
-                }
                 // If it's a section then it may define assemblies.
                 var previousAssemblies = builder.AssemblyConfiguration;
                 builder.AssemblyConfiguration = builder.AssemblyConfiguration.Apply( monitor, configuration ) ?? previousAssemblies;
                 try
                 {
-                    // Else, lookup the "Type" field.
+                    // First, check if the configuration is a value and if it is the case, we have no other choice
+                    // to use the optional tryCreateFromTypeName. 
+                    if( configuration.Value != null )
+                    {
+                        return CreateFromValue( monitor, builder, configuration, configuration.Value );
+                    }
+                    // Lookup the "Type" field.
                     var typeName = configuration[_typeFieldName];
                     // If it exists and the optional tryCreateFromTypeName exists then give it a try.
                     if( typeName != null && _tryCreateFromTypeName != null )
@@ -160,12 +147,17 @@ namespace CK.Core
                     }
                     return CreateWithTypeName( monitor, builder, configuration, typeName );
                 }
+                catch( Exception ex )
+                {
+                    monitor.Error( $"While instantiating from configuration '{configuration.Path}.", ex );
+                    return null;
+                }
                 finally
                 {
                     builder.AssemblyConfiguration = previousAssemblies;
                 }
             }
-
+        
             object? CreateWithTypeName( IActivityMonitor monitor,
                                         PolymorphicConfigurationTypeBuilder builder,
                                         ImmutableConfigurationSection configuration,
@@ -189,23 +181,7 @@ namespace CK.Core
                                    $"(Configuration '{configuration.Path}:{_typeFieldName}'.)" );
                     return null;
                 }
-                try
-                {
-                    var f = builder.GetInstanceFactory( monitor, BaseType, type );
-                    if( f == null ) return null;
-                    if( f.IsComposite )
-                    {
-                        var a = DoCreateItems( monitor, builder, configuration, null, null, false );
-                        if( a == null ) return null;
-                        return f.CreateComposite( monitor, builder, configuration, a );
-                    }
-                    return f.Create( monitor, builder, configuration );
-                }
-                catch( Exception ex )
-                {
-                    monitor.Error( $"While instantiating '{type:C}'. (Configuration '{configuration.Path}:{_typeFieldName} = {typeName}'.)", ex );
-                    return null;
-                }
+                return CoreCreate( monitor, builder, configuration, type, null );
             }
 
             object? CreateWithNoTypeName( IActivityMonitor monitor,
@@ -220,7 +196,7 @@ namespace CK.Core
                     // This allows array (or even keyed objects) to be handled. This trick is safe
                     // since we check that the configuration has children and in such case, children
                     // configurations must be valid definitions.
-                    var itemsField = configuration.TryGetSection( _compositeItemsFieldName );
+                    var itemsField = configuration.TryGetSection( CompositeItemsFieldName );
                     if( itemsField == null && allowDefaultComposite )
                     {
                         if( !configuration.HasChildren )
@@ -232,17 +208,9 @@ namespace CK.Core
                     }
                     if( itemsField != null )
                     {
-                        try
-                        {
-                            return DoCreateComposite( monitor, builder, configuration, _defaultCompositeBaseType, itemsField );
-                        }
-                        catch( Exception ex )
-                        {
-                            monitor.Error( $"While instantiating '{_defaultCompositeBaseType:C}' from '{configuration.Path}'.", ex );
-                            return null;
-                        }
+                        return CoreCreate( monitor, builder, configuration, _defaultCompositeBaseType, itemsField );
                     }
-                    monitor.Warn( $"Missing '{configuration.Path}:{_compositeItemsFieldName}' to define a composite." );
+                    monitor.Warn( $"Missing '{configuration.Path}:{CompositeItemsFieldName}' to define a composite." );
                 }
                 monitor.Error( $"Missing required '{configuration.Path}:{_typeFieldName}' type name." );
                 return null;
@@ -316,62 +284,29 @@ namespace CK.Core
                 return result;
             }
 
-            object? DoCreateComposite( IActivityMonitor monitor,
-                                       PolymorphicConfigurationTypeBuilder builder,
-                                       ImmutableConfigurationSection configuration,
-                                       Type type,
-                                       ImmutableConfigurationSection? itemsField )
+            object? CoreCreate( IActivityMonitor monitor,
+                                PolymorphicConfigurationTypeBuilder builder,
+                                ImmutableConfigurationSection configuration,
+                                Type type,
+                                ImmutableConfigurationSection? knownItemsField )
             {
-                Array? a = DoCreateItems( monitor, builder, configuration, itemsField, null, false );
-                if( a == null ) return null;
                 var f = builder.GetInstanceFactory( monitor, BaseType, type );
                 if( f == null ) return null;
-                return f.CreateComposite( monitor, builder, configuration, a );
-            }
-
-            Array? DoCreateItems( IActivityMonitor monitor,
-                                  PolymorphicConfigurationTypeBuilder builder,
-                                  ImmutableConfigurationSection configuration,
-                                  ImmutableConfigurationSection? itemsField,
-                                  string? alternateItemsName,
-                                  bool requiresItemsFieldName )
-            {
-                if( itemsField == null )
+                if( f.IsCallWithComposite )
                 {
-                    if( alternateItemsName != null )
+                    Array? a;
+                    if( knownItemsField != null )
                     {
-                        itemsField = configuration.TryGetSection( alternateItemsName );
+                        a = builder.CreateItems( monitor, f.ItemType, knownItemsField );
                     }
-                    itemsField ??= configuration.TryGetSection( _compositeItemsFieldName );
-                }
-                if( itemsField == null )
-                {
-                    if( requiresItemsFieldName )
+                    else
                     {
-                        if( alternateItemsName != null )
-                        {
-                            monitor.Error( $"Missing composite required items '{configuration.Path}:{alternateItemsName}' or ':{_compositeItemsFieldName}'." );
-                        }
-                        else
-                        {
-                            monitor.Error( $"Missing composite required items '{configuration.Path}:{_compositeItemsFieldName}'." );
-                        }
-                        return null;
+                        a = builder.FindItemsSectionAndCreateItems( monitor, configuration, f.ItemType, f.ItemsFieldName );
                     }
-                    // Empty array (but correctly typed).
-                    return Array.CreateInstance( BaseType, 0 );
+                    if( a == null ) return null;
+                    return f.CreateComposite( monitor, builder, configuration, a );
                 }
-                // We must use a correctly typed array for reflection binding.
-                var children = itemsField.GetChildren();
-                var a = Array.CreateInstance( BaseType, children.Count );
-                bool success = true;
-                for( int i = 0; i < a.Length; i++ )
-                {
-                    var o = DoCreateWithFallback( monitor, builder, children[i], false );
-                    if( o == null ) success = false;
-                    a.SetValue( o, i );
-                }
-                return success ? a : null;
+                return f.Create( monitor, builder, configuration );
             }
         }
     }

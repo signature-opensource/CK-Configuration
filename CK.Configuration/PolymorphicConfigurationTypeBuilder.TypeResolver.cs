@@ -26,21 +26,30 @@ namespace CK.Core
         public abstract class TypeResolver
         {
             readonly Type _baseType;
+            readonly string _compositeItemsFieldName;
 
             /// <summary>
             /// Initializes a new type resolver.
             /// </summary>
             /// <param name="baseType">The <see cref="BaseType"/>.</param>
-            protected TypeResolver( Type baseType )
+            /// <param name="compositeItemsFieldName">Required field name of a composite items.</param>
+            protected TypeResolver( Type baseType, string compositeItemsFieldName = "Items" )
             {
                 Throw.CheckNotNullArgument( baseType );
+                Throw.CheckNotNullOrWhiteSpaceArgument( compositeItemsFieldName );
                 _baseType = baseType;
+                _compositeItemsFieldName = compositeItemsFieldName;
             }
 
             /// <summary>
             /// Gets the base type handled by this resolver.
             /// </summary>
             public Type BaseType => _baseType;
+
+            /// <summary>
+            /// Gets the compsite item field name. Defaults to "Items".
+            /// </summary>
+            public string CompositeItemsFieldName => _compositeItemsFieldName;
 
             /// <summary>
             /// Attempts to create an instance from a configuration using any possible strategies
@@ -53,41 +62,6 @@ namespace CK.Core
             internal protected abstract object? Create( IActivityMonitor monitor,
                                                         PolymorphicConfigurationTypeBuilder builder,
                                                         ImmutableConfigurationSection configuration );
-
-            /// <summary>
-            /// Attempts to instantiate items of the composite type from a composite configuration.
-            /// <para>
-            /// This may easily be implemented by calling <see cref="Create(IActivityMonitor, ImmutableConfigurationSection)"/> for
-            /// each item but this is modeled for 2 reasons:
-            /// <list type="bullet">
-            /// <item>
-            /// Creating the content of a composite may not be exactly the same as creating a composite from the items built "from the outside"
-            /// (even locating the "Items" field to consider is specific to this resolver).
-            /// </item>
-            /// <item>
-            /// The returned items must be assignable to a <see cref="IReadOnlyList{T}"/> of <see cref="BaseType"/> an we have not generic at this level.
-            /// Using the rarely used <see cref="Array"/> enables to create a correctly typed list without using <see cref="Type.MakeGenericType(Type[])"/>.
-            /// </item>
-            /// </list>
-            /// </para>
-            /// </summary>
-            /// <param name="monitor">The monitor that must be used to signal errors and warnings.</param>
-            /// <param name="builder">The calling builder for which the configuration must be resolved.</param>
-            /// <param name="composite">The composite configuration.</param>
-            /// <param name="requiresItemsFieldName">
-            /// True to requires the "Items" (or <paramref name="alternateItemsFieldName"/>) field name.
-            /// By default even if no "Items" appears in the <paramref name="configuration"/>, an empty list is returned.
-            /// </param>
-            /// <param name="alternateItemsFieldName">
-            /// Optional "Items" field names with the subordinated items. When let to null or when not found, the default composite "Items" field name
-            /// used by this resolver must be used.
-            /// </param>
-            /// <returns>The resulting list or null if any error occurred.</returns>
-            internal protected abstract Array? CreateItems( IActivityMonitor monitor,
-                                                            PolymorphicConfigurationTypeBuilder builder,
-                                                            ImmutableConfigurationSection composite,
-                                                            bool requiresItemsFieldName = false, 
-                                                            string? alternateItemsFieldName = null );
         }
     }
 }
