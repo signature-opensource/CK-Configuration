@@ -46,26 +46,24 @@ namespace CK.Object.Predicate
         /// <summary>
         /// Creates an asynchronous predicate.
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A configured predicate or null for an empty predicate.</returns>
-        public abstract Func<object, ValueTask<bool>>? CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services );
+        public abstract Func<object, ValueTask<bool>>? CreateAsyncPredicate( IServiceProvider services );
 
         /// <summary>
         /// Creates a <see cref="IObjectPredicateHook"/> with this configuration and a predicate obtained by
-        /// calling <see cref="CreateAsyncPredicate(IActivityMonitor, IServiceProvider)"/>.
+        /// calling <see cref="CreateAsyncPredicate(IServiceProvider)"/>.
         /// <para>
         /// This should be overridden if this predicate relies on other predicates in order to hook all of them.
         /// Failing to do so will hide some predicates to the evaluation hook.
         /// </para>
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
-        public virtual IObjectPredicateHook? CreateAsyncHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
+        public virtual IObjectPredicateHook? CreateAsyncHook( PredicateHookContext context, IServiceProvider services )
         {
-            var p = CreateAsyncPredicate( monitor, services );
+            var p = CreateAsyncPredicate( services );
             return p != null ? new ObjectAsyncPredicateHook( context, this, p ) : null;
         }
 
@@ -218,21 +216,21 @@ namespace CK.Object.Predicate
             // their returned group with a SyncGroup when all the predicates were sync ones.
             if( typeName.Equals( "All", StringComparison.OrdinalIgnoreCase ) )
             {
-                var items = builder.CreateItems<ObjectPredicateConfiguration>( monitor, configuration );
+                var items = builder.FindItemsSectionAndCreateItems<ObjectPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedAny( monitor, configuration );
                 return new GroupPredicateConfiguration( 0, 0, configuration.Path, items.ToImmutableArray() );
             }
             if( typeName.Equals( "Any", StringComparison.OrdinalIgnoreCase ) )
             {
-                var items = builder.CreateItems<ObjectPredicateConfiguration>( monitor, configuration );
+                var items = builder.FindItemsSectionAndCreateItems<ObjectPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedSingle( monitor, configuration );
                 return new GroupPredicateConfiguration( 1, 0, configuration.Path, items.ToImmutableArray() );
             }
             if( typeName.Equals( "Single", StringComparison.OrdinalIgnoreCase ) )
             {
-                var items = builder.CreateItems<ObjectPredicateConfiguration>( monitor, configuration );
+                var items = builder.FindItemsSectionAndCreateItems<ObjectPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedAtLeastAtMost( monitor, configuration );
                 return new GroupPredicateConfiguration( 1, 1, configuration.Path, items.ToImmutableArray() );
@@ -261,24 +259,24 @@ namespace CK.Object.Predicate
             }
             if( typeName.Equals( "All", StringComparison.OrdinalIgnoreCase ) )
             {
-                var items = builder.CreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
+                var items = builder.FindItemsSectionAndCreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedAny( monitor, configuration );
-                return GroupAsyncPredicateConfiguration.DoCreateGroup( 0, 0, configuration.Path, items );
+                return DoCreateGroup( 0, 0, configuration.Path, items );
             }
             if( typeName.Equals( "Any", StringComparison.OrdinalIgnoreCase ) )
             {
-                var items = builder.CreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
+                var items = builder.FindItemsSectionAndCreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
                 if( items == null ) return null;
                 WarnUnusedSingle( monitor, configuration );
-                return GroupAsyncPredicateConfiguration.DoCreateGroup( 1, 0, configuration.Path, items );
+                return DoCreateGroup( 1, 0, configuration.Path, items );
             }
             if( typeName.Equals( "Single", StringComparison.OrdinalIgnoreCase ) )
             {
-                var predicates = builder.CreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
+                var predicates = builder.FindItemsSectionAndCreateItems<ObjectAsyncPredicateConfiguration>( monitor, configuration );
                 if( predicates == null ) return null;
                 WarnUnusedAtLeastAtMost( monitor, configuration );
-                return GroupAsyncPredicateConfiguration.DoCreateGroup( 1, 1, configuration.Path, predicates );
+                return DoCreateGroup( 1, 1, configuration.Path, predicates );
             }
             return null;
         }

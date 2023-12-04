@@ -87,9 +87,9 @@ namespace CK.Object.Transform
 
 
         /// <inheritdoc />
-        public override IObjectTransformHook? CreateAsyncHook( IActivityMonitor monitor, TransformHookContext context, IServiceProvider services )
+        public override IObjectTransformHook? CreateAsyncHook( TransformHookContext context, IServiceProvider services )
         {
-            ImmutableArray<IObjectTransformHook> items = _transforms.Select( c => c.CreateAsyncHook( monitor, context, services ) )
+            ImmutableArray<IObjectTransformHook> items = _transforms.Select( c => c.CreateAsyncHook( context, services ) )
                                                                     .Where( s => s != null )
                                                                     .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
@@ -99,9 +99,9 @@ namespace CK.Object.Transform
         }
 
         /// <inheritdoc />
-        public override Func<object,ValueTask<object>>? CreateAsyncTransform( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object,ValueTask<object>>? CreateAsyncTransform( IServiceProvider services )
         {
-            ImmutableArray<Func<object, ValueTask<object>>> transformers = _transforms.Select( c => c.CreateAsyncTransform( monitor, services ) )
+            ImmutableArray<Func<object, ValueTask<object>>> transformers = _transforms.Select( c => c.CreateAsyncTransform( services ) )
                                                                                       .Where( s => s != null )        
                                                                                       .ToImmutableArray()!;
             if( transformers.Length == 0 ) return null;

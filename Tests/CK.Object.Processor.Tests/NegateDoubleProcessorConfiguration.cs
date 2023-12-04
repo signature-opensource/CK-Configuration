@@ -19,12 +19,12 @@ namespace CK.Object.Processor
             SetIntrinsicTransform( Transform );
         }
 
-        Func<object, bool>? Condition( IActivityMonitor monitor, IServiceProvider services )
+        Func<object, bool>? Condition( IServiceProvider services )
         {
             return static o => o is double;
         }
 
-        Func<object, object>? Transform( IActivityMonitor monitor, IServiceProvider services )
+        Func<object, object>? Transform( IServiceProvider services )
         {
             return static o => -((double)o);
         }

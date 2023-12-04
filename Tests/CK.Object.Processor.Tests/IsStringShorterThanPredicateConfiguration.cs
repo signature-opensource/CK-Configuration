@@ -13,7 +13,7 @@ namespace CK.Object.Predicate
             _len = IsStringLongerThanPredicateConfiguration.ReadLength( monitor, configuration );
         }
 
-        public override Func<object, bool> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, bool> CreatePredicate( IServiceProvider services )
         {
             return o => o is string s && s.Length < _len;
         }

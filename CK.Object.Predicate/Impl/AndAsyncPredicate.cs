@@ -28,10 +28,10 @@ namespace CK.Object.Predicate
             _right = right;
         }
 
-        public override Func<object, ValueTask<bool>>? CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, ValueTask<bool>>? CreateAsyncPredicate( IServiceProvider services )
         {
-            var l = _left.CreateAsyncPredicate( monitor, services );
-            var r = _right.CreateAsyncPredicate( monitor, services );
+            var l = _left.CreateAsyncPredicate( services );
+            var r = _right.CreateAsyncPredicate( services );
             if( l != null )
             {
                 if( r != null )
@@ -43,10 +43,10 @@ namespace CK.Object.Predicate
             return r;
         }
 
-        public override IObjectPredicateHook? CreateAsyncHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
+        public override IObjectPredicateHook? CreateAsyncHook( PredicateHookContext context, IServiceProvider services )
         {
-            var l = _left.CreateAsyncHook( monitor, context, services );
-            var r = _right.CreateAsyncHook( monitor, context, services );
+            var l = _left.CreateAsyncHook( context, services );
+            var r = _right.CreateAsyncHook( context, services );
             if( l != null )
             {
                 if( r != null )

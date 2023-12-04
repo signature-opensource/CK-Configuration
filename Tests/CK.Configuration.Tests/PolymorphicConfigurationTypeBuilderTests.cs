@@ -3,6 +3,8 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 using StrategyPlugin;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Configuration.Tests
@@ -318,7 +320,7 @@ namespace CK.Configuration.Tests
                 var config = ImmutableConfigurationSection.CreateFromJson( "Root", """{ "Strategies": [{}] }""" );
                 var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
                 sC.Should().BeNull();
-                logs.Should().Contain( "Missing required 'Root:Strategies:0:Type' type name." );
+                logs.Should().Contain( "Configuration 'Root:Strategies:0' must have children to be considered a default 'CompositeStrategyConfiguration'." );
             }
         }
 

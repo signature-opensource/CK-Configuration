@@ -29,50 +29,47 @@ namespace CK.Object.Predicate
         /// <summary>
         /// Adapts this synchronous predicate thanks to a <see cref="ValueTask.FromResult{TResult}(TResult)"/>.
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
+        /// 
         /// <returns>A configured predicate or null for an empty predicate.</returns>
-        public sealed override Func<object, ValueTask<bool>>? CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
+        public sealed override Func<object, ValueTask<bool>>? CreateAsyncPredicate( IServiceProvider services )
         {
-            var p = CreatePredicate(monitor, services);
+            var p = CreatePredicate( services );
             return p != null ? o => ValueTask.FromResult( p( o ) ) : null;
         }
 
         /// <summary>
         /// Creates a synchronous predicate.
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A configured object predicate or null for an empty predicate.</returns>
-        public abstract Func<object, bool>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services );
+        public abstract Func<object, bool>? CreatePredicate( IServiceProvider services );
 
         /// <summary>
-        /// Definite relay to <see cref="CreateHook(IActivityMonitor, PredicateHookContext, IServiceProvider)"/>.
+        /// Definite relay to <see cref="CreateHook(PredicateHookContext, IServiceProvider)"/>.
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
-        public sealed override IObjectPredicateHook? CreateAsyncHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
+        public sealed override IObjectPredicateHook? CreateAsyncHook( PredicateHookContext context, IServiceProvider services )
         {
-            return CreateHook( monitor, context, services );
+            return CreateHook( context, services );
         }
 
         /// <summary>
         /// Creates a <see cref="ObjectPredicateHook"/> with this configuration and a predicate obtained by
-        /// calling <see cref="CreatePredicate(IActivityMonitor, IServiceProvider)"/>.
+        /// calling <see cref="CreatePredicate(IServiceProvider)"/>.
         /// <para>
         /// This should be overridden if this predicate relies on other predicates in order to hook all of them.
         /// Failing to do so will hide some predicates to the evaluation hook.
         /// </para>
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) predicates.</param>
         /// <returns>A wrapper bound to the hook context or null for an empty predicate.</returns>
-        public virtual ObjectPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
+        public virtual ObjectPredicateHook? CreateHook( PredicateHookContext context, IServiceProvider services )
         {
-            var p = CreatePredicate( monitor, services );
+            var p = CreatePredicate( services );
             return p != null ? new ObjectPredicateHook( context, this, p ) : null;
         }
 

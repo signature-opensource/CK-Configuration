@@ -34,10 +34,10 @@ namespace CK.Object.Predicate
         /// <summary>
         /// Always creates the empty (null) predicate.
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">The services.</param>
+        /// 
         /// <returns>The empty predicate (null).</returns>
-        public override Func<object, bool>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, bool>? CreatePredicate( IServiceProvider services )
         {
             return null;
         }

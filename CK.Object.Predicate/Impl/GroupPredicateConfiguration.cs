@@ -121,9 +121,9 @@ namespace CK.Object.Predicate
         public IReadOnlyList<ObjectPredicateConfiguration> Predicates => _predicates;
 
         /// <inheritdoc />
-        public override ObjectPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
+        public override ObjectPredicateHook? CreateHook( PredicateHookContext context, IServiceProvider services )
         {
-            ImmutableArray<ObjectPredicateHook> items = _predicates.Select( c => c.CreateHook( monitor, context, services ) )
+            ImmutableArray<ObjectPredicateHook> items = _predicates.Select( c => c.CreateHook( context, services ) )
                                                                    .Where( s => s != null )
                                                                    .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
@@ -133,9 +133,9 @@ namespace CK.Object.Predicate
         }
 
         /// <inheritdoc />
-        public override Func<object, bool>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, bool>? CreatePredicate( IServiceProvider services )
         {
-            ImmutableArray<Func<object, bool>> items = _predicates.Select( c => c.CreatePredicate( monitor, services ) )
+            ImmutableArray<Func<object, bool>> items = _predicates.Select( c => c.CreatePredicate( services ) )
                                                                   .Where( f => f != null )
                                                                   .ToImmutableArray()!;
             if( items.Length == 0 ) return null;

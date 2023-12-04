@@ -104,9 +104,9 @@ namespace CK.Object.Predicate
                     : @this;
         }
 
-        public override IObjectPredicateHook? CreateAsyncHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
+        public override IObjectPredicateHook? CreateAsyncHook( PredicateHookContext context, IServiceProvider services )
         {
-            ImmutableArray<IObjectPredicateHook> items = _predicates.Select( c => c.CreateAsyncHook( monitor, context, services ) )
+            ImmutableArray<IObjectPredicateHook> items = _predicates.Select( c => c.CreateAsyncHook( context, services ) )
                                                                     .Where( s => s != null )
                                                                     .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
@@ -115,9 +115,9 @@ namespace CK.Object.Predicate
             return new GroupAsyncPredicateHook( context, this, items );
         }
 
-        public override Func<object,ValueTask<bool>>? CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object,ValueTask<bool>>? CreateAsyncPredicate( IServiceProvider services )
         {
-            ImmutableArray<Func<object, ValueTask<bool>>> items = _predicates.Select( c => c.CreateAsyncPredicate( monitor, services ) )
+            ImmutableArray<Func<object, ValueTask<bool>>> items = _predicates.Select( c => c.CreateAsyncPredicate( services ) )
                                                                              .Where( s => s != null )        
                                                                              .ToImmutableArray()!;
             if( items.Length == 0 ) return null;

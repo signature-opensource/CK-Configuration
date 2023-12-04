@@ -22,7 +22,7 @@ namespace CK.Object.Predicate
         }
 
         /// <inheritdoc />
-        public override Func<object, bool> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, bool> CreatePredicate( IServiceProvider services )
         {
             return static _ => true;
         }

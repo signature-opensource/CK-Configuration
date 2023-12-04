@@ -40,9 +40,9 @@ namespace CK.Object.Predicate
         public ObjectPredicateConfiguration Operand => _operand;
 
         /// <inheritdoc />
-        public override Func<object, bool>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, bool>? CreatePredicate( IServiceProvider services )
         {
-            var p = _operand.CreatePredicate( monitor, services );
+            var p = _operand.CreatePredicate( services );
             return p != null ? o => !p( o ) : null;
         }
     }

@@ -20,10 +20,10 @@ namespace CK.Object.Transform
 
         public IReadOnlyList<IObjectTransformConfiguration> Transforms => _t;
 
-        public override Func<object, ValueTask<object>>? CreateAsyncTransform( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, ValueTask<object>>? CreateAsyncTransform( IServiceProvider services )
         {
-            var f = Unsafe.As<ObjectTransformConfiguration>( _t[0] ).CreateTransform( monitor, services );
-            var s = _t[1].CreateAsyncTransform( monitor, services );
+            var f = Unsafe.As<ObjectTransformConfiguration>( _t[0] ).CreateTransform( services );
+            var s = _t[1].CreateAsyncTransform( services );
             if( f != null )
             {
                 if( s != null )
@@ -37,10 +37,10 @@ namespace CK.Object.Transform
             return s;
         }
 
-        public override IObjectTransformHook? CreateAsyncHook( IActivityMonitor monitor, TransformHookContext context, IServiceProvider services )
+        public override IObjectTransformHook? CreateAsyncHook( TransformHookContext context, IServiceProvider services )
         {
-            var f = Unsafe.As<ObjectTransformConfiguration>( _t[0] ).CreateHook( monitor, context, services );
-            var s = _t[1].CreateAsyncHook( monitor, context, services );
+            var f = Unsafe.As<ObjectTransformConfiguration>( _t[0] ).CreateHook( context, services );
+            var s = _t[1].CreateAsyncHook( context, services );
             if( f != null )
             {
                 if( s != null )

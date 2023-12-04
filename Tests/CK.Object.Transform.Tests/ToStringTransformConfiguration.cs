@@ -12,7 +12,7 @@ namespace CK.Object.Transform
         {
         }
 
-        public override Func<object, object>? CreateTransform( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, object>? CreateTransform( IServiceProvider services )
         {
             return static o => o.ToString() ?? "<null>";
         }

@@ -16,10 +16,10 @@ namespace CK.Object.Transform
 
         public IReadOnlyList<IObjectTransformConfiguration> Transforms => _t;
 
-        public override Func<object, object>? CreateTransform( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, object>? CreateTransform( IServiceProvider services )
         {
-            var f = _t[0].CreateTransform( monitor, services );
-            var s = _t[1].CreateTransform( monitor, services );
+            var f = _t[0].CreateTransform( services );
+            var s = _t[1].CreateTransform( services );
             if( f != null )
             {
                 if( s != null )
@@ -31,10 +31,10 @@ namespace CK.Object.Transform
             return s;
         }
 
-        public override ObjectTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext context, IServiceProvider services )
+        public override ObjectTransformHook? CreateHook( TransformHookContext context, IServiceProvider services )
         {
-            var f = _t[0].CreateHook( monitor, context, services );
-            var s = _t[1].CreateHook( monitor, context, services );
+            var f = _t[0].CreateHook( context, services );
+            var s = _t[1].CreateHook( context, services );
             if( f != null )
             {
                 if( s != null )

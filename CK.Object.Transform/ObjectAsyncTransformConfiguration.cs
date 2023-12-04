@@ -40,26 +40,26 @@ namespace CK.Object.Transform
         /// <summary>
         /// Creates an asynchronous transform function.
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">Services that may be required for some (complex) transform functions.</param>
+        /// 
         /// <returns>A configured transform function or null for an identity function.</returns>
-        public abstract Func<object, ValueTask<object>>? CreateAsyncTransform( IActivityMonitor monitor, IServiceProvider services );
+        public abstract Func<object, ValueTask<object>>? CreateAsyncTransform( IServiceProvider services );
 
         /// <summary>
         /// Creates a <see cref="ObjectAsyncTransformHook"/> with this configuration and a function obtained by
-        /// calling <see cref="CreateAsyncTransform(IActivityMonitor, IServiceProvider)"/>.
+        /// calling <see cref="CreateAsyncTransform(IServiceProvider)"/>.
         /// <para>
         /// This should be overridden if this transform function relies on other transform functions in order to hook all of them.
         /// Failing to do so will hide some transform functions to the evaluation hook.
         /// </para>
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="context">The hook context.</param>
         /// <param name="services">Services that may be required for some (complex) transform functions.</param>
+        /// 
         /// <returns>A wrapper bound to the hook context or null for an identity function.</returns>
-        public virtual IObjectTransformHook? CreateAsyncHook( IActivityMonitor monitor, TransformHookContext context, IServiceProvider services )
+        public virtual IObjectTransformHook? CreateAsyncHook( TransformHookContext context, IServiceProvider services )
         {
-            var p = CreateAsyncTransform( monitor, services );
+            var p = CreateAsyncTransform( services );
             return p != null ? new ObjectAsyncTransformHook( context, this, p ) : null;
         }
 

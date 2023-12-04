@@ -21,7 +21,7 @@ namespace CK.Object.Predicate
         {
         }
 
-        public override Func<object, bool> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, bool> CreatePredicate( IServiceProvider services )
         {
             return static _ => false;
         }

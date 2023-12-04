@@ -34,10 +34,10 @@ namespace CK.Object.Transform
         /// <summary>
         /// Always creates the (null) identity function.
         /// </summary>
-        /// <param name="monitor">The monitor that must be used to signal errors.</param>
         /// <param name="services">The services.</param>
+        /// 
         /// <returns>The identity function (null).</returns>
-        public override Func<object, object>? CreateTransform( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, object>? CreateTransform( IServiceProvider services )
         {
             return null;
         }

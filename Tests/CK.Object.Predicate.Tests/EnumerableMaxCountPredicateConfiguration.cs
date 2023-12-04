@@ -22,7 +22,7 @@ namespace CK.Object.Predicate
             else _maxCount = c.Value;
         }
 
-        public override Func<object, bool> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, bool> CreatePredicate( IServiceProvider services )
         {
             return o => DoContains( o, _maxCount );
         }

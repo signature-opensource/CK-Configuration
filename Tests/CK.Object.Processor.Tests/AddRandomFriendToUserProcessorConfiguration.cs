@@ -21,12 +21,12 @@ namespace CK.Object.Processor
             SetIntrinsicTransform( Transform );
         }
 
-        Func<object, bool>? Condition( IActivityMonitor monitor, IServiceProvider services )
+        Func<object, bool>? Condition( IServiceProvider services )
         {
             return o => o is UserRecord u && u.Age >= _minAge;
         }
 
-        Func<object, object>? Transform( IActivityMonitor monitor, IServiceProvider services )
+        Func<object, object>? Transform( IServiceProvider services )
         {
             var userServices = services.GetRequiredService<UserService>();
             return o =>

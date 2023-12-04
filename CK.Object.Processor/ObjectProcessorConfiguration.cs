@@ -254,8 +254,8 @@ namespace CK.Object.Processor
                                                                        ObjectAsyncTransformConfiguration? transform,
                                                                        ImmutableArray<ObjectProcessorConfiguration> processors )
         {
-            Func<object, ValueTask<bool>>? c = condition?.CreateAsyncPredicate( monitor, services );
-            Func<object, ValueTask<object>>? t = transform?.CreateAsyncTransform( monitor, services );
+            Func<object, ValueTask<bool>>? c = condition?.CreateAsyncPredicate( services );
+            Func<object, ValueTask<object>>? t = transform?.CreateAsyncTransform( services );
             object? inner = CreateHybridInnerProcessor( monitor, services, processors );
             if( c != null )
             {
@@ -330,8 +330,8 @@ namespace CK.Object.Processor
                                                                              ObjectTransformConfiguration transform,
                                                                              ImmutableArray<ObjectProcessorConfiguration> processors )
         {
-            Func<object, ValueTask<bool>>? c = condition.CreateAsyncPredicate( monitor, services );
-            Func<object, object>? t = transform.CreateTransform( monitor, services );
+            Func<object, ValueTask<bool>>? c = condition.CreateAsyncPredicate( services );
+            Func<object, object>? t = transform.CreateTransform( services );
             object? inner = CreateHybridInnerProcessor( monitor, services, processors );
             if( c != null )
             {
@@ -400,8 +400,8 @@ namespace CK.Object.Processor
                                                                              ObjectAsyncTransformConfiguration transform,
                                                                              ImmutableArray<ObjectProcessorConfiguration> processors )
         {
-            Func<object, bool>? c = condition.CreatePredicate( monitor, services );
-            Func<object, ValueTask<object>>? t = transform.CreateAsyncTransform( monitor, services );
+            Func<object, bool>? c = condition.CreatePredicate( services );
+            Func<object, ValueTask<object>>? t = transform.CreateAsyncTransform( services );
             object? inner = CreateHybridInnerProcessor( monitor, services, processors );
             if( c != null )
             {
@@ -472,8 +472,8 @@ namespace CK.Object.Processor
                                                        ObjectTransformConfiguration? transform,
                                                        ImmutableArray<ObjectProcessorConfiguration> processors )
         {
-            Func<object, bool>? c = condition?.CreatePredicate( monitor, services );
-            Func<object, object>? t = transform?.CreateTransform( monitor, services );
+            Func<object, bool>? c = condition?.CreatePredicate( services );
+            Func<object, object>? t = transform?.CreateTransform( services );
             Func<object, object?>? inner = CreateInnerProcessor( monitor, services, processors );
             if( c != null )
             {
@@ -654,8 +654,8 @@ namespace CK.Object.Processor
         public ObjectProcessorHook? CreateHook( IActivityMonitor monitor, ProcessorHookContext context, IServiceProvider services )
         {
             Initialize();
-            IObjectPredicateHook? c = _fCondition?.CreateAsyncHook( monitor, context.ConditionHookContext, services );
-            IObjectTransformHook? t = _fTransform?.CreateAsyncHook( monitor, context.TransformHookContext, services );
+            IObjectPredicateHook? c = _fCondition?.CreateAsyncHook( context.ConditionHookContext, services );
+            IObjectTransformHook? t = _fTransform?.CreateAsyncHook( context.TransformHookContext, services );
             ImmutableArray<ObjectProcessorHook> processors = _processors.Select( p => p.CreateHook( monitor, context, services ) )
                                                                              .Where( p => p != null )
                                                                              .ToImmutableArray()!;
@@ -666,28 +666,28 @@ namespace CK.Object.Processor
 
         sealed class AsyncCond : ObjectAsyncPredicateConfiguration
         {
-            readonly Func<IActivityMonitor, IServiceProvider, Func<object, ValueTask<bool>>?> _predicateFactory;
-            readonly Func<IActivityMonitor, PredicateHookContext, IServiceProvider, ObjectAsyncPredicateHook?>? _hookFactory;
+            readonly Func<IServiceProvider, Func<object, ValueTask<bool>>?> _predicateFactory;
+            readonly Func<PredicateHookContext, IServiceProvider, ObjectAsyncPredicateHook?>? _hookFactory;
 
             public AsyncCond( string configurationPath,
-                              Func<IActivityMonitor, IServiceProvider, Func<object, ValueTask<bool>>?> predicateFactory,
-                              Func<IActivityMonitor, PredicateHookContext, IServiceProvider, ObjectAsyncPredicateHook?>? hookFactory = null )
+                              Func<IServiceProvider, Func<object, ValueTask<bool>>?> predicateFactory,
+                              Func<PredicateHookContext, IServiceProvider, ObjectAsyncPredicateHook?>? hookFactory = null )
                 : base( configurationPath )
             {
                 _predicateFactory = predicateFactory;
                 _hookFactory = hookFactory;
             }
 
-            public override Func<object, ValueTask<bool>>? CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
+            public override Func<object, ValueTask<bool>>? CreateAsyncPredicate( IServiceProvider services )
             {
-                return _predicateFactory( monitor, services );
+                return _predicateFactory( services );
             }
 
-            public override IObjectPredicateHook? CreateAsyncHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
+            public override IObjectPredicateHook? CreateAsyncHook( PredicateHookContext context, IServiceProvider services )
             {
                 return _hookFactory != null
-                        ? _hookFactory( monitor, context, services )
-                        : base.CreateAsyncHook( monitor, context, services );
+                        ? _hookFactory( context, services )
+                        : base.CreateAsyncHook( context, services );
             }
         }
 
@@ -697,8 +697,8 @@ namespace CK.Object.Processor
         /// </summary>
         /// <param name="predicateFactory">Required factory of asynchronous condition.</param>
         /// <param name="hookFactory">Optional hook factory.</param>
-        protected void SetIntrinsicAsyncCondition( Func<IActivityMonitor, IServiceProvider, Func<object, ValueTask<bool>>?> predicateFactory,
-                                                   Func<IActivityMonitor, PredicateHookContext, IServiceProvider, ObjectAsyncPredicateHook?>? hookFactory = null )
+        protected void SetIntrinsicAsyncCondition( Func<IServiceProvider, Func<object, ValueTask<bool>>?> predicateFactory,
+                                                   Func<PredicateHookContext, IServiceProvider, ObjectAsyncPredicateHook?>? hookFactory = null )
         {
             Throw.CheckNotNullArgument( predicateFactory );
             SetIntrinsicCondition( new AsyncCond( ConfigurationPath, predicateFactory, hookFactory ) );
@@ -706,28 +706,28 @@ namespace CK.Object.Processor
 
         sealed class AsyncTrans : ObjectAsyncTransformConfiguration
         {
-            readonly Func<IActivityMonitor, IServiceProvider, Func<object, ValueTask<object>>?> _transformFactory;
-            readonly Func<IActivityMonitor, TransformHookContext, IServiceProvider, ObjectAsyncTransformHook>? _hookFactory;
+            readonly Func<IServiceProvider, Func<object, ValueTask<object>>?> _transformFactory;
+            readonly Func<TransformHookContext, IServiceProvider, ObjectAsyncTransformHook>? _hookFactory;
 
             public AsyncTrans( string configurationPath,
-                               Func<IActivityMonitor, IServiceProvider, Func<object, ValueTask<object>>?> transformFactory,
-                               Func<IActivityMonitor, TransformHookContext, IServiceProvider, ObjectAsyncTransformHook>? hookFactory )
+                               Func<IServiceProvider, Func<object, ValueTask<object>>?> transformFactory,
+                               Func<TransformHookContext, IServiceProvider, ObjectAsyncTransformHook>? hookFactory )
                 : base( configurationPath )
             {
                 _transformFactory = transformFactory;
                 _hookFactory = hookFactory;
             }
 
-            public override Func<object, ValueTask<object>>? CreateAsyncTransform( IActivityMonitor monitor, IServiceProvider services )
+            public override Func<object, ValueTask<object>>? CreateAsyncTransform( IServiceProvider services )
             {
-                return _transformFactory( monitor, services );
+                return _transformFactory( services );
             }
 
-            public override IObjectTransformHook? CreateAsyncHook( IActivityMonitor monitor, TransformHookContext context, IServiceProvider services )
+            public override IObjectTransformHook? CreateAsyncHook( TransformHookContext context, IServiceProvider services )
             {
                 return _hookFactory != null
-                        ? _hookFactory( monitor, context, services )
-                        : base.CreateAsyncHook( monitor, context, services );
+                        ? _hookFactory( context, services )
+                        : base.CreateAsyncHook( context, services );
             }
         }
 
@@ -737,8 +737,8 @@ namespace CK.Object.Processor
         /// </summary>
         /// <param name="transformFactory">Required factory of asynchronous transformation.</param>
         /// <param name="hookFactory">Optional hook factory.</param>
-        protected void SetIntrinsicAsyncTransform( Func<IActivityMonitor, IServiceProvider, Func<object, ValueTask<object>>?> transformFactory,
-                                                   Func<IActivityMonitor, TransformHookContext, IServiceProvider, ObjectAsyncTransformHook>? hookFactory = null )
+        protected void SetIntrinsicAsyncTransform( Func<IServiceProvider, Func<object, ValueTask<object>>?> transformFactory,
+                                                   Func<TransformHookContext, IServiceProvider, ObjectAsyncTransformHook>? hookFactory = null )
         {
             Throw.CheckNotNullArgument( transformFactory );
             SetIntrinsicTransform( new AsyncTrans( ConfigurationPath, transformFactory, hookFactory ) );
@@ -746,28 +746,28 @@ namespace CK.Object.Processor
 
         sealed class Cond : ObjectPredicateConfiguration
         {
-            readonly Func<IActivityMonitor, IServiceProvider, Func<object, bool>?> _predicateFactory;
-            readonly Func<IActivityMonitor, PredicateHookContext, IServiceProvider, ObjectPredicateHook?>? _hookFactory;
+            readonly Func<IServiceProvider, Func<object, bool>?> _predicateFactory;
+            readonly Func<PredicateHookContext, IServiceProvider, ObjectPredicateHook?>? _hookFactory;
 
             public Cond( string configurationPath,
-                         Func<IActivityMonitor, IServiceProvider, Func<object, bool>?> predicateFactory,
-                         Func<IActivityMonitor, PredicateHookContext, IServiceProvider, ObjectPredicateHook?>? hookFactory = null )
+                         Func<IServiceProvider, Func<object, bool>?> predicateFactory,
+                         Func<PredicateHookContext, IServiceProvider, ObjectPredicateHook?>? hookFactory = null )
                 : base( configurationPath )
             {
                 _predicateFactory = predicateFactory;
                 _hookFactory = hookFactory;
             }
 
-            public override Func<object, bool>? CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+            public override Func<object, bool>? CreatePredicate( IServiceProvider services )
             {
-                return _predicateFactory( monitor, services );
+                return _predicateFactory( services );
             }
 
-            public override ObjectPredicateHook? CreateHook( IActivityMonitor monitor, PredicateHookContext context, IServiceProvider services )
+            public override ObjectPredicateHook? CreateHook( PredicateHookContext context, IServiceProvider services )
             {
                 return _hookFactory != null
-                        ? _hookFactory( monitor, context, services )
-                        : base.CreateHook( monitor, context, services );
+                        ? _hookFactory( context, services )
+                        : base.CreateHook( context, services );
             }
         }
 
@@ -777,8 +777,8 @@ namespace CK.Object.Processor
         /// </summary>
         /// <param name="predicateFactory">Required factory of synchronous condition.</param>
         /// <param name="hookFactory">Optional hook factory.</param>
-        protected void SetIntrinsicCondition( Func<IActivityMonitor, IServiceProvider, Func<object, bool>?> predicateFactory,
-                                              Func<IActivityMonitor, PredicateHookContext, IServiceProvider, ObjectPredicateHook?>? hookFactory = null )
+        protected void SetIntrinsicCondition( Func<IServiceProvider, Func<object, bool>?> predicateFactory,
+                                              Func<PredicateHookContext, IServiceProvider, ObjectPredicateHook?>? hookFactory = null )
         {
             Throw.CheckNotNullArgument( predicateFactory );
             SetIntrinsicCondition( new Cond( ConfigurationPath, predicateFactory, hookFactory ) );
@@ -786,28 +786,28 @@ namespace CK.Object.Processor
 
         sealed class Trans : ObjectTransformConfiguration
         {
-            readonly Func<IActivityMonitor, IServiceProvider, Func<object, object>?> _transformFactory;
-            readonly Func<IActivityMonitor, TransformHookContext, IServiceProvider, ObjectTransformHook>? _hookFactory;
+            readonly Func<IServiceProvider, Func<object, object>?> _transformFactory;
+            readonly Func<TransformHookContext, IServiceProvider, ObjectTransformHook>? _hookFactory;
 
             public Trans( string configurationPath,
-                          Func<IActivityMonitor, IServiceProvider, Func<object, object>?> transformFactory,
-                          Func<IActivityMonitor, TransformHookContext, IServiceProvider, ObjectTransformHook>? hookFactory = null )
+                          Func<IServiceProvider, Func<object, object>?> transformFactory,
+                          Func<TransformHookContext, IServiceProvider, ObjectTransformHook>? hookFactory = null )
                 : base( configurationPath )
             {
                 _transformFactory = transformFactory;
                 _hookFactory = hookFactory;
             }
 
-            public override Func<object, object>? CreateTransform( IActivityMonitor monitor, IServiceProvider services )
+            public override Func<object, object>? CreateTransform( IServiceProvider services )
             {
-                return _transformFactory( monitor, services );
+                return _transformFactory( services );
             }
 
-            public override ObjectTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext context, IServiceProvider services )
+            public override ObjectTransformHook? CreateHook( TransformHookContext context, IServiceProvider services )
             {
                 return _hookFactory != null
-                        ? _hookFactory( monitor, context, services )
-                        : base.CreateHook( monitor, context, services );
+                        ? _hookFactory( context, services )
+                        : base.CreateHook( context, services );
             }
         }
 
@@ -817,8 +817,8 @@ namespace CK.Object.Processor
         /// </summary>
         /// <param name="transformFactory">Required factory of synchronous transformation.</param>
         /// <param name="hookFactory">Optional hook factory.</param>
-        protected void SetIntrinsicTransform( Func<IActivityMonitor, IServiceProvider, Func<object, object>?> transformFactory,
-                                              Func<IActivityMonitor, TransformHookContext, IServiceProvider, ObjectTransformHook>? hookFactory = null )
+        protected void SetIntrinsicTransform( Func<IServiceProvider, Func<object, object>?> transformFactory,
+                                              Func<TransformHookContext, IServiceProvider, ObjectTransformHook>? hookFactory = null )
         {
             Throw.CheckNotNullArgument( transformFactory );
             SetIntrinsicTransform( new Trans( ConfigurationPath, transformFactory, hookFactory ) );

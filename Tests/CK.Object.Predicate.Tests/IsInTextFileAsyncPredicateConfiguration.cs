@@ -16,7 +16,7 @@ namespace CK.Object.Predicate
             _fileName = IsInTextFilePredicateConfiguration.ReadFileName( monitor, configuration );
         }
 
-        public override Func<object, ValueTask<bool>> CreateAsyncPredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, ValueTask<bool>> CreateAsyncPredicate( IServiceProvider services )
         {
             return async o =>
             {

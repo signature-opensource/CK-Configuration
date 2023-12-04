@@ -15,7 +15,7 @@ namespace CK.Object.Transform
             _prefix = configuration["Prefix"] ?? "";
         }
 
-        public override Func<object, object>? CreateTransform( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, object>? CreateTransform( IServiceProvider services )
         {
             return Transform;
         }

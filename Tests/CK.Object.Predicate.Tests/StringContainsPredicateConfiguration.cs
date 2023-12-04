@@ -20,7 +20,7 @@ namespace CK.Object.Predicate
             _content = c!;
         }
 
-        public override Func<object, bool> CreatePredicate( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, bool> CreatePredicate( IServiceProvider services )
         {
             return o => o is string s && s.Contains( _content );
         }

@@ -40,9 +40,9 @@ namespace CK.Object.Transform
         public IReadOnlyList<ObjectTransformConfiguration> Transforms => _transforms;
 
         /// <inheritdoc />
-        public override ObjectTransformHook? CreateHook( IActivityMonitor monitor, TransformHookContext context, IServiceProvider services )
+        public override ObjectTransformHook? CreateHook( TransformHookContext context, IServiceProvider services )
         {
-            ImmutableArray<ObjectTransformHook> items = _transforms.Select( c => c.CreateHook( monitor, context, services ) )
+            ImmutableArray<ObjectTransformHook> items = _transforms.Select( c => c.CreateHook( context, services ) )
                                                                    .Where( s => s != null )
                                                                    .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
@@ -51,9 +51,9 @@ namespace CK.Object.Transform
         }
 
         /// <inheritdoc />
-        public override Func<object, object>? CreateTransform( IActivityMonitor monitor, IServiceProvider services )
+        public override Func<object, object>? CreateTransform( IServiceProvider services )
         {
-            ImmutableArray<Func<object, object>> items = _transforms.Select( c => c.CreateTransform( monitor, services ) )
+            ImmutableArray<Func<object, object>> items = _transforms.Select( c => c.CreateTransform( services ) )
                                                                .Where( f => f != null )
                                                                .ToImmutableArray()!;
             if( items.Length == 0 ) return null;
