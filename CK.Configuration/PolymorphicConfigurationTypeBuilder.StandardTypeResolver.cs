@@ -108,7 +108,8 @@ namespace CK.Core
                 {
                     o = DoCreate( monitor, builder, configuration, allowDefaultComposite );
                 }
-                if( o == null && !hasError && _fallback != null )
+                if( hasError ) return null;
+                if( o == null && _fallback != null )
                 {
                     o = _fallback.Create( monitor, builder, configuration );
                 }
