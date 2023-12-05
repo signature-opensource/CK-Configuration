@@ -37,12 +37,12 @@ Assemblies and aliases can also be expressed as:
 Assembly names have no version, culture, or token. Only the simple name is considered and this
 is by design.
 
-The `AssemblyConfiguration.TryResolveType` is the method that does the actual job of "finding a plugin".
+`AssemblyConfiguration.TryResolveType` method does the actual job of "finding a plugin".
 A plugin is typically defined with a simple `Type = "XXX"` configuration:
 
-- `Type = "My.Namespace.MyPluginComponentConfiguration"`: Will be searched in the DefaultAssembly if defined (or in the assembly that
-  defines the "plugin family" - see the `PolymorphicConfigurationTypeBuilder` for this).
-- `Type = "MyPlugin"`: The PolymorphicConfigurationTypeBuilder can introduce a default namespace and
+- `Type = "My.Namespace.MyPluginComponentConfiguration"`: Will be searched in the DefaultAssembly if defined
+  (or in the assembly that defines the "plugin family" - see the `PolymorphicConfigurationTypeBuilder` for this).
+- `Type = "MyPlugin"`: The PolymorphicConfigurationTypeBuilder introduces a default namespace and
   automatically suffix the type name with its resolver's configuration.
 - `Type = "MyPlugin, Acme.Corp.Strategies"`: The type will be search in the specified assembly (that must
   be explicitely allowed). 
@@ -94,8 +94,6 @@ A sample is available in [Tests/ConfigurationPlugins](Tests/ConfigurationPlugins
 a simple strategy, its composite, and 2 sets of configuration objects, one of them being "extensible":
 placeholders can be defined and "patched" with "dynamic configurations".
 
-The [CK.Object.Predicate](../CK.Object.Predicate/README.md) is another concrete example.
-
 ### Configuration object family and Type resolution.
 A family is defined by a root configuration type that is almost always abstract. This root type defines the
 API of the family. A typical member of this API is a factory of actual "strategy" that is fully
@@ -118,5 +116,5 @@ The design of a configuration system can introduce such "islands" with dedicated
 Placeholders are extension points that are "empty" but can be substituted by actual configuration
 sections to create a new configuration structure that extends the original one.
 
-The [Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration](../Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration/README.md)
+The [Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration](..\Tests\ConfigurationPlugins\StrategyPlugin\ExtensibleConfiguration\README.md)
 documents this approach.

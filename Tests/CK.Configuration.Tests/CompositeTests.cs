@@ -1,9 +1,9 @@
 using CK.Core;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Configuration.Tests
@@ -66,6 +66,11 @@ namespace CK.Configuration.Tests
                                     ImmutableConfigurationSection configuration )
             : base( configuration.Path )
         {
+            var e = configuration["CtorError"];
+            if( e != null )
+            {
+                monitor.Error( e );
+            }
         }
     }
 
@@ -83,6 +88,11 @@ namespace CK.Configuration.Tests
             : base( configuration.Path )
         {
             _simpleItems = simpleItems.ToImmutableArray();
+            var e = configuration["CtorError"];
+            if( e != null )
+            {
+                monitor.Error( e );
+            }
         }
 
         public ImmutableArray<SimpleConfiguration> SimpleItems => _simpleItems;
@@ -118,6 +128,12 @@ namespace CK.Configuration.Tests
                                                      ImmutableConfigurationSection configuration )
         {
             IReadOnlyList<SimpleCollectionConfiguration>? subs = null;
+
+            var e = configuration["CtorError"];
+            if( e != null )
+            {
+                monitor.Error( e );
+            }
 
             var simpleItems = configuration.TryGetSection( "SimpleItems" );
             if( simpleItems != null )
@@ -225,6 +241,65 @@ namespace CK.Configuration.Tests
             e.Items[1].Should().NotBeAssignableTo<MoreComplexConfiguration>()
                                .And.BeAssignableTo<DefaultCompositeConfiguration>();
         }
+
+        [Test]
+        public void error_in_constructor_returns_null_and_trigger_no_exception()
+        {
+            var config = ImmutableConfigurationSection.CreateFromJson( "Root",
+                """
+                {
+                    "DefaultAssembly": "CK.Configuration.Tests",
+                    "Type": "SimpleCollection",
+                    "CtorError": "Pouf!",
+                    "SimpleItems": [
+                        { "Type": "Simple" },
+                        { "Type": "Simple" }
+                    ],
+                    // This one is ignored: the SimpleCollection constructor parameter name is "simpleItems"...
+                    "Items": [
+                        { "Type": "Simple" }
+                    ]
+                }
+                """ );
+            var builder = new PolymorphicConfigurationTypeBuilder();
+            TestConfigurationBase.AddResolver( builder );
+            using( TestHelper.Monitor.CollectEntries( out var logs ) )
+            {
+                builder.Create<TestConfigurationBase>( TestHelper.Monitor, config ).Should().BeNull();
+                logs.Where( e => e.Exception != null ).Should().BeEmpty();
+            }
+        }
+
+        [Test]
+        public void error_in_subordinated_constructor_returns_null_and_trigger_no_exception()
+        {
+            var config = ImmutableConfigurationSection.CreateFromJson( "Root",
+                """
+                {
+                    "DefaultAssembly": "CK.Configuration.Tests",
+                    "Type": "SimpleCollection",
+                    "SimpleItems": [
+                        { "Type": "Simple" },
+                        {
+                            "Type": "Simple",
+                            "CtorError": "Pouf!"
+                        }
+                    ],
+                    // This one is ignored: the SimpleCollection constructor parameter name is "simpleItems"...
+                    "Items": [
+                        { "Type": "Simple" }
+                    ]
+                }
+                """ );
+            var builder = new PolymorphicConfigurationTypeBuilder();
+            TestConfigurationBase.AddResolver( builder );
+            using( TestHelper.Monitor.CollectEntries( out var logs ) )
+            {
+                builder.Create<TestConfigurationBase>( TestHelper.Monitor, config ).Should().BeNull();
+                logs.Where( e => e.Exception != null ).Should().BeEmpty();
+            }
+        }
+
 
     }
 }
