@@ -41,8 +41,8 @@ is by design.
 A plugin is typically defined with a simple `Type = "XXX"` configuration:
 
 - `Type = "My.Namespace.MyPluginComponentConfiguration"`: Will be searched in the DefaultAssembly if defined
-  (or in the assembly that defines the "plugin family" - see the `PolymorphicConfigurationTypeBuilder` for this).
-- `Type = "MyPlugin"`: The PolymorphicConfigurationTypeBuilder introduces a default namespace and
+  (or in the assembly that defines the "plugin family" - see the `TypedConfigurationBuilder` for this).
+- `Type = "MyPlugin"`: The TypedConfigurationBuilder introduces a default namespace and
   automatically suffix the type name with its resolver's configuration.
 - `Type = "MyPlugin, Acme.Corp.Strategies"`: The type will be search in the specified assembly (that must
   be explicitely allowed). 
@@ -75,7 +75,7 @@ Or:
 ```
 
 
-## PolymorphicConfigurationTypeBuilder
+## TypedConfigurationBuilder
 
 The [strategy design pattern](https://en.wikipedia.org/wiki/Strategy_pattern) encapsulates
 variability behind an abstraction. Mixed with the [composite design pattern](https://en.wikipedia.org/wiki/Composite_pattern),
@@ -87,7 +87,7 @@ This library provides a small framework that helps implementing a configuration 
 Configured objects are immutable and are the factories of actual objetcs that are typically instantiated
 in a "unit of work", a DI Scope.
 
-The [`PolymorphicConfigurationTypeBuilder`](PolymorphicConfigurationTypeBuilder.cs)
+The [`TypedConfigurationBuilder`](TypedConfigurationBuilder.cs)
 offers a simple and extensible way to instantiate one (or more) family of "configured objects".
 
 A sample is available in [Tests/ConfigurationPlugins](Tests/ConfigurationPlugins) that demonstrate
@@ -103,7 +103,7 @@ families, producing 2 types of objects:
   - ObjectAsyncPredicate produce `Func<object,ValueTask<bool>>`.
   - ObjectPredicate (that are ObjectAsyncPredicate) can in addition produce more efficient `Func<object,bool>`.
   
-The complicated stuff is done by the `PolymorphicConfigurationTypeBuilder` and its resolvers.
+The complicated stuff is done by the `TypedConfigurationBuilder` and its resolvers.
 A configuration can contain multiple families simply by registering the family resolvers that
 must be handled: families are composable, hence configurations are composable.
 

@@ -4,18 +4,18 @@ using System.Linq;
 
 namespace CK.Core
 {
-    public sealed partial class PolymorphicConfigurationTypeBuilder
+    public sealed partial class TypedConfigurationBuilder
     {
         /// <summary>
         /// A resolver can create an instance of a <see cref="BaseType"/> from a <see cref="ImmutableConfigurationSection"/>.
         /// <para>
-        /// Other type resolver than the standard one (see <see cref="PolymorphicConfigurationTypeBuilderExtensions.AddStandardTypeResolver{TBuilder}(TBuilder, Type, string, bool, string?, Type?, string, string, string)"/>)
+        /// Other type resolver than the standard one (see <see cref="StandardTypeResolver"/>)
         /// can be created, but the standard one should cover all needs.
         /// </para>
         /// <para>
         /// Adding a resolver to <see cref="Resolvers"/> is done by the TypeResolver constructor.
-        /// When <see cref="PolymorphicConfigurationTypeBuilder.IsCreating"/> is true, the added resolver only applies until the current call
-        /// to <see cref="PolymorphicConfigurationTypeBuilder.Create(IActivityMonitor, Type, Microsoft.Extensions.Configuration.IConfigurationSection)"/>
+        /// When <see cref="TypedConfigurationBuilder.IsCreating"/> is true, the added resolver only applies until the current call
+        /// to <see cref="TypedConfigurationBuilder.Create(IActivityMonitor, Type, Microsoft.Extensions.Configuration.IConfigurationSection)"/>
         /// ends.
         /// </para>
         /// <para>
@@ -60,7 +60,7 @@ namespace CK.Core
             /// <param name="configuration">The configuration to analyze.</param>
             /// <returns>The resulting instance or null if any error occurred.</returns>
             internal protected abstract object? Create( IActivityMonitor monitor,
-                                                        PolymorphicConfigurationTypeBuilder builder,
+                                                        TypedConfigurationBuilder builder,
                                                         ImmutableConfigurationSection configuration );
         }
     }

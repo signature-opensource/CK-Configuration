@@ -24,7 +24,7 @@ namespace Plugin.Strategy
         /// <param name="configuration">The configuration for this object.</param>
         /// <param name="strategies">The subordinated items.</param>
         public ExtensibleCompositeStrategyConfiguration( IActivityMonitor monitor,
-                                                         PolymorphicConfigurationTypeBuilder builder,
+                                                         TypedConfigurationBuilder builder,
                                                          ImmutableConfigurationSection configuration,
                                                          IReadOnlyList<ExtensibleStrategyConfiguration> strategies )
         {

@@ -118,7 +118,7 @@ namespace CK.Configuration.Tests
                 using( TestHelper.Monitor.CollectTexts( out var logs ) )
                 {
                     var config = ImmutableConfigurationSection.CreateFromJson( "Root", raw );
-                    var builder = new PolymorphicConfigurationTypeBuilder();
+                    var builder = new TypedConfigurationBuilder();
                     ExtensibleStrategyConfiguration.AddResolver( builder );
                     var sC = builder.Create<ExtensibleStrategyConfiguration>( TestHelper.Monitor, config );
                     Throw.DebugAssert( sC != null );

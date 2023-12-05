@@ -7,7 +7,7 @@ namespace StrategyPlugin
     /// the factory of the configured component.
     /// <para>
     /// An instance constructor must exist with the following signature:
-    /// <c>( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )</c>.
+    /// <c>( IActivityMonitor monitor, TypedConfigurationBuilder builder, ImmutableConfigurationSection configuration )</c>.
     /// </para>
     /// </summary>
     public interface IStrategyConfiguration
@@ -31,9 +31,9 @@ namespace StrategyPlugin
         /// Configures a builder to handle this type family (without <see cref="CompositeStrategyConfiguration"/>).
         /// </summary>
         /// <param name="builder">A builder to configure.</param>
-        public static void AddResolverWithoutComposite( PolymorphicConfigurationTypeBuilder builder )
+        public static void AddResolverWithoutComposite( TypedConfigurationBuilder builder )
         {
-            builder.AddResolver( new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
+            builder.AddResolver( new TypedConfigurationBuilder.StandardTypeResolver(
                                         baseType: typeof( IStrategyConfiguration ),
                                         typeNamespace: "Plugin.Strategy",
                                         allowOtherNamespace: false,
@@ -44,9 +44,9 @@ namespace StrategyPlugin
         /// Configures a builder to handle this type family (with composite).
         /// </summary>
         /// <param name="builder">A builder to configure.</param>
-        public static void AddResolver( PolymorphicConfigurationTypeBuilder builder )
+        public static void AddResolver( TypedConfigurationBuilder builder )
         {
-            builder.AddResolver( new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
+            builder.AddResolver( new TypedConfigurationBuilder.StandardTypeResolver(
                                         baseType: typeof( IStrategyConfiguration ),
                                         typeNamespace: "Plugin.Strategy",
                                         allowOtherNamespace: false,

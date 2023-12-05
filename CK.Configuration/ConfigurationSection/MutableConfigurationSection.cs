@@ -15,7 +15,7 @@ namespace CK.Core
     /// Mutable <see cref="IConfigurationSection"/>: this acts as a simple configuration builder
     /// that can then be captured by a <see cref="ImmutableConfigurationSection"/>.
     /// <para>
-    /// This supports direct <see cref="AddJson(string, IUtf8JsonReaderContext?, bool)"/> (that can be json
+    /// This supports direct <see cref="AddJson(string, bool)"/> (that can be json
     /// with comments).
     /// </para>
     /// <para>

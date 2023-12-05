@@ -14,11 +14,11 @@ namespace Plugin.Strategy
     public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
     {
         readonly AssemblyConfiguration _assemblies;
-        readonly ImmutableArray<PolymorphicConfigurationTypeBuilder.TypeResolver> _resolvers;
+        readonly ImmutableArray<TypedConfigurationBuilder.TypeResolver> _resolvers;
         readonly ImmutableConfigurationSection _configuration;
 
         public PlaceholderStrategyConfiguration( IActivityMonitor monitor,
-                                                 PolymorphicConfigurationTypeBuilder builder,
+                                                 TypedConfigurationBuilder builder,
                                                  ImmutableConfigurationSection configuration )
         {
             _assemblies = builder.AssemblyConfiguration;
@@ -37,7 +37,7 @@ namespace Plugin.Strategy
         {
             if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
             {
-                var builder = new PolymorphicConfigurationTypeBuilder( _assemblies, _resolvers );
+                var builder = new TypedConfigurationBuilder( _assemblies, _resolvers );
                 if( configuration is not ImmutableConfigurationSection config )
                 {
                     config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );

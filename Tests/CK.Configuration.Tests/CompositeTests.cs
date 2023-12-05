@@ -22,9 +22,9 @@ namespace CK.Configuration.Tests
 
         public string ConfigurationPath => _configurationPath;
 
-        public static void AddResolver( PolymorphicConfigurationTypeBuilder builder )
+        public static void AddResolver( TypedConfigurationBuilder builder )
         {
-            var r = new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
+            var r = new TypedConfigurationBuilder.StandardTypeResolver(
                 typeof( TestConfigurationBase ),
                 "CK.Configuration.Tests",
                 defaultCompositeBaseType: typeof( DefaultCompositeConfiguration ) );
@@ -40,7 +40,7 @@ namespace CK.Configuration.Tests
         readonly ImmutableArray<TestConfigurationBase> _items;
 
         public DefaultCompositeConfiguration( IActivityMonitor monitor,
-                                              PolymorphicConfigurationTypeBuilder builder,
+                                              TypedConfigurationBuilder builder,
                                               ImmutableConfigurationSection configuration,
                                               IReadOnlyList<TestConfigurationBase> items )
             : this( configuration.Path, items.ToImmutableArray() )
@@ -62,7 +62,7 @@ namespace CK.Configuration.Tests
     public class SimpleConfiguration : TestConfigurationBase
     {
         public SimpleConfiguration( IActivityMonitor monitor,
-                                    PolymorphicConfigurationTypeBuilder builder,
+                                    TypedConfigurationBuilder builder,
                                     ImmutableConfigurationSection configuration )
             : base( configuration.Path )
         {
@@ -82,7 +82,7 @@ namespace CK.Configuration.Tests
         readonly ImmutableArray<SimpleConfiguration> _simpleItems;
 
         public SimpleCollectionConfiguration( IActivityMonitor monitor,
-                                              PolymorphicConfigurationTypeBuilder builder,
+                                              TypedConfigurationBuilder builder,
                                               ImmutableConfigurationSection configuration,
                                               IReadOnlyList<SimpleConfiguration> simpleItems )
             : base( configuration.Path )
@@ -124,7 +124,7 @@ namespace CK.Configuration.Tests
         public ImmutableArray<TestConfigurationBase> Items => _items;
 
         public static TestConfigurationBase? Create( IActivityMonitor monitor,
-                                                     PolymorphicConfigurationTypeBuilder builder,
+                                                     TypedConfigurationBuilder builder,
                                                      ImmutableConfigurationSection configuration )
         {
             IReadOnlyList<SimpleCollectionConfiguration>? subs = null;
@@ -168,7 +168,7 @@ namespace CK.Configuration.Tests
                     "Items": []
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             TestConfigurationBase.AddResolver( builder );
             var e = (DefaultCompositeConfiguration)builder.Create<TestConfigurationBase>( TestHelper.Monitor, config )!;
             e.Items.Should().BeEmpty();
@@ -192,7 +192,7 @@ namespace CK.Configuration.Tests
                     ]
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             TestConfigurationBase.AddResolver( builder );
             var e = (SimpleCollectionConfiguration)builder.Create<TestConfigurationBase>( TestHelper.Monitor, config )!;
             e.SimpleItems.Should().HaveCount( 2 );
@@ -233,7 +233,7 @@ namespace CK.Configuration.Tests
                     ]
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             TestConfigurationBase.AddResolver( builder );
             var e = (DefaultCompositeConfiguration)builder.Create<TestConfigurationBase>( TestHelper.Monitor, config )!;
             e.Items.Should().HaveCount( 2 );
@@ -261,7 +261,7 @@ namespace CK.Configuration.Tests
                     ]
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             TestConfigurationBase.AddResolver( builder );
             using( TestHelper.Monitor.CollectEntries( out var logs ) )
             {
@@ -291,7 +291,7 @@ namespace CK.Configuration.Tests
                     ]
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             TestConfigurationBase.AddResolver( builder );
             using( TestHelper.Monitor.CollectEntries( out var logs ) )
             {

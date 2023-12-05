@@ -26,7 +26,7 @@ namespace StrategyPlugin
         /// <param name="configuration">The configuration for this object.</param>
         /// <param name="strategies">The subordinated items.</param>
         public CompositeStrategyConfiguration( IActivityMonitor monitor,
-                                               PolymorphicConfigurationTypeBuilder builder,
+                                               TypedConfigurationBuilder builder,
                                                ImmutableConfigurationSection configuration,
                                                IReadOnlyList<IStrategyConfiguration> strategies )
         {

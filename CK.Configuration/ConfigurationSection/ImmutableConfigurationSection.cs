@@ -130,6 +130,28 @@ namespace CK.Core
         }
 
         /// <summary>
+        /// Gets a subordinated section by its key (or path) or throws an <see cref="InvalidOperationException"/> if not found.
+        /// <para>
+        /// This is primarily defined to hide the GetRequiredSection extension method on IConfigurationSection. In practice,
+        /// we avoid any exception while analyzing configuration: the
+        /// <see cref="ConfigurationSectionExtension.GetRequiredSection(ImmutableConfigurationSection, IActivityMonitor, string)">GetRequiredSection(IActivityMonitor, string)</see>
+        /// extension method (that emits an error and returns null) should always be used.
+        /// </para>
+        /// </summary>
+        /// <param name="path">The configuration key or a path to a subordinated key.</param>
+        /// <returns></returns>
+        public ImmutableConfigurationSection GetRequiredSection( string path )
+        {
+            MutableConfigurationSection.CheckPathArgument( path );
+            var c = TryGetSection( path );
+            if( c == null )
+            {
+                Throw.InvalidOperationException( $"Configuration path '{path}' not found in '{Path}'." );
+            }
+            return c;
+        }
+
+        /// <summary>
         /// Tries to find a value in this section or in the parent section.
         /// If a section with the key is found above but has no value (because it has children),
         /// this returns null. Use <see cref="TryLookupSection(string)"/> to lookup for a section.
@@ -296,18 +318,15 @@ namespace CK.Core
         public IChangeToken GetReloadToken() => Util.NoChangeToken;
 
         /// <summary>
-        /// Creates a root ImmutableConfigurationSection from a JSON (comments are ignored).
-        /// <para>
-        /// A root section has its <see cref="IConfigurationSection.Path"/> that is its <see cref="IConfigurationSection.Key"/>.
-        /// </para>
+        /// Creates a ImmutableConfigurationSection from a JSON (comments are ignored).
         /// </summary>
         /// <param name="path">The section path. It must be <see cref="MutableConfigurationSection.IsValidPath(ReadOnlySpan{char})"/>.</param>
-        /// <param name="configuration">the JSON configuration.</param>
+        /// <param name="json">the JSON configuration.</param>
         /// <param name="checkPropertyNameUnicity">Optionally allow duplicate property names to appear: last occurrence wins.</param>
         /// <returns>A new root section.</returns>
-        public static ImmutableConfigurationSection CreateFromJson( string path, string configuration, bool checkPropertyNameUnicity = true )
+        public static ImmutableConfigurationSection CreateFromJson( string path, string json, bool checkPropertyNameUnicity = true )
         {
-            var c = new MutableConfigurationSection( path ).AddJson( configuration, checkPropertyNameUnicity );
+            var c = new MutableConfigurationSection( path ).AddJson( json, checkPropertyNameUnicity );
             return new ImmutableConfigurationSection( c );
         }
 
@@ -315,12 +334,13 @@ namespace CK.Core
         /// Creates a ImmutableConfigurationSection from a JSON (comments are ignored).
         /// </summary>
         /// <param name="parentPath">The parent section path. It must be null or empty or <see cref="MutableConfigurationSection.IsValidPath(ReadOnlySpan{char})"/>.</param>
+        /// <param name="json">the JSON configuration.</param>
         /// <param name="key">The key name. It must be <see cref="MutableConfigurationSection.IsValidKey(ReadOnlySpan{char})"/>.</param>
         /// <param name="checkPropertyNameUnicity">Optionally allow duplicate property names to appear: last occurrence wins.</param>
         /// <returns>A new root section.</returns>
-        public static ImmutableConfigurationSection CreateFromJson( string? parentPath, string key, string configuration, bool checkPropertyNameUnicity = true )
+        public static ImmutableConfigurationSection CreateFromJson( string? parentPath, string key, string json, bool checkPropertyNameUnicity = true )
         {
-            var c = new MutableConfigurationSection( parentPath, key ).AddJson( configuration, checkPropertyNameUnicity );
+            var c = new MutableConfigurationSection( parentPath, key ).AddJson( json, checkPropertyNameUnicity );
             return new ImmutableConfigurationSection( c );
         }
 

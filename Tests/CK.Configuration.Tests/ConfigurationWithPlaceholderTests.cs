@@ -48,7 +48,7 @@ namespace CK.Configuration.Tests
                     ]
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             ExtensibleStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<ExtensibleStrategyConfiguration>( TestHelper.Monitor, config );
             sC = CheckNotNullAndRun( sC, 3 );

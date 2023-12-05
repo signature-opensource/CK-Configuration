@@ -47,16 +47,48 @@ The `ShouldApplyConfiguration` extension methods (in [ConfigurationSectionExtens
 implements this once for all.
 
 ## Reading a ImmutableConfigurationSection.
-The root `ImmutableConfigurationSection` methods are:
+
+Configurations come from the "external world". They are like "user input" and one should never
+throw when a user input is invalid: errors must be handled because an invalid user input is
+everything but exceptional.
+
+We use the `IActivityMonitor` to "catch" errors and we always try to process a configuration
+as much as possible, signaling the errors and the warnings but not stopping on the first error.
+
+At the root of a read, a typical pattern is:
+
+```csharp
+object? ReadSomeComplexStuff( IActivityMonitor monitor,
+                              ImmutableConfigurationSection configuration )
+{
+    object? o;
+    bool success = true;
+    using( monitor.OnError( () => success = false ) )
+    {
+        o = DoRead( monitor, configuration );
+    }
+    return success ? o : null;
+}
+```
+This is a obviously more complex than throwing exceptions (and _alea jacta est_) but this is
+how we do.
+
+### The good parts.
+The basic `ImmutableConfigurationSection` methods are:
 - The `IConfigurationSection` inherited methods:
   - `string? Value { get; }` and `string? this[string path] { get; }` (setter throws
     an InvalidOperationException).
   - `IReadOnlyList<ImmutableConfigurationSection> GetChildren() { get; }`
   - `IConfigurationSection IConfiguration.GetSection( string path )` is explicitly implemented and hidden by
-    `ImmutableConfigurationSection GetSection( string path )`.
+    `ImmutableConfigurationSection? GetSection( string path )`.
 
     Its contract is to return an empty (useles) section. It is always better to use
     `ImmutableConfigurationSection? TryGetSection( string path )` that avoids a stupid allocation.
+
+ - `ImmutableConfigurationSection? GetRequiredSection( IActivityMonitor monitor, string path )`
+   should be used instead of the `GetRequiredSection( string )` that throws an
+   InvalidOperationException.
+  
 - Lookup section methods that use the lookup parent to a value or a section "here or above". This allows
   "configuration inheritance" support:
   - `string? TryLookupValue( string path )`  
@@ -65,7 +97,12 @@ The root `ImmutableConfigurationSection` methods are:
   - `ImmutableConfigurationSection? TryLookupSection( string path, out int distance )`
   - `IEnumerable<ImmutableConfigurationSection> LookupAllSection( string path )` 
   - `IEnumerable<(ImmutableConfigurationSection,int)> LookupAllSectionWithDistance( string path )` 
-- Extension methods that parse, warn, with or without a default value for `boolean`, `int`, `TimeSpan`,
+
+### The bad parts.
+
+Based on the previous "good" methods, extension methods have been defined:
+
+- Parse, warn, with or without a default value for `boolean`, `int`, `TimeSpan`,
   `DateTime`, `Double` and `Enum`.
 
   Current helpers are not good enough. Below are the double helpers.
@@ -117,7 +154,7 @@ public static ImmutableConfigurationSection ToImmutableConfigurationSection( thi
     return r;
 }
 ```
-This is obviously broken: as soon as the section is an immutable, the lookup parent will be what it is. This is
+This is obviously broken: as soon as the section is an immutable, the lookup parent will be what it was. This is
 clealrly not what we want. Is the following implementation better?
 ```csharp
 public static ImmutableConfigurationSection ToImmutableConfigurationSection( this IConfigurationSection section,

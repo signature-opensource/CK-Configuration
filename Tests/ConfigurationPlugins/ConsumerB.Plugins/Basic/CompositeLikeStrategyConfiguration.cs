@@ -14,7 +14,7 @@ namespace Plugin.Strategy
         readonly CompositeStrategyConfiguration _after;
 
         public CompositeLikeStrategyConfiguration( IActivityMonitor monitor,
-                                                   PolymorphicConfigurationTypeBuilder builder,
+                                                   TypedConfigurationBuilder builder,
                                                    ImmutableConfigurationSection configuration )
         {
             _configuration = configuration;

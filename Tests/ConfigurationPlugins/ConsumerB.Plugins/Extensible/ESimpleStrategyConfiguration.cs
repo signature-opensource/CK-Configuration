@@ -7,7 +7,7 @@ namespace Plugin.Strategy
     public class ESimpleStrategyConfiguration : ExtensibleStrategyConfiguration
     {
         public ESimpleStrategyConfiguration( IActivityMonitor monitor,
-                                             PolymorphicConfigurationTypeBuilder builder,
+                                             TypedConfigurationBuilder builder,
                                              ImmutableConfigurationSection configuration )
         {
         }

@@ -6,10 +6,10 @@ using System.Reflection;
 
 namespace CK.Core
 {
-    public sealed partial class PolymorphicConfigurationTypeBuilder
+    public sealed partial class TypedConfigurationBuilder
     {
         static readonly Type[] _argTypes = new Type[] { typeof( IActivityMonitor ),
-                                                        typeof( PolymorphicConfigurationTypeBuilder ),
+                                                        typeof( TypedConfigurationBuilder ),
                                                         typeof( ImmutableConfigurationSection ) };
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace CK.Core
             /// <param name="configuration">The configuration.</param>
             /// <returns>The created instance or null on error.</returns>
             public object? Create( IActivityMonitor monitor,
-                                   PolymorphicConfigurationTypeBuilder builder,
+                                   TypedConfigurationBuilder builder,
                                    ImmutableConfigurationSection configuration )
             {
                 Throw.CheckState( !IsCallWithComposite );
@@ -92,7 +92,7 @@ namespace CK.Core
             /// <param name="items">The subordinated items.</param>
             /// <returns>The created instance or null on error.</returns>
             public object? CreateComposite( IActivityMonitor monitor,
-                                            PolymorphicConfigurationTypeBuilder builder,
+                                            TypedConfigurationBuilder builder,
                                             ImmutableConfigurationSection configuration,
                                             Array items )
             {
@@ -151,7 +151,7 @@ namespace CK.Core
             }
 
             monitor.Error( $"Unable to find a public constructor or public static Create factory method. Expected:{Environment.NewLine}" +
-                            $"'public {t.Name}( IActiviyMonitor monitor, {nameof(PolymorphicConfigurationTypeBuilder)} builder, ImmutableConfigurationSection configuration[, IReadOnlyList<{baseType:C}> items ])'{Environment.NewLine}" +
+                            $"'public {t.Name}( IActiviyMonitor monitor, {nameof(TypedConfigurationBuilder)} builder, ImmutableConfigurationSection configuration[, IReadOnlyList<{baseType:C}> items ])'{Environment.NewLine}" +
                             $" or 'public static object? Create( ... )' in type '{t:N}'." );
             return null;
         }
@@ -187,7 +187,7 @@ namespace CK.Core
             var parameters = m.GetParameters();
             if( (parameters.Length == 3 || parameters.Length == 4)
                 && parameters[0].ParameterType == typeof( IActivityMonitor )
-                && parameters[1].ParameterType == typeof( PolymorphicConfigurationTypeBuilder )
+                && parameters[1].ParameterType == typeof( TypedConfigurationBuilder )
                 && parameters[2].ParameterType == typeof( ImmutableConfigurationSection ) )
             {
                 if( parameters.Length == 3 )
@@ -206,7 +206,7 @@ namespace CK.Core
                 }
                 bool isCtor = m is ConstructorInfo;
                 monitor.Warn( $"{(isCtor ? "Constructor" : "Factory method")} '{m.DeclaringType:N}{(isCtor ? "" : m.Name)}( " +
-                              $"IActivityMonitor, {nameof( PolymorphicConfigurationTypeBuilder )}, ImmutableConfigurationSection, {list:C} {parameters[3].Name} )' " +
+                              $"IActivityMonitor, {nameof( TypedConfigurationBuilder )}, ImmutableConfigurationSection, {list:C} {parameters[3].Name} )' " +
                               $"has invalid 4th parameter. It must be a IReadOnlyList<{baseType:C}>.{Environment.NewLine}" +
                               $"This is ignored." );
             }

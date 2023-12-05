@@ -49,7 +49,7 @@ does the job:
     - Check if the proposed new section is anchored in itself: the section parent configuration
       path must be exactly the placeholder's path.
       If the section is a "child", then:
-      - It creates a new `PolymorphicConfigurationTypeBuilder` that uses the captured assemblies and resolvers.
+      - It creates a new `TypedConfigurationBuilder` that uses the captured assemblies and resolvers.
       - It ensures that the section is an immutable one or creates it (anchored at the right position).
       - It creates the configured object from the section.
       - If it fails (`Create` returns null), it does nothing (by returning itsef the placeholder is kept
@@ -58,11 +58,11 @@ does the job:
 public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
 {
     readonly AssemblyConfiguration _assemblies;
-    readonly ImmutableArray<PolymorphicConfigurationTypeBuilder.TypeResolver> _resolvers;
+    readonly ImmutableArray<TypedConfigurationBuilder.TypeResolver> _resolvers;
     readonly ImmutableConfigurationSection _configuration;
 
     public PlaceholderStrategyConfiguration( IActivityMonitor monitor,
-                                              PolymorphicConfigurationTypeBuilder builder,
+                                              TypedConfigurationBuilder builder,
                                               ImmutableConfigurationSection configuration )
     {
         _assemblies = builder.AssemblyConfiguration;
@@ -77,7 +77,7 @@ public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfigu
     {
         if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
         {
-            var builder = new PolymorphicConfigurationTypeBuilder( _assemblies, _resolvers );
+            var builder = new TypedConfigurationBuilder( _assemblies, _resolvers );
             if( configuration is not ImmutableConfigurationSection config )
             {
                 config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
@@ -206,7 +206,7 @@ var config = ImmutableConfigurationSection.CreateFromJson( "Root",
         ]
     }
     """ );
-var builder = new PolymorphicConfigurationTypeBuilder();
+var builder = new TypedConfigurationBuilder();
 ExtensibleStrategyConfiguration.AddResolver( builder );
 var sC = builder.Create<ExtensibleStrategyConfiguration>( TestHelper.Monitor, config );
 

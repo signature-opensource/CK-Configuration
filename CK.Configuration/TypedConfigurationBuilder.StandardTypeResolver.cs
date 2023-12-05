@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace CK.Core
 {
-    public sealed partial class PolymorphicConfigurationTypeBuilder
+    public sealed partial class TypedConfigurationBuilder
     {
         /// <summary>
         /// Standard type resolver.
@@ -21,7 +21,7 @@ namespace CK.Core
             readonly string _typeNameSuffix;
             readonly TypeResolver? _fallback;
             readonly Type? _defaultCompositeBaseType;
-            readonly Func<IActivityMonitor, string, PolymorphicConfigurationTypeBuilder, ImmutableConfigurationSection, object?>? _tryCreateFromTypeName;
+            readonly Func<IActivityMonitor, string, TypedConfigurationBuilder, ImmutableConfigurationSection, object?>? _tryCreateFromTypeName;
 
             /// <summary>
             /// Initializes a new <see cref="StandardTypeResolver"/>.
@@ -68,7 +68,7 @@ namespace CK.Core
                                          string typeNamespace,
                                          bool allowOtherNamespace = false,
                                          string? familyTypeNameSuffix = null,
-                                         Func<IActivityMonitor, string, PolymorphicConfigurationTypeBuilder, ImmutableConfigurationSection, object?>? tryCreateFromTypeName = null,
+                                         Func<IActivityMonitor, string, TypedConfigurationBuilder, ImmutableConfigurationSection, object?>? tryCreateFromTypeName = null,
                                          Type? defaultCompositeBaseType = null,
                                          string compositeItemsFieldName = "Items",
                                          string typeFieldName = "Type",
@@ -90,15 +90,22 @@ namespace CK.Core
                 _fallback = fallback;
             }
 
+            /// <summary>
+            /// Attempts to create an instance from a configuration.
+            /// </summary>
+            /// <param name="monitor">The monitor that must be used to signal errors and warnings.</param>
+            /// <param name="builder">The calling builder for which the configuration must be resolved.</param>
+            /// <param name="configuration">The configuration to analyze.</param>
+            /// <returns>The resulting instance or null if any error occurred.</returns>
             internal protected override object? Create( IActivityMonitor monitor,
-                                                        PolymorphicConfigurationTypeBuilder builder,
+                                                        TypedConfigurationBuilder builder,
                                                         ImmutableConfigurationSection configuration )
             {
                 return DoCreateWithFallback( monitor, builder, configuration, _defaultCompositeBaseType != null );
             }
 
             object? DoCreateWithFallback( IActivityMonitor monitor,
-                                          PolymorphicConfigurationTypeBuilder builder,
+                                          TypedConfigurationBuilder builder,
                                           ImmutableConfigurationSection configuration,
                                           bool allowDefaultComposite )
             {
@@ -117,7 +124,7 @@ namespace CK.Core
             }
 
             object? DoCreate( IActivityMonitor monitor,
-                              PolymorphicConfigurationTypeBuilder builder,
+                              TypedConfigurationBuilder builder,
                               ImmutableConfigurationSection configuration,
                               bool allowDefaultComposite )
             {
@@ -160,7 +167,7 @@ namespace CK.Core
             }
         
             object? CreateWithTypeName( IActivityMonitor monitor,
-                                        PolymorphicConfigurationTypeBuilder builder,
+                                        TypedConfigurationBuilder builder,
                                         ImmutableConfigurationSection configuration,
                                         string typeName )
             {
@@ -186,7 +193,7 @@ namespace CK.Core
             }
 
             object? CreateWithNoTypeName( IActivityMonitor monitor,
-                                          PolymorphicConfigurationTypeBuilder builder,
+                                          TypedConfigurationBuilder builder,
                                           ImmutableConfigurationSection configuration,
                                           bool allowDefaultComposite )
             {
@@ -218,7 +225,7 @@ namespace CK.Core
             }
 
             object? TryCreateFromTypeName( IActivityMonitor monitor,
-                                           PolymorphicConfigurationTypeBuilder builder,
+                                           TypedConfigurationBuilder builder,
                                            ImmutableConfigurationSection configuration,
                                            string typeName,
                                            out bool hasError )
@@ -244,7 +251,7 @@ namespace CK.Core
             }
 
             object? CreateFromValue( IActivityMonitor monitor,
-                                     PolymorphicConfigurationTypeBuilder builder,
+                                     TypedConfigurationBuilder builder,
                                      ImmutableConfigurationSection configuration,
                                      string value )
             {
@@ -267,7 +274,7 @@ namespace CK.Core
             }
 
             object? DoTryCreateFromTypeName( IActivityMonitor monitor,
-                                             PolymorphicConfigurationTypeBuilder builder,
+                                             TypedConfigurationBuilder builder,
                                              string typeName,
                                              ImmutableConfigurationSection configuration )
             {
@@ -286,7 +293,7 @@ namespace CK.Core
             }
 
             object? CoreCreate( IActivityMonitor monitor,
-                                PolymorphicConfigurationTypeBuilder builder,
+                                TypedConfigurationBuilder builder,
                                 ImmutableConfigurationSection configuration,
                                 Type type,
                                 ImmutableConfigurationSection? knownItemsField )

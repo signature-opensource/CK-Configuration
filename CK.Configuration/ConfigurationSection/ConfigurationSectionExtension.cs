@@ -12,6 +12,26 @@ namespace CK.Core
     public static class ConfigurationSectionExtension
     {
         /// <summary>
+        /// Gentle <see cref="ImmutableConfigurationSection.GetRequiredSection(string)"/> that emits an error and returns null if the
+        /// subordinate section is not found instead of throwing an exception.
+        /// </summary>
+        /// <param name="section">This section.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="path">The configuration key or a path to a subordinated key.</param>
+        /// <returns>The section or null.</returns>
+        public static ImmutableConfigurationSection? GetRequiredSection( this ImmutableConfigurationSection section, IActivityMonitor monitor, string path )
+        {
+            Throw.CheckNotNullArgument( section );
+            MutableConfigurationSection.CheckPathArgument( path );
+            var c = section.TryGetSection( path );
+            if( c == null )
+            {
+                monitor.Error( $"Configuration path '{section.Path}' must contain a '{path}' section." );
+            }
+            return c;
+        }
+
+        /// <summary>
         /// Handles opt-in or opt-out section that can have "true" or "false" value or children.
         /// <para>
         /// Note that for convenience, this extension method can be called on a null this <paramref name="parent"/>:

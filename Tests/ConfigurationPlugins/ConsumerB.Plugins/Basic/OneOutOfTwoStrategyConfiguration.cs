@@ -9,7 +9,7 @@ namespace Plugin.Strategy
         readonly bool _halfRun;
 
         public OneOutOfTwoStrategyConfiguration( IActivityMonitor monitor,
-                                                 PolymorphicConfigurationTypeBuilder builder,
+                                                 TypedConfigurationBuilder builder,
                                                  ImmutableConfigurationSection configuration,
                                                  IReadOnlyList<IStrategyConfiguration> items )
             : base( monitor, builder, configuration, items )

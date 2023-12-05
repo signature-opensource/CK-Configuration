@@ -18,7 +18,7 @@ namespace CK.Core
     /// Caution: this is a stateful object, concurrency is not supported.
     /// </para>
     /// </summary>
-    public sealed partial class PolymorphicConfigurationTypeBuilder
+    public sealed partial class TypedConfigurationBuilder
     {
         readonly List<TypeResolver> _resolvers;
         AssemblyConfiguration _assemblyConfiguration;
@@ -30,15 +30,15 @@ namespace CK.Core
         readonly Dictionary<FactoryKey, Factory?> _factories;
 
         /// <summary>
-        /// Initializes a new <see cref="PolymorphicConfigurationTypeBuilder"/>.
+        /// Initializes a new <see cref="TypedConfigurationBuilder"/>.
         /// </summary>
-        public PolymorphicConfigurationTypeBuilder()
+        public TypedConfigurationBuilder()
             : this( AssemblyConfiguration.Empty, ImmutableArray<TypeResolver>.Empty )
         {
         }
 
         /// <summary>
-        /// Initializes a new <see cref="PolymorphicConfigurationTypeBuilder"/> with an <see cref="AssemblyConfiguration"/>
+        /// Initializes a new <see cref="TypedConfigurationBuilder"/> with an <see cref="AssemblyConfiguration"/>
         /// and <see cref="Resolvers"/>.
         /// <para>
         /// This is typically used by placeholders to restore the creation state at their position.
@@ -46,7 +46,7 @@ namespace CK.Core
         /// </summary>
         /// <param name="assemblyConfiguration">Known initial assembly configuration to use.</param>
         /// <param name="resolvers">Known resolvers to register.</param>
-        public PolymorphicConfigurationTypeBuilder( AssemblyConfiguration assemblyConfiguration,
+        public TypedConfigurationBuilder( AssemblyConfiguration assemblyConfiguration,
                                                     ImmutableArray<TypeResolver> resolvers )
         {
             _resolvers = resolvers.ToList();

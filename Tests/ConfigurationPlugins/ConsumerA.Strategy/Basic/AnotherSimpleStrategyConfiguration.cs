@@ -8,7 +8,7 @@ namespace Plugin.Strategy
         readonly ImmutableConfigurationSection _configuration;
 
         public AnotherSimpleStrategyConfiguration( IActivityMonitor monitor,
-                                                   PolymorphicConfigurationTypeBuilder builder,
+                                                   TypedConfigurationBuilder builder,
                                                    ImmutableConfigurationSection configuration )
         {
             _configuration = configuration;

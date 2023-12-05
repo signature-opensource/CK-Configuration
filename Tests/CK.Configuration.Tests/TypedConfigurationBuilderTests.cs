@@ -10,7 +10,7 @@ using static CK.Testing.MonitorTestHelper;
 namespace CK.Configuration.Tests
 {
     [TestFixture]
-    public class PolymorphicConfigurationTypeBuilderTests
+    public class TypedConfigurationBuilderTests
     {
         [Test]
         public void simple_configuration_with_DefaultAssembly()
@@ -31,7 +31,7 @@ namespace CK.Configuration.Tests
                     }
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             IStrategyConfiguration.AddResolverWithoutComposite( builder );
             builder.AssemblyConfiguration = AssemblyConfiguration.Create( TestHelper.Monitor, config ) ?? AssemblyConfiguration.Empty;
             var s1C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S1" ) );
@@ -78,7 +78,7 @@ namespace CK.Configuration.Tests
                     }
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             IStrategyConfiguration.AddResolverWithoutComposite( builder );
             builder.AssemblyConfiguration = AssemblyConfiguration.Create( TestHelper.Monitor, config ) ?? AssemblyConfiguration.Empty;
             var s1C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S1" ) );
@@ -135,7 +135,7 @@ namespace CK.Configuration.Tests
                     }
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             IStrategyConfiguration.AddResolverWithoutComposite( builder );
             builder.AssemblyConfiguration = AssemblyConfiguration.Create( TestHelper.Monitor, config ) ?? AssemblyConfiguration.Empty;
             var s1C = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config.GetRequiredSection( "S1" ) );
@@ -188,7 +188,7 @@ namespace CK.Configuration.Tests
                     ]
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             IStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
@@ -240,7 +240,7 @@ namespace CK.Configuration.Tests
                     ]
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             IStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
@@ -283,7 +283,7 @@ namespace CK.Configuration.Tests
                     ]
                 }
                 """ );
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             IStrategyConfiguration.AddResolver( builder );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
             Throw.DebugAssert( sC != null );
@@ -296,7 +296,7 @@ namespace CK.Configuration.Tests
         [Test]
         public void unsuccessful_Create_returns_null()
         {
-            var builder = new PolymorphicConfigurationTypeBuilder();
+            var builder = new TypedConfigurationBuilder();
             IStrategyConfiguration.AddResolver( builder );
 
             using( TestHelper.Monitor.CollectTexts( out var logs ) )

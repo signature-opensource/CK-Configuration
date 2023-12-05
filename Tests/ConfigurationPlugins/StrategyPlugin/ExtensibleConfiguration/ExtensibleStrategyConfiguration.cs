@@ -81,9 +81,9 @@ namespace StrategyPlugin
         /// Configures a builder to handle this type family.
         /// </summary>
         /// <param name="builder">A builder to configure.</param>
-        public static void AddResolver( PolymorphicConfigurationTypeBuilder builder )
+        public static void AddResolver( TypedConfigurationBuilder builder )
         {
-            builder.AddResolver( new PolymorphicConfigurationTypeBuilder.StandardTypeResolver(
+            builder.AddResolver( new TypedConfigurationBuilder.StandardTypeResolver(
                                         baseType: typeof( ExtensibleStrategyConfiguration ),
                                         typeNamespace: "Plugin.Strategy",
                                         allowOtherNamespace: false,
