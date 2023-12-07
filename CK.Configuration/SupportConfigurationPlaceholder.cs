@@ -27,7 +27,7 @@ namespace CK.Core
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that should replace a placeholder.</param>
         /// <returns>
-        /// A new configuration (or this object if nothing changed) or null if an error occurred.
+        /// A new configuration (or this object if nothing changed). Should be null only if an error occurred.
         /// </returns>
         T? SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration );
     }
@@ -39,6 +39,7 @@ namespace CK.Core
     {
         /// <summary>
         /// Tries to replace a "Placeholder" in this configuration object.
+        /// This logs an error and return null if the placeholder was not found.
         /// <para>
         /// The <paramref name="configuration"/>.Path must be a direct child of the placeholder to replace.
         /// </para>
@@ -46,7 +47,9 @@ namespace CK.Core
         /// <param name="this">This configured object.</param>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that should replace a placeholder.</param>
+        /// <returns>
         /// A new configuration (or this object if nothing changed) or null if an error occurred or the placeholder was not found.
+        /// </returns>
         public static T? TrySetPlaceholder<T>( this ISupportConfigurationPlaceholder<T> @this,
                                                IActivityMonitor monitor,
                                                IConfigurationSection configuration ) where T : class
@@ -56,6 +59,7 @@ namespace CK.Core
 
         /// <summary>
         /// Tries to replace a "Placeholder" in this configuration object.
+        /// This logs an error and return null if the placeholder was not found.
         /// <para>
         /// The <paramref name="configuration"/>.Path must be a direct child of the placeholder to replace.
         /// </para>
@@ -81,6 +85,12 @@ namespace CK.Core
             using( monitor.OnError( () => buildError = true ) )
             {
                 result = @this.SetPlaceholder( monitor, configuration );
+                // Security:
+                if( result == null && !buildError )
+                {
+                    monitor.Error( ActivityMonitor.Tags.ToBeInvestigated, $"SetPlaceholder returns null but no error was logged." );
+                    Throw.DebugAssert( "Now an error has been emitted.", buildError );
+                }
             }
             if( !buildError && result == @this )
             {

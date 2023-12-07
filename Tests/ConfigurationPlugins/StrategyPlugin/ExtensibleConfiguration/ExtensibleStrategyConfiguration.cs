@@ -26,8 +26,8 @@ namespace StrategyPlugin
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">Configuration of the replaced placeholder.</param>
-        /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
-        public virtual ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
+        /// <returns>A new configuration (or this object if nothing changed). Should be null only if an error occurred.</returns>
+        public virtual ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
         {
             return this;
         }

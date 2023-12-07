@@ -32,7 +32,7 @@ namespace Plugin.Strategy
         public override IStrategy? CreateStrategy( IActivityMonitor monitor ) => null;
 
 
-        public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor,
+        public override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
                                                                         IConfigurationSection configuration )
         {
             if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
@@ -42,8 +42,7 @@ namespace Plugin.Strategy
                 {
                     config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
                 }
-                var newC = builder.Create<ExtensibleStrategyConfiguration>( monitor, config );
-                if( newC != null ) return newC;
+                return builder.Create<ExtensibleStrategyConfiguration>( monitor, config );
             }
             return this;
         }

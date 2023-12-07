@@ -24,7 +24,8 @@ classical pattern with immutable structures).
 To support placeholders and configuration extension, a family:
 - Must support the "empty configured object" pattern, either by implementing the [null object pattern](https://en.wikipedia.org/wiki/Null_object_pattern)
   or by simply allows created configured objects to be null.
-
+  > This is required because a placeholder must be an "invisible" factory, with no impact, no "production" at all.
+- 
   In this [ExtensibleStrategyConfiguration](ExtensibleStrategyConfiguration.cs) family, a null `IStrategy` is the
   "empty configured object".
 
@@ -35,8 +36,10 @@ To support placeholders and configuration extension, a family:
   /// </summary>
   /// <param name="monitor">The monitor to use to signal errors.</param>
   /// <param name="configuration">Configuration of the replaced placeholder.</param>
-  /// <returns>A new configuration or this instance if an error occurred or the placeholder has not been found.</returns>
-  public virtual ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
+  /// <returns>
+  /// A new configuration (or this object if nothing changed). Should be null only if an error occurred.
+  /// </returns>
+  public virtual ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
   {
       return this;
   }
@@ -52,8 +55,7 @@ does the job:
       - It creates a new `TypedConfigurationBuilder` that uses the captured assemblies and resolvers.
       - It ensures that the section is an immutable one or creates it (anchored at the right position).
       - It creates the configured object from the section.
-      - If it fails (`Create` returns null), it does nothing (by returning itsef the placeholder is kept
-        unchanged).
+      - If it fails (`builder.Create` returns null), it returns null.
 ``` csharp
 public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
 {
@@ -62,8 +64,8 @@ public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfigu
     readonly ImmutableConfigurationSection _configuration;
 
     public PlaceholderStrategyConfiguration( IActivityMonitor monitor,
-                                              TypedConfigurationBuilder builder,
-                                              ImmutableConfigurationSection configuration )
+                                             TypedConfigurationBuilder builder,
+                                             ImmutableConfigurationSection configuration )
     {
         _assemblies = builder.AssemblyConfiguration;
         _resolvers = builder.Resolvers.ToImmutableArray();
@@ -72,8 +74,8 @@ public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfigu
 
     public override IStrategy? CreateStrategy( IActivityMonitor monitor ) => null;
 
-    public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor,
-                                                                    IConfigurationSection configuration )
+    public override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
+                                                                     IConfigurationSection configuration )
     {
         if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
         {
@@ -82,8 +84,7 @@ public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfigu
             {
                 config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
             }
-            var newC = builder.Create<ExtensibleStrategyConfiguration>( monitor, config );
-            if( newC != null ) return newC;
+            return builder.Create<ExtensibleStrategyConfiguration>( monitor, config );
         }
         return this;
     }
@@ -106,14 +107,22 @@ public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfigu
 ``` 
   - This composite `SetPlaceholder` is correct (alloc-free if nothing changed).
 ```csharp
-public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor,
-                                                                IConfigurationSection configuration )
+public override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
+                                                                 IConfigurationSection configuration )
 {
+    Throw.CheckNotNullArgument( monitor );
+    Throw.CheckNotNullArgument( configuration );
+    // Bails out early if we are not concerned.
+    if( !ConfigurationSectionExtension.IsChildPath( _path, configuration.Path ) )
+    {
+        return this;
+    }
     ImmutableArray<ExtensibleStrategyConfiguration>.Builder? newItems = null;
     for( int i = 0; i < _items.Count; i++ )
     {
         var item = _items[i];
         var r = item.SetPlaceholder( monitor, configuration );
+        if( r == null ) return null;
         if( r != item )
         {
             if( newItems == null )
@@ -131,9 +140,10 @@ public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor
 ```
 And that's it.
 
-Recall that errors are managed by the monitor during the `Create`.
-To handle this once for all, a helper method `TrySetPlaceholder` can be on the root type that handles builder errors and optionnaly signals if the section
-failed to find its target placeholder.
+Any error emitted should discard the result and a null result should have emitted an error but
+this is not done above systematically. It is enough to do this chack once at the root of the
+substitution: helper methods `TrySetPlaceholder` should be defined on the root type that also
+signals if the section failed to find its target placeholder.
 
 ```csharp
 
@@ -172,6 +182,12 @@ public ExtensibleStrategyConfiguration? TrySetPlaceholder( IActivityMonitor moni
     using( monitor.OnError( () => buildError = true ) )
     {
         result = SetPlaceholder( monitor, configuration );
+        // Security:
+        if( result == null && !buildError )
+        {
+            monitor.Error( ActivityMonitor.Tags.ToBeInvestigated, $"SetPlaceholder returns null but no error was logged." );
+            Throw.DebugAssert( "Now an error has been emitted.", buildError );
+        }
     }
     if( !buildError && result == this )
     {

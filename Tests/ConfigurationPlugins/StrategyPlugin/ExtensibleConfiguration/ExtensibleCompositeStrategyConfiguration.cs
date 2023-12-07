@@ -50,15 +50,23 @@ namespace Plugin.Strategy
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">Configuration to apply.</param>
-        /// <returns>This or a new composite.</returns>
-        public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor,
-                                                                        IConfigurationSection configuration )
+        /// <returns>This or a new composite. May be null if an error occurred.</returns>
+        public override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
+                                                                         IConfigurationSection configuration )
         {
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( configuration );
+            // Bails out early if we are not concerned.
+            if( !ConfigurationSectionExtension.IsChildPath( _path, configuration.Path ) )
+            {
+                return this;
+            }
             ImmutableArray<ExtensibleStrategyConfiguration>.Builder? newItems = null;
             for( int i = 0; i < _items.Count; i++ )
             {
                 var item = _items[i];
                 var r = item.SetPlaceholder( monitor, configuration );
+                if( r == null ) return null;
                 if( r != item )
                 {
                     if( newItems == null )
