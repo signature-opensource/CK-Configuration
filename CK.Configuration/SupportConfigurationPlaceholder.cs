@@ -27,7 +27,7 @@ namespace CK.Core
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that should replace a placeholder.</param>
         /// <returns>
-        /// A new configuration (or this object if nothing changed) or null if an error occurred or the placeholder was not found.
+        /// A new configuration (or this object if nothing changed) or null if an error occurred.
         /// </returns>
         T? SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration );
     }
@@ -46,7 +46,7 @@ namespace CK.Core
         /// <param name="this">This configured object.</param>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that should replace a placeholder.</param>
-        /// <returns>A new configuration or null if an error occurred or the placeholder was not found.</returns>
+        /// A new configuration (or this object if nothing changed) or null if an error occurred or the placeholder was not found.
         public static T? TrySetPlaceholder<T>( this ISupportConfigurationPlaceholder<T> @this,
                                                IActivityMonitor monitor,
                                                IConfigurationSection configuration ) where T : class
@@ -63,8 +63,13 @@ namespace CK.Core
         /// <param name="this">This configured object.</param>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration that should replace a placeholder.</param>
-        /// <param name="builderError">True if an error occurred while building the configuration, false if the placeholder was not found.</param>
-        /// <returns>A new configuration or null if a <paramref name="builderError"/> occurred or the placeholder was not found.</returns>
+        /// <param name="builderError">
+        /// On error (when null is returned), this indicates whether the error occurred while building the configuration
+        /// or false if the placeholder was not found.
+        /// </param>
+        /// <returns>
+        /// A new configuration (or this object if nothing changed) or null if a <paramref name="builderError"/> occurred or the placeholder was not found.
+        /// </returns>
         public static T? TrySetPlaceholder<T>( this ISupportConfigurationPlaceholder<T> @this,
                                                IActivityMonitor monitor,
                                                IConfigurationSection configuration,
