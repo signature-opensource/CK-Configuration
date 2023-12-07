@@ -131,8 +131,8 @@ public override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor
 ```
 And that's it.
 
-Recall that errors are managed by the monitor during the `Create`. To handle this once for all, a helper method
-`TrySetPlaceholder` can be on the root type that handles builder errors and optionnaly signals if the section
+Recall that errors are managed by the monitor during the `Create`.
+To handle this once for all, a helper method `TrySetPlaceholder` can be on the root type that handles builder errors and optionnaly signals if the section
 failed to find its target placeholder.
 
 ```csharp
@@ -182,6 +182,8 @@ public ExtensibleStrategyConfiguration? TrySetPlaceholder( IActivityMonitor moni
     return (builderError = buildError) ? null : result;
 }
 ```    
+The [`ISupportConfigurationPlaceholder<T>`](../../../../CK.Configuration/SupportConfigurationPlaceholder.cs)
+helper provides these `TrySetPlaceholder` automatically through extension methods.
 
 Note that nothing prevents a substituted section to also contains placeholders. In this
 case, the section name is crucial and must uniquely identify the replaced section in its

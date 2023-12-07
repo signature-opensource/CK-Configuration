@@ -47,11 +47,20 @@ namespace CK.Core
         /// <param name="assemblyConfiguration">Known initial assembly configuration to use.</param>
         /// <param name="resolvers">Known resolvers to register.</param>
         public TypedConfigurationBuilder( AssemblyConfiguration assemblyConfiguration,
-                                                    ImmutableArray<TypeResolver> resolvers )
+                                          ImmutableArray<TypeResolver> resolvers )
         {
             _resolvers = resolvers.ToList();
             _assemblyConfiguration = assemblyConfiguration;
             _factories = new Dictionary<FactoryKey, Factory?>();
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="TypedConfigurationBuilder"/> with an existing <see cref="AssemblyConfiguration"/>.
+        /// </summary>
+        /// <param name="assemblyConfiguration">Known initial assembly configuration to use.</param>
+        public TypedConfigurationBuilder( AssemblyConfiguration assemblyConfiguration )
+            : this( assemblyConfiguration, ImmutableArray<TypeResolver>.Empty )
+        {
         }
 
         /// <summary>

@@ -95,13 +95,13 @@ a simple strategy, its composite, and 2 sets of configuration objects, one of th
 placeholders can be defined and "patched" with "dynamic configurations".
 
 ### Configuration object family and Type resolution.
-A family is defined by a root configuration type that is almost always abstract. This root type defines the
+A family is defined by a root configuration type that is often abstract. This root type defines the
 API of the family. A typical member of this API is a factory of actual "strategy" that is fully
 configured and operational. There is absolutely no constraint on this final type and there can be more than one
-kind of factories: [CK.Object.Predicate](../CK.Object.Predicate.README.md) for instance defines 2 configuration
-families, producing 2 types of objects:
+kind of factories: [CK.Object.Predicate](https://github.com/signature-opensource/CK-Object-Mixer/tree/develop/CK.Object.Predicate#readme)
+for instance defines 2 configuration families, producing 2 types of objects:
   - ObjectAsyncPredicate produce `Func<object,ValueTask<bool>>`.
-  - ObjectPredicate (that are ObjectAsyncPredicate) can in addition produce more efficient `Func<object,bool>`.
+  - ObjectPredicate (that also are ObjectAsyncPredicate) can in addition produce more efficient `Func<object,bool>`.
   
 The complicated stuff is done by the `TypedConfigurationBuilder` and its resolvers.
 A configuration can contain multiple families simply by registering the family resolvers that
