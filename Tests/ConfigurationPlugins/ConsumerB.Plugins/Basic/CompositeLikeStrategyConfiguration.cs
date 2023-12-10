@@ -14,12 +14,12 @@ namespace Plugin.Strategy
         readonly CompositeStrategyConfiguration _after;
 
         public CompositeLikeStrategyConfiguration( IActivityMonitor monitor,
-                                                   PolymorphicConfigurationTypeBuilder builder,
+                                                   TypedConfigurationBuilder builder,
                                                    ImmutableConfigurationSection configuration )
         {
             _configuration = configuration;
-            builder.TryCreate( monitor, configuration.GetRequiredSection( "Before" ), out _before! );
-            builder.TryCreate( monitor, configuration.GetRequiredSection( "After" ), out _after! );
+            _before = builder.Create<CompositeStrategyConfiguration>( monitor, configuration.GetRequiredSection( "Before" ) )!;
+            _after = builder.Create<CompositeStrategyConfiguration>( monitor, configuration.GetRequiredSection( "After" ) )!;
         }
 
         public ImmutableConfigurationSection Configuration => _configuration;

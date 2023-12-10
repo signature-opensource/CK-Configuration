@@ -13,29 +13,32 @@ namespace CK.Core
     /// Captures "DefaultAssembly" and "Assemblies" configurations hierarchically.
     /// This is an immutable instance that can be obtained by <see cref="Create(IActivityMonitor, ImmutableConfigurationSection?)"/>
     /// or by applying a subordinate configuration with <see cref="Apply(IActivityMonitor, ImmutableConfigurationSection?)"/>.
-    /// <para>
-    /// There is currently no way to lock a configuration so that subordinated "DefaultAssembly" or "Assemblies" section
-    /// are considered errors. A "LockAssemblies" (which valu amy be "All", "Default" or "Assemblies") flag can be implemented
-    /// once if needed.
-    /// </para>
     /// </summary>
     public sealed class AssemblyConfiguration
     {
         readonly string? _defaultAssemblyName;
         readonly IReadOnlyDictionary<string, string> _assemblies;
         readonly AssemblyConfiguration _parent;
+        readonly bool _isLocked;
 
-        internal AssemblyConfiguration( AssemblyConfiguration? parent, string? defaultAssemblyName, IReadOnlyDictionary<string, string> assemblies )
+        internal AssemblyConfiguration( AssemblyConfiguration? parent, string? defaultAssemblyName, IReadOnlyDictionary<string, string> assemblies, bool isLocked )
         {
             _defaultAssemblyName = defaultAssemblyName;
             _assemblies = assemblies;
             _parent = parent ?? this;
+            _isLocked = isLocked;
         }
 
         /// <summary>
         /// The empty configuration singleton.
         /// </summary>
-        public readonly static AssemblyConfiguration Empty = new AssemblyConfiguration( null, null, ImmutableDictionary<string, string>.Empty );
+        public readonly static AssemblyConfiguration Empty = new AssemblyConfiguration( null, null, ImmutableDictionary<string, string>.Empty, false );
+
+        /// <summary>
+        /// Gets whether this assembly configuration is locked.
+        /// Once locked, subordinated configurations cannot alter the <see cref="DefaultAssembly"/> nor <see cref="Assemblies"/>.
+        /// </summary>
+        public bool IsLocked => _isLocked;
 
         /// <summary>
         /// Get the default assembly name.
@@ -89,11 +92,12 @@ namespace CK.Core
         /// Required namespace that will be prepended to the <paramref name="typeName"/> if there is no '.' in it.
         /// This must not be empty or whitespace.
         /// </param>
+        /// <param name="isOptional">True to not emit an error if the type is not found. Must be used when an alternative is possible.</param>
         /// <param name="allowOtherNamespace">
         /// True to allow type names in other namespaces than <paramref name="typeNamespace"/>.
         /// </param>
         /// <param name="familyTypeNameSuffix">
-        /// Optional type suffix that will be appended to the <paramref name="typeName"/> if it doesn't
+        /// Type suffix that will be appended to the <paramref name="typeName"/> if it doesn't
         /// already end with it.
         /// <para>
         /// Example: with "Strategy", a "Simple" type name will be "SimpleStrategyConfiguration"
@@ -109,6 +113,7 @@ namespace CK.Core
         public Type? TryResolveType( IActivityMonitor monitor,
                                      string typeName,
                                      string typeNamespace,
+                                     bool isOptional = false,
                                      Assembly? fallbackDefaultAssembly = null,
                                      bool allowOtherNamespace = false,
                                      string? familyTypeNameSuffix = null,
@@ -126,6 +131,8 @@ namespace CK.Core
                 monitor.Error( $"{errorPrefix?.Invoke()}Specified type name is invalid ('{typeName}').{errorSuffix?.Invoke()}" );
                 return null;
             }
+
+            #region Resolving assembly
             Assembly? assembly = null;
             int idxComma = tName.IndexOf( ',' );
             bool isDefaultAssembly = idxComma < 0;
@@ -162,6 +169,8 @@ namespace CK.Core
                 assembly = LoadAssembly( monitor, assemblyName, errorPrefix, errorSuffix );
                 if( assembly == null ) return null;
             }
+            #endregion
+
             Throw.DebugAssert( "assembly == null ==> isDefaultAssembly (and there is no default but we have a fallbackDefaultAssembly).",
                                assembly != null || isDefaultAssembly );
 
@@ -185,30 +194,31 @@ namespace CK.Core
             if( assembly == null )
             {
                 Throw.DebugAssert( isDefaultAssembly && _defaultAssemblyName == null && fallbackDefaultAssembly != null );
-                return LoadType( monitor, fallbackDefaultAssembly, null, finalTypeName, errorPrefix, errorSuffix );
+                return LoadType( monitor, fallbackDefaultAssembly, null, finalTypeName, isOptional, errorPrefix, errorSuffix );
             }
             if( isDefaultAssembly && fallbackDefaultAssembly != null )
             {
-                return LoadType( monitor, assembly, fallbackDefaultAssembly, finalTypeName, errorPrefix, errorSuffix );
+                return LoadType( monitor, assembly, fallbackDefaultAssembly, finalTypeName, isOptional, errorPrefix, errorSuffix );
             }
-            return LoadType( monitor, assembly, null, finalTypeName, errorPrefix, errorSuffix );
+            return LoadType( monitor, assembly, null, finalTypeName, isOptional, errorPrefix, errorSuffix );
         }
 
         static Type? LoadType( IActivityMonitor monitor,
                                Assembly a1,
                                Assembly? a2,
                                string finalTypeName,
+                               bool isOptional,
                                Func<string>? errorPrefix,
                                Func<string>? errorSuffix )
         {
             var t = SafeGetType( monitor, a1, finalTypeName );
             if( t == null && a2 != null ) t = SafeGetType( monitor, a2, finalTypeName );
-            if( t == null )
+            if( t == null && !isOptional )
             {
                 monitor.Error( $"{errorPrefix?.Invoke()}" +
-                               $"Unable to locate '{finalTypeName}' type from '{a1}'" +
-                               $"{(a2 != null ? $" and '{a2}'" : "")}." +
-                               $"{errorSuffix?.Invoke()}" );
+                                $"Unable to locate '{finalTypeName}' type from '{a1}'" +
+                                $"{(a2 != null ? $" and '{a2}'" : "")}." +
+                                $"{errorSuffix?.Invoke()}" );
             }
             return t;
 
@@ -241,8 +251,6 @@ namespace CK.Core
             }
         }
 
-
-
         /// <summary>
         /// Tries to apply the given <paramref name="configuration"/> section to this <see cref="AssemblyConfiguration"/> and
         /// returns a new assembly configuration or null on error.
@@ -256,19 +264,24 @@ namespace CK.Core
             if( configuration == null || !configuration.HasChildren ) return this;
             string? defName = null;
             bool defRemoved = false;
+            bool isLocked = _isLocked;
             Dictionary<string, string>? assemblies = null;
             bool success = true;
             using( monitor.OnError( () => success = false ) )
             {
-                foreach( var c in configuration.GetChildren() )
+                var cDef = configuration.TryGetSection( "DefaultAssembly" );
+                if( cDef != null )
                 {
-                    if( !c.Exists() ) continue;
-                    if( c.Key.Equals( "DefaultAssembly", StringComparison.OrdinalIgnoreCase ) )
+                    if( isLocked )
                     {
-                        var name = c.Value;
-                        if( String.IsNullOrWhiteSpace( name ) )
+                        WarnOnLocked( monitor, cDef.Path );
+                    }
+                    else
+                    {
+                        var name = cDef.Value;
+                        if( string.IsNullOrWhiteSpace( name ) )
                         {
-                            monitor.Warn( $"Configuration '{c.Path}': invalid empty DefaultAssembly. Ignored." );
+                            monitor.Warn( $"Configuration '{cDef.Path}': invalid empty DefaultAssembly. Ignored." );
                         }
                         else
                         {
@@ -282,10 +295,18 @@ namespace CK.Core
                             }
                         }
                     }
-                    else if( c.Key.Equals( "Assemblies", StringComparison.OrdinalIgnoreCase ) )
+                }
+                var cAss = configuration.TryGetSection( "Assemblies" );
+                if( cAss != null )
+                {
+                    if( _isLocked )
+                    {
+                        WarnOnLocked( monitor, cAss.Path );
+                    }
+                    else
                     {
                         var currentAssemblies = _assemblies;
-                        HandleAssemblies( monitor, ref assemblies, c, ref currentAssemblies );
+                        HandleAssemblies( monitor, ref assemblies, cAss, ref isLocked, ref currentAssemblies );
                     }
                 }
             }
@@ -293,10 +314,13 @@ namespace CK.Core
             {
                 return null;
             }
-            var newDef = defName ?? (defRemoved ? null : _defaultAssemblyName);
-            if( newDef != _defaultAssemblyName || assemblies != null )
+            if( !_isLocked )
             {
-                return new AssemblyConfiguration( this, newDef, assemblies ?? _assemblies );
+                var newDef = defName ?? (defRemoved ? null : _defaultAssemblyName);
+                if( newDef != _defaultAssemblyName || assemblies != null || isLocked )
+                {
+                    return new AssemblyConfiguration( this, newDef, assemblies ?? _assemblies, isLocked );
+                }
             }
             return this;
 
@@ -312,38 +336,74 @@ namespace CK.Core
         {
             Throw.CheckNotNullArgument( monitor );
             if( configuration == null ) return Empty;
+            bool isLocked = false;
             Dictionary<string, string>? assemblies = null;
+            // First, use LookupAllSection to handle "Assemblies:IsLocked" (or "Assemblies:Locked" or "Assemblies:Lock")
+            // definition from the top most "Assemblies" that sets it to true.
+            ImmutableConfigurationSection? locked = null;
+            int lockedDistance = -1;
             bool success = true;
             using( monitor.OnError( () => success = false ) )
             {
-                foreach( var c in configuration.LookupAllSection( "Assemblies" ) )
+                foreach( var (c,d) in configuration.LookupAllSectionWithDistance( "Assemblies" ) )
                 {
                     var currentAssemblies = Empty._assemblies;
-                    HandleAssemblies( monitor, ref assemblies, c, ref currentAssemblies );
+                    HandleAssemblies( monitor, ref assemblies, c, ref isLocked, ref currentAssemblies );
+                    if( isLocked && locked == null )
+                    {
+                        locked = c;
+                        lockedDistance = d;
+                    }
+                    // When isLocked is true, continue so that warning can be emitted on skipped "Assemblies".
                 }
             }
+            // If an error has been signaled, stops.
             if( !success )
             {
                 return null;
             }
-            var def = configuration.TryLookupValue( "DefaultAssembly" );
-            return new AssemblyConfiguration( Empty, def, assemblies ?? Empty._assemblies );
+            // If a "Assembly:IsLocked" has been found above, looks up the "DefaultAssembly" from it (skip any configuration below),
+            // else starts from this configuration.
+            string? defaultAssembly = configuration.TryLookupValue( "DefaultAssembly", out var defDistance );
+            if( locked != null && locked != configuration )
+            {
+                defaultAssembly = locked.TryLookupValue( "DefaultAssembly" );
+                Throw.DebugAssert( lockedDistance > 0 );
+                int delta = lockedDistance - defDistance;
+                if( delta > 0 )
+                {
+                    WarnOnLocked( monitor, configuration.GetParentPath( delta ) );
+                }
+            }
+            else
+            {
+                defaultAssembly = configuration.TryLookupValue( "DefaultAssembly" );
+            }
+            return new AssemblyConfiguration( Empty, defaultAssembly, assemblies ?? Empty._assemblies, isLocked );
         }
 
         static void HandleAssemblies( IActivityMonitor monitor,
                                       ref Dictionary<string, string>? assemblies,
                                       ImmutableConfigurationSection c,
+                                      ref bool isLocked,
                                       ref IReadOnlyDictionary<string, string> currentAssemblies )
         {
+            if( isLocked )
+            {
+                WarnOnLocked( monitor, c.Path );
+                return;
+            }
             // Fist try on the "Assemblies" section itself.
-            // If we find a Value, it's an assembly -> assembly.
-            // If we find a {Assembly:xxx(,Alias:yyyy)?} it's an assembly alias/assembly -> assembly.
-            if( TryAddAssemblyEntry( monitor, ref assemblies, c, ref currentAssemblies ) )
+            // If we find a Value, it's an assembly -> assembly or the value may be "IsLocked" (or "Locked" or "Lock").
+            // If we find a {Assembly:xxx(,Alias:yyyy)?} it's an assembly alias/assembly -> assembly (that
+            // may also contain a "IsLocked: true" (or "Locked" or "Lock").
+            if( TryAddAssemblyEntry( monitor, ref assemblies, c, ref currentAssemblies, ref isLocked, c.GetParentPath() ) )
             {
                 return;
             }
             // If the section has chidren, then it must be an array of assembly entries
             // or pairs of "Alias": "Assembly" or an array of assembly entries.
+            // In all of these "IsLocked" is handled.
             if( c.HasChildren )
             {
                 foreach( var child in c.GetChildren() )
@@ -351,7 +411,9 @@ namespace CK.Core
                     if( !child.Exists() ) continue;
                     if( int.TryParse( child.Key, out var _ ) )
                     {
-                        if( !TryAddAssemblyEntry( monitor, ref assemblies, child, ref currentAssemblies ) )
+                        // Allows "IsLocked" to appear in the array or a "IsLocked: true" in a {} whether there's also
+                        // ""Assembly/Alias" or not.
+                        if( !TryAddAssemblyEntry( monitor, ref assemblies, child, ref currentAssemblies, ref isLocked, c.GetParentPath() ) )
                         {
                             WarnUreadable( monitor, child );
                         }
@@ -359,7 +421,12 @@ namespace CK.Core
                     else
                     {
                         var assembly = child.Key.Trim();
-                        if( assembly.Length == 0 )
+                        // Allows a "IsLocked: true" to occur among the assemblies.
+                        if( IsLockedTerm( assembly ) )
+                        {
+                            ParseIsLockedBooleanValue( monitor, c, ref isLocked, c.GetParentPath(), child.Value );
+                        }
+                        else if( assembly.Length == 0 )
                         {
                             monitor.Error( $"Configuration '{c.Path}': invalid assembly name." );
                         }
@@ -387,17 +454,72 @@ namespace CK.Core
             {
                 monitor.Warn( $"Configuration '{c.Path}': unable to read an assembly name, an assembly name and an alias or a list of such entries. Ignored." );
             }
+
+        }
+
+        // Returns whether a "IsLocked: true/false" has been handled.
+        static bool HandleIsLocked( IActivityMonitor monitor, ImmutableConfigurationSection c, ref bool isLocked, ReadOnlySpan<char> lockSectionPath )
+        {
+            var value = c["IsLocked"] ?? c["Locked"] ?? c["Lock"];
+            if( value != null )
+            {
+                ParseIsLockedBooleanValue( monitor, c, ref isLocked, lockSectionPath, value );
+                return true;
+            }
+            return false;
+        }
+
+        static void ParseIsLockedBooleanValue( IActivityMonitor monitor,
+                                               ImmutableConfigurationSection c,
+                                               ref bool isLocked,
+                                               ReadOnlySpan<char> lockSectionPath,
+                                               string? value )
+        {
+            if( !bool.TryParse( value, out var newLock ) )
+            {
+                monitor.Warn( $"Invalid '{c}:IsLocked' (or 'Locked' or 'Lock') value '{value}'. In doubt, considering it to be 'true'." );
+                newLock = true;
+            }
+            if( !isLocked && newLock )
+            {
+                monitor.Info( $"Allowed assemblies are locked below '{lockSectionPath}'." );
+                isLocked = true;
+            }
+        }
+
+        static bool IsLockedTerm( string value )
+        {
+            return value.Equals( "IsLocked", StringComparison.OrdinalIgnoreCase )
+                    || value.Equals( "Locked", StringComparison.OrdinalIgnoreCase )
+                    || value.Equals( "Lock", StringComparison.OrdinalIgnoreCase );
+        }
+
+        static void WarnOnLocked( IActivityMonitor monitor, ReadOnlySpan<char> ignoredPath )
+        {
+            monitor.Warn( $"Assemblies is locked. Ignoring '{ignoredPath}'." );
         }
 
         static bool TryAddAssemblyEntry( IActivityMonitor monitor,
                                          ref Dictionary<string, string>? assemblies,
                                          ImmutableConfigurationSection c,
-                                         ref IReadOnlyDictionary<string, string> currentAssemblies )
+                                         ref IReadOnlyDictionary<string, string> currentAssemblies,
+                                         ref bool isLocked,
+                                         ReadOnlySpan<char> lockSectionPath )
         {
             string? alias = null;
             var assembly = c.Value;
             if( !string.IsNullOrWhiteSpace( assembly ) )
             {
+                // Allows "Assemblies: IsLocked".
+                if( IsLockedTerm( assembly ) )
+                {
+                    if( !isLocked )
+                    {
+                        isLocked = true;
+                        monitor.Info( $"Allowed assemblies are locked below '{lockSectionPath}'." );
+                    }
+                    return true;
+                }
                 alias = assembly;
             }
             else if( c.HasChildren )
@@ -411,9 +533,16 @@ namespace CK.Core
                         alias = assembly;
                     }
                 }
+                // Allows a "IsLocked: true" to occur.
+                // If we only read the "IsLocked" and there is no "Assembly", this is handled.
+                if( HandleIsLocked( monitor, c, ref isLocked, lockSectionPath ) && alias == null )
+                {
+                    return true;
+                }
             }
             if( alias == null )
             {
+                // Nothing has been handled.
                 return false;
             }
             AddAssembly( monitor, ref assemblies, c, ref currentAssemblies, alias, assembly );

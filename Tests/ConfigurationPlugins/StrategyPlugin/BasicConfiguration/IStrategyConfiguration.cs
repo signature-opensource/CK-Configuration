@@ -7,7 +7,7 @@ namespace StrategyPlugin
     /// the factory of the configured component.
     /// <para>
     /// An instance constructor must exist with the following signature:
-    /// <c>( IActivityMonitor monitor, PolymorphicConfigurationTypeBuilder builder, ImmutableConfigurationSection configuration )</c>.
+    /// <c>( IActivityMonitor monitor, TypedConfigurationBuilder builder, ImmutableConfigurationSection configuration )</c>.
     /// </para>
     /// </summary>
     public interface IStrategyConfiguration
@@ -31,26 +31,28 @@ namespace StrategyPlugin
         /// Configures a builder to handle this type family (without <see cref="CompositeStrategyConfiguration"/>).
         /// </summary>
         /// <param name="builder">A builder to configure.</param>
-        public static void ConfigureWithoutComposite( PolymorphicConfigurationTypeBuilder builder )
+        public static void AddResolverWithoutComposite( TypedConfigurationBuilder builder )
         {
-            builder.AddStandardTypeResolver( baseType: typeof( IStrategyConfiguration ),
-                                             typeNamespace: "Plugin.Strategy",
-                                             allowOtherNamespace: false,
-                                             familyTypeNameSuffix: "Strategy" );
+            builder.AddResolver( new TypedConfigurationBuilder.StandardTypeResolver(
+                                        baseType: typeof( IStrategyConfiguration ),
+                                        typeNamespace: "Plugin.Strategy",
+                                        allowOtherNamespace: false,
+                                        familyTypeNameSuffix: "Strategy" ) );
         }
 
         /// <summary>
         /// Configures a builder to handle this type family (with composite).
         /// </summary>
         /// <param name="builder">A builder to configure.</param>
-        public static void Configure( PolymorphicConfigurationTypeBuilder builder )
+        public static void AddResolver( TypedConfigurationBuilder builder )
         {
-            builder.AddStandardTypeResolver( baseType: typeof( IStrategyConfiguration ),
-                                             typeNamespace: "Plugin.Strategy",
-                                             allowOtherNamespace: false,
-                                             familyTypeNameSuffix: "Strategy",
-                                             compositeBaseType: typeof( CompositeStrategyConfiguration ),
-                                             compositeItemsFieldName: "Strategies" );
+            builder.AddResolver( new TypedConfigurationBuilder.StandardTypeResolver(
+                                        baseType: typeof( IStrategyConfiguration ),
+                                        typeNamespace: "Plugin.Strategy",
+                                        allowOtherNamespace: false,
+                                        familyTypeNameSuffix: "Strategy",
+                                        defaultCompositeBaseType: typeof( CompositeStrategyConfiguration ),
+                                        compositeItemsFieldName: "Strategies" ) );
         }
     }
 }

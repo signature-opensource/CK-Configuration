@@ -26,7 +26,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Configuration", "CK.Conf
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StrategyPlugin", "Tests\ConfigurationPlugins\StrategyPlugin\StrategyPlugin.csproj", "{19F6C3A6-6996-47D6-90FE-327185DF371A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsumerB.Plugins", "Tests\ConfigurationPlugins\ConsumerB.Plugins\ConsumerB.Plugins.csproj", "{D1A2B4FE-85EF-47ED-A673-C474E99D8F95}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsumerB.Plugins", "Tests\ConfigurationPlugins\ConsumerB.Plugins\ConsumerB.Plugins.csproj", "{D1A2B4FE-85EF-47ED-A673-C474E99D8F95}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{90CF3FC6-59ED-4D7C-B813-2BE587CA7C09}"
 EndProject

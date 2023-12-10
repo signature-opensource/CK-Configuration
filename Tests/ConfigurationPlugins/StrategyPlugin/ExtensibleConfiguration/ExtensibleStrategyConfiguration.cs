@@ -6,7 +6,7 @@ namespace StrategyPlugin
     /// <summary>
     /// While the <see cref="IStrategyConfiguration"/> is an interface, this one is
     /// an abstract class (it could also be an interface).
-    /// An extensible configuration handles <see cref="PlaceholderStrategyConfiguration"/> configuration replacements.
+    /// An extensible configuration handles <see cref="ExtensibleStrategyConfiguration"/> configuration replacements.
     /// <para>
     /// This one doesn't capture and expose its <see cref="ImmutableConfigurationSection"/> by default: it is up to
     /// the concrete configurations to do this as needed.
@@ -16,35 +16,18 @@ namespace StrategyPlugin
     /// explicitely targeted.
     /// </para>
     /// </summary>
-    public abstract class ExtensibleStrategyConfiguration
+    public abstract class ExtensibleStrategyConfiguration : ISupportConfigurationPlaceholder<ExtensibleStrategyConfiguration>
     {
         /// <inheritdoc cref="IStrategyConfiguration.CreateStrategy(IActivityMonitor)"/>
         public abstract IStrategy? CreateStrategy( IActivityMonitor monitor );
-
-        public bool TrySetPlaceholder( IActivityMonitor monitor,
-                                       IConfigurationSection configuration,
-                                       out ExtensibleStrategyConfiguration? result )
-        {
-            bool success = true;
-            using( monitor.OnError( () => success = false ) )
-            {
-                result = SetPlaceholder( monitor, configuration );
-                if( result == this )
-                {
-                    monitor.Error( $"Unable to set placeholder: '{configuration.GetParentPath()}' doesn't exist or is not a placeholder." );
-                }
-            }
-            if( !success ) result = null;
-            return success;
-        }
 
         /// <summary>
         /// Mutator default implementation: always returns this instance by default.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">Configuration of the replaced placeholder.</param>
-        /// <returns>This, a new configuration, or null to remove this.</returns>
-        protected internal virtual ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
+        /// <returns>A new configuration (or this object if nothing changed). Should be null only if an error occurred.</returns>
+        public virtual ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration )
         {
             return this;
         }
@@ -53,14 +36,15 @@ namespace StrategyPlugin
         /// Configures a builder to handle this type family.
         /// </summary>
         /// <param name="builder">A builder to configure.</param>
-        public static void Configure( PolymorphicConfigurationTypeBuilder builder )
+        public static void AddResolver( TypedConfigurationBuilder builder )
         {
-            builder.AddStandardTypeResolver( baseType: typeof( ExtensibleStrategyConfiguration ),
-                                             typeNamespace: "Plugin.Strategy",
-                                             allowOtherNamespace: false,
-                                             familyTypeNameSuffix: "Strategy",
-                                             compositeBaseType: typeof( Plugin.Strategy.ExtensibleCompositeStrategyConfiguration ),
-                                             compositeItemsFieldName: "Strategies" );
+            builder.AddResolver( new TypedConfigurationBuilder.StandardTypeResolver(
+                                        baseType: typeof( ExtensibleStrategyConfiguration ),
+                                        typeNamespace: "Plugin.Strategy",
+                                        allowOtherNamespace: false,
+                                        familyTypeNameSuffix: "Strategy",
+                                        defaultCompositeBaseType: typeof( Plugin.Strategy.ExtensibleCompositeStrategyConfiguration ),
+                                        compositeItemsFieldName: "Strategies" ) );
         }
 
     }

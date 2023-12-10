@@ -8,7 +8,7 @@ namespace Plugin.Strategy
     /// <summary>
     /// Extensible composite configuration.
     /// <para>
-    /// This must be in the "plugin" namespace so that it can be explictely loaded.
+    /// This must be in the "plugin" namespace so that it can be found by the resolver.
     /// </para>
     /// </summary>
     public class ExtensibleCompositeStrategyConfiguration : ExtensibleStrategyConfiguration
@@ -24,7 +24,7 @@ namespace Plugin.Strategy
         /// <param name="configuration">The configuration for this object.</param>
         /// <param name="strategies">The subordinated items.</param>
         public ExtensibleCompositeStrategyConfiguration( IActivityMonitor monitor,
-                                                         PolymorphicConfigurationTypeBuilder builder,
+                                                         TypedConfigurationBuilder builder,
                                                          ImmutableConfigurationSection configuration,
                                                          IReadOnlyList<ExtensibleStrategyConfiguration> strategies )
         {
@@ -50,15 +50,23 @@ namespace Plugin.Strategy
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">Configuration to apply.</param>
-        /// <returns>This or a new composite.</returns>
-        protected internal override ExtensibleStrategyConfiguration SetPlaceholder( IActivityMonitor monitor,
-                                                                                    IConfigurationSection configuration )
+        /// <returns>This or a new composite. May be null if an error occurred.</returns>
+        public override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
+                                                                         IConfigurationSection configuration )
         {
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( configuration );
+            // Bails out early if we are not concerned.
+            if( !ConfigurationSectionExtension.IsChildPath( _path, configuration.Path ) )
+            {
+                return this;
+            }
             ImmutableArray<ExtensibleStrategyConfiguration>.Builder? newItems = null;
             for( int i = 0; i < _items.Count; i++ )
             {
                 var item = _items[i];
                 var r = item.SetPlaceholder( monitor, configuration );
+                if( r == null ) return null;
                 if( r != item )
                 {
                     if( newItems == null )
@@ -67,7 +75,7 @@ namespace Plugin.Strategy
                         newItems.AddRange( _items.Take( i ) );
                     }
                 }
-                if( r != null && newItems != null ) newItems.Add( r );
+                newItems?.Add( r );
             }
             return newItems != null ? new ExtensibleCompositeStrategyConfiguration( this, newItems.ToImmutableArray() ) : this;
         }

@@ -10,7 +10,7 @@ namespace Plugin.Strategy
         readonly string _action;
 
         public SimpleStrategyConfiguration( IActivityMonitor monitor,
-                                            PolymorphicConfigurationTypeBuilder builder,
+                                            TypedConfigurationBuilder builder,
                                             ImmutableConfigurationSection configuration )
         {
             _configuration = configuration;

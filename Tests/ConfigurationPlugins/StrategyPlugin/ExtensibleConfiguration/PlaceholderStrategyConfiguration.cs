@@ -1,25 +1,28 @@
 using CK.Core;
 using Microsoft.Extensions.Configuration;
 using StrategyPlugin;
+using System.Collections.Immutable;
 
 namespace Plugin.Strategy
 {
     /// <summary>
-    /// Confiration object that is here to be replaced by a real configuration.
+    /// Configuration object that is here to be replaced by a real configuration.
     /// <para>
     /// This must be in the "plugin" namespace.
     /// </para>
     /// </summary>
-    public class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
+    public sealed class PlaceholderStrategyConfiguration : ExtensibleStrategyConfiguration
     {
         readonly AssemblyConfiguration _assemblies;
+        readonly ImmutableArray<TypedConfigurationBuilder.TypeResolver> _resolvers;
         readonly ImmutableConfigurationSection _configuration;
 
         public PlaceholderStrategyConfiguration( IActivityMonitor monitor,
-                                                 PolymorphicConfigurationTypeBuilder builder,
+                                                 TypedConfigurationBuilder builder,
                                                  ImmutableConfigurationSection configuration )
         {
-            _assemblies = builder.CurrentAssemblyConfiguration;
+            _assemblies = builder.AssemblyConfiguration;
+            _resolvers = builder.Resolvers.ToImmutableArray();
             _configuration = configuration;
         }
 
@@ -29,19 +32,17 @@ namespace Plugin.Strategy
         public override IStrategy? CreateStrategy( IActivityMonitor monitor ) => null;
 
 
-        protected internal override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
-                                                                                     IConfigurationSection configuration )
+        public override ExtensibleStrategyConfiguration? SetPlaceholder( IActivityMonitor monitor,
+                                                                        IConfigurationSection configuration )
         {
-            if( configuration.HasParentPath( _configuration.Path ) )
+            if( configuration.GetParentPath().Equals( _configuration.Path, StringComparison.OrdinalIgnoreCase ) )
             {
-                var builder = new PolymorphicConfigurationTypeBuilder( _assemblies );
-                ExtensibleStrategyConfiguration.Configure( builder );
-                // Anchors the new configuration under this one.
-                var config = new ImmutableConfigurationSection( configuration, _configuration );
-                builder.TryCreate<ExtensibleStrategyConfiguration>( monitor, config, out var newC );
-                // We choose here to keep the placeholder on error or if the configuration leads to 
-                // no strategy. Of course, other approaches can be followed here.
-                if( newC != null ) return newC;
+                var builder = new TypedConfigurationBuilder( _assemblies, _resolvers );
+                if( configuration is not ImmutableConfigurationSection config )
+                {
+                    config = new ImmutableConfigurationSection( configuration, lookupParent: _configuration );
+                }
+                return builder.Create<ExtensibleStrategyConfiguration>( monitor, config );
             }
             return this;
         }

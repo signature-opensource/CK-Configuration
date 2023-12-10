@@ -1,37 +1,174 @@
-using System.Collections.Generic;
-using System.Linq;
-using System;
 using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
+using System;
+using System.Linq;
+using System.IO;
 
 namespace CK.Core
 {
     /// <summary>
-    /// Provides helpers to <see cref="ImmutableConfigurationSection"/>.
+    /// Extends configuration objects.
     /// </summary>
-    public static class ImmutableConfigurationSectionExtensions
+    public static class ConfigurationSectionExtension
     {
         /// <summary>
-        /// Gets whether the <paramref name="path"/> is this section's parent path.
+        /// Gentle <see cref="ImmutableConfigurationSection.GetRequiredSection(string)"/> that emits an error and returns null if the
+        /// subordinate section is not found instead of throwing an exception.
         /// </summary>
         /// <param name="section">This section.</param>
-        /// <param name="path">The path that may be this section's parent path.</param>
-        /// <returns>True if the path is this section's parent path.</returns>
-        public static bool HasParentPath( this IConfigurationSection section, ReadOnlySpan<char> path )
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="path">The configuration key or a path to a subordinated key.</param>
+        /// <returns>The section or null.</returns>
+        public static ImmutableConfigurationSection? GetRequiredSection( this ImmutableConfigurationSection section, IActivityMonitor monitor, string path )
         {
-            return path.Length == section.Path.Length - (section.Key.Length > 0 ? section.Key.Length + 1 : 0)
-                   && section.Path.AsSpan( 0, path.Length ).Equals( path, StringComparison.OrdinalIgnoreCase );
+            Throw.CheckNotNullArgument( section );
+            MutableConfigurationSection.CheckPathArgument( path );
+            var c = section.TryGetSection( path );
+            if( c == null )
+            {
+                monitor.Error( $"Configuration path '{section.Path}' must contain a '{path}' section." );
+            }
+            return c;
         }
 
         /// <summary>
-        /// Gets this section's parent path.
+        /// Handles opt-in or opt-out section that can have "true" or "false" value or children.
+        /// <para>
+        /// Note that for convenience, this extension method can be called on a null this <paramref name="parent"/>:
+        /// the section doesn't obviously exists and <paramref name="optOut"/> value applies.
+        /// </para>
+        /// </summary>
+        /// <param name="parent">This parent configuration. Can be null.</param>
+        /// <param name="path">The configuration key or a path to a subordinated key.</param>
+        /// <param name="optOut">
+        /// <list type="bullet">
+        ///   <item>
+        ///     True to consider unexisting section to be the default configuration.
+        ///     To skip the configuration, the section must have a "false" value.
+        ///   </item>
+        ///   <item>
+        ///     False to ignore an unexisting section.
+        ///     To apply the default configuration, the section must have a "true" value.
+        ///   </item>
+        /// </list>
+        /// </param>
+        /// <param name="content">Non null if the section has content: configuration applies.</param>
+        /// <returns>
+        /// True if the configuration applies (if <paramref name="content"/> is null, the default configuration must be applied),
+        /// false if the configuration must be skipped.
+        /// </returns>
+        public static bool ShouldApplyConfiguration( this ImmutableConfigurationSection? parent,
+                                                     string path,
+                                                     bool optOut,
+                                                     out ImmutableConfigurationSection? content )
+        {
+            content = parent?.TryGetSection( path );
+            if( content == null ) return optOut;
+            if( bool.TryParse( content.Value, out var b ) )
+            {
+                content = null;
+                return b;
+            }
+            if( !content.HasChildren )
+            {
+                content = null;
+                return optOut;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Handles opt-in or opt-out section that can have "true" or "false" value or children.
+        /// <para>
+        /// Note that for convenience, this extension method can be called on a null this <paramref name="parent"/>:
+        /// the section doesn't obviously exists and <paramref name="optOut"/> value applies.
+        /// </para>
+        /// </summary>
+        /// <param name="parent">This parent configuration. Can be null.</param>
+        /// <param name="path">The configuration key or a path to a subordinated key.</param>
+        /// <param name="optOut">
+        /// <list type="bullet">
+        ///   <item>
+        ///     True to consider unexisting section to be the default configuration.
+        ///     To skip the configuration, the section must have a "false" value.
+        ///   </item>
+        ///   <item>
+        ///     False to ignore an unexisting section.
+        ///     To apply the default configuration, the section must have a "true" value.
+        ///   </item>
+        /// </list>
+        /// </param>
+        /// <param name="content">Non null if the section has content: configuration applies.</param>
+        /// <returns>
+        /// True if the configuration applies (if <paramref name="content"/> is null, the default configuration must be applied),
+        /// false if the configuration must be skipped.
+        /// </returns>
+        public static bool ShouldApplyConfiguration( this IConfiguration? parent,
+                                                     string path,
+                                                     bool optOut,
+                                                     out IConfigurationSection? content )
+        {
+            content = parent?.GetSection( path );
+            if( content == null || !content.Exists() )
+            {
+                content = null;
+                return optOut;
+            }
+            if( bool.TryParse( content.Value, out var b ) )
+            {
+                content = null;
+                return b;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Gets whether the <paramref name="path"/> is a child path (at any depth).
         /// </summary>
         /// <param name="section">This section.</param>
-        /// <returns>This section's parent path.</returns>
-        public static ReadOnlySpan<char> GetParentPath( this IConfigurationSection section )
+        /// <param name="path">The path that may be a child path.</param>
+        /// <returns>True if the path is a child path.</returns>
+        public static bool IsChildPath( this IConfigurationSection section, ReadOnlySpan<char> path )
         {
-            return section.Key.Length > 0
-                    ? section.Path.AsSpan( 0, section.Path.Length - section.Key.Length - 1 )
-                    : section.Path.AsSpan();
+            return IsChildPath( section.Path, path );
+        }
+
+        /// <summary>
+        /// Gets whether the <paramref name="parentPath"/> is a parent of <paramref name="path"/> (at any depth).
+        /// </summary>
+        /// <param name="parentPath">The parent path.</param>
+        /// <param name="path">The potential child path.</param>
+        /// <returns>True if the path is a child path.</returns>
+        public static bool IsChildPath( ReadOnlySpan<char> parentPath, ReadOnlySpan<char> path )
+        {
+            return path.Length > parentPath.Length + 1
+                   && path[parentPath.Length] == ':'
+                   && path.Slice( 0, parentPath.Length ).Equals( parentPath, StringComparison.OrdinalIgnoreCase );
+        }
+
+        /// <summary>
+        /// Gets this section's parent path (or any parent path).
+        /// </summary>
+        /// <param name="section">This section.</param>
+        /// <param name="distance">Optional distance to the parent section.</param>
+        /// <returns>This section's parent path.</returns>
+        public static ReadOnlySpan<char> GetParentPath( this IConfigurationSection section, int distance = 1 )
+        {
+            if( distance <= 0 ) return section.Path;
+            if( distance == 1 )
+            {
+                int len = section.Path.Length - section.Key.Length - 1;
+                return len > 0
+                        ? section.Path.AsSpan( 0, len )
+                        : default;
+            }
+            ReadOnlySpan<char> p = section.Path;
+            int idx = 0;
+            while( --distance >= 0 && (idx = p.LastIndexOf( ':' )) >= 0 )
+            {
+                p = p.Slice( 0, idx );
+            }
+            return idx > 0 ? p : default;
         }
 
         /// <summary>
@@ -39,14 +176,14 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="reasonPhrase">The reason why this property must not be defined here.</param>
         /// <returns>True on success (no configuration), false if the key exists.</returns>
-        public static bool CheckNotExist( this ImmutableConfigurationSection s, IActivityMonitor monitor, string key, string reasonPhrase )
+        public static bool CheckNotExist( this ImmutableConfigurationSection s, IActivityMonitor monitor, string path, string reasonPhrase )
         {
-            if( s.TryGetSection( key ) != null )
+            if( s.TryGetSection( path ) != null )
             {
-                monitor.Error( $"Invalid '{s.Path}:{key}' key: {reasonPhrase}" );
+                monitor.Error( $"Invalid '{s.Path}:{path}' key: {reasonPhrase}" );
                 return false;
             }
             return true;
@@ -61,13 +198,13 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <returns>The value or null.</returns>
         public static bool? TryLookupBooleanValue( this ImmutableConfigurationSection s,
                                                    IActivityMonitor monitor,
-                                                   string key )
+                                                   string path )
         {
-            return TryReadBoolean( s, monitor, key, s.TryLookupValue( key ) );
+            return TryReadBoolean( s, monitor, path, s.TryLookupValue( path ) );
         }
 
         /// <summary>
@@ -79,21 +216,21 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <returns>The value or null.</returns>
         public static bool? TryGetBooleanValue( this ImmutableConfigurationSection s,
                                                 IActivityMonitor monitor,
-                                                string key )
+                                                string path )
         {
-            return TryReadBoolean( s, monitor, key, s[key] );
+            return TryReadBoolean( s, monitor, path, s[path] );
         }
 
-        private static bool? TryReadBoolean( ImmutableConfigurationSection s, IActivityMonitor monitor, string key, string? a )
+        private static bool? TryReadBoolean( ImmutableConfigurationSection s, IActivityMonitor monitor, string path, string? a )
         {
             if( a == null ) return null;
             if( !bool.TryParse( a, out var value ) )
             {
-                return WarnAndIgnore<bool>( s, monitor, key, "'true' or 'false'", a );
+                return WarnAndIgnore<bool>( s, monitor, path, "'true' or 'false'", a );
             }
             return value;
         }
@@ -108,17 +245,17 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="min">The minimal value to accept.</param>
         /// <param name="max">The maximal value to accept.</param>
         /// <returns>The value or null.</returns>
         public static int? TryLookupIntValue( this ImmutableConfigurationSection s,
                                               IActivityMonitor monitor,
-                                              string key,
+                                              string path,
                                               int min = 0,
                                               int max = int.MaxValue )
         {
-            return TryReadInt( s, monitor, key, min, max, s.TryLookupValue( key ) );
+            return TryReadInt( s, monitor, path, min, max, s.TryLookupValue( path ) );
         }
 
         /// <summary>
@@ -131,29 +268,29 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="min">The minimal value to accept.</param>
         /// <param name="max">The maximal value to accept.</param>
         /// <returns>The value or null.</returns>
         public static int? TryGetIntValue( this ImmutableConfigurationSection s,
                                            IActivityMonitor monitor,
-                                           string key,
+                                           string path,
                                            int min = 0,
                                            int max = int.MaxValue )
         {
-            return TryReadInt( s, monitor, key, min, max, s[key] );
+            return TryReadInt( s, monitor, path, min, max, s[path] );
         }
 
-        private static int? TryReadInt( ImmutableConfigurationSection s, IActivityMonitor monitor, string key, int min, int max, string? a )
+        private static int? TryReadInt( ImmutableConfigurationSection s, IActivityMonitor monitor, string path, int min, int max, string? a )
         {
             if( a == null ) return null;
             if( !int.TryParse( a, out var value ) )
             {
-                return WarnAndIgnore<int>( s, monitor, key, "an integer", a );
+                return WarnAndIgnore<int>( s, monitor, path, "an integer", a );
             }
             if( value < min || value > max )
             {
-                return WarnOutOfRangeAndIgnore<int>( s, monitor, key, value, min, max );
+                return WarnOutOfRangeAndIgnore<int>( s, monitor, path, value, min, max );
             }
             return value;
         }
@@ -168,17 +305,17 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="min">The minimal value to accept.</param>
         /// <param name="max">The maximal value to accept.</param>
         /// <returns>The value or null.</returns>
         public static TimeSpan? TryLookupTimeSpanValue( this ImmutableConfigurationSection s,
                                                         IActivityMonitor monitor,
-                                                        string key,
+                                                        string path,
                                                         TimeSpan min,
                                                         TimeSpan max )
         {
-            return TryReadTimeSpan( s, monitor, key, min, max, s.TryLookupValue( key ) );
+            return TryReadTimeSpan( s, monitor, path, min, max, s.TryLookupValue( path ) );
         }
 
         /// <summary>
@@ -191,17 +328,17 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="min">The minimal value to accept.</param>
         /// <param name="max">The maximal value to accept.</param>
         /// <returns>The value or null.</returns>
         public static TimeSpan? TryGetTimeSpanValue( this ImmutableConfigurationSection s,
                                                      IActivityMonitor monitor,
-                                                     string key,
+                                                     string path,
                                                      TimeSpan min,
                                                      TimeSpan max )
         {
-            return TryReadTimeSpan( s, monitor, key, min, max, s[key] );
+            return TryReadTimeSpan( s, monitor, path, min, max, s[path] );
         }
 
         static TimeSpan? TryReadTimeSpan( ImmutableConfigurationSection s, IActivityMonitor monitor, string key, TimeSpan min, TimeSpan max, string? a )
@@ -219,6 +356,66 @@ namespace CK.Core
         }
 
         /// <summary>
+        /// Lookups a <see cref="DateTime"/> value in this section or above.
+        /// <para>
+        /// This never throws: if the value exists and cannot be parsed or falls outside
+        /// of the <paramref name="min"/>-<paramref name="max"/> range, emits a log warning
+        /// and returns null.
+        /// </para>
+        /// </summary>
+        /// <param name="s">This section.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="path">The configuration key or a path.</param>
+        /// <param name="min">The minimal value to accept.</param>
+        /// <param name="max">The maximal value to accept.</param>
+        /// <returns>The value or null.</returns>
+        public static DateTime? TryLookupDateTimeValue( this ImmutableConfigurationSection s,
+                                                        IActivityMonitor monitor,
+                                                        string path,
+                                                        DateTime min,
+                                                        DateTime max )
+        {
+            return TryReadDateTime( s, monitor, path, min, max, s.TryLookupValue( path ) );
+        }
+
+        /// <summary>
+        /// Tries to get a <see cref="DateTime"/> value in this section.
+        /// <para>
+        /// This never throws: if the value exists and cannot be parsed or falls outside
+        /// of the <paramref name="min"/>-<paramref name="max"/> range, emits a log warning
+        /// and returns null.
+        /// </para>
+        /// </summary>
+        /// <param name="s">This section.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="path">The configuration key or a path.</param>
+        /// <param name="min">The minimal value to accept.</param>
+        /// <param name="max">The maximal value to accept.</param>
+        /// <returns>The value or null.</returns>
+        public static DateTime? TryGetDateTimeValue( this ImmutableConfigurationSection s,
+                                                     IActivityMonitor monitor,
+                                                     string path,
+                                                     DateTime min,
+                                                     DateTime max )
+        {
+            return TryReadDateTime( s, monitor, path, min, max, s[path] );
+        }
+
+        static DateTime? TryReadDateTime( ImmutableConfigurationSection s, IActivityMonitor monitor, string path, DateTime min, DateTime max, string? a )
+        {
+            if( a == null ) return null;
+            if( !DateTime.TryParse( a, out var value ) )
+            {
+                return WarnAndIgnore<DateTime>( s, monitor, path, "a DateTime", a );
+            }
+            if( value < min || value > max )
+            {
+                return WarnOutOfRangeAndIgnore<DateTime>( s, monitor, path, value, min, max );
+            }
+            return value;
+        }
+
+        /// <summary>
         /// Lookups a floating number value in this section or above.
         /// <para>
         /// This never throws: if the value exists and cannot be parsed or falls outside
@@ -228,17 +425,17 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="min">The minimal value to accept.</param>
         /// <param name="max">The maximal value to accept.</param>
         /// <returns>The value or null.</returns>
         public static double? TryLookupDoubleValue( this ImmutableConfigurationSection s,
                                                     IActivityMonitor monitor,
-                                                    string key,
+                                                    string path,
                                                     double min = 0.0,
                                                     double max = double.MaxValue )
         {
-            return TryReadDouble( s, monitor, key, min, max, s.TryLookupValue( key ) );
+            return TryReadDouble( s, monitor, path, min, max, s.TryLookupValue( path ) );
         }
 
         /// <summary>
@@ -251,29 +448,29 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="min">The minimal value to accept.</param>
         /// <param name="max">The maximal value to accept.</param>
         /// <returns>The value or null.</returns>
         public static double? TryGetDoubleValue( this ImmutableConfigurationSection s,
                                                  IActivityMonitor monitor,
-                                                 string key,
+                                                 string path,
                                                  double min = 0.0,
                                                  double max = double.MaxValue )
         {
-            return TryReadDouble( s, monitor, key, min, max, s[key] );
+            return TryReadDouble( s, monitor, path, min, max, s[path] );
         }
 
-        static double? TryReadDouble( ImmutableConfigurationSection s, IActivityMonitor monitor, string key, double min, double max, string? a )
+        static double? TryReadDouble( ImmutableConfigurationSection s, IActivityMonitor monitor, string path, double min, double max, string? a )
         {
             if( a == null ) return null;
             if( !double.TryParse( a, out var value ) )
             {
-                return WarnAndIgnore<double>( s, monitor, key, "a number", a );
+                return WarnAndIgnore<double>( s, monitor, path, "a number", a );
             }
             if( value < min || value > max )
             {
-                return WarnOutOfRangeAndIgnore<double>( s, monitor, key, value, min, max );
+                return WarnOutOfRangeAndIgnore<double>( s, monitor, path, value, min, max );
             }
             return value;
         }
@@ -287,14 +484,14 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <returns>The value or null.</returns>
         public static T? TryLookupEnumValue<T>( this ImmutableConfigurationSection s,
                                                 IActivityMonitor monitor,
-                                                string key )
+                                                string path )
             where T : struct, Enum
         {
-            return TryReadEnum<T>( s, monitor, key, s.TryLookupValue( key ) );
+            return TryReadEnum<T>( s, monitor, path, s.TryLookupValue( path ) );
         }
 
         /// <summary>
@@ -306,41 +503,53 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <returns>The value or null.</returns>
         public static T? TryGetEnumValue<T>( this ImmutableConfigurationSection s,
                                              IActivityMonitor monitor,
-                                             string key )
+                                             string path )
             where T : struct, Enum
         {
-            return TryReadEnum<T>( s, monitor, key, s[key] );
+            return TryReadEnum<T>( s, monitor, path, s[path] );
         }
 
-        static T? TryReadEnum<T>( ImmutableConfigurationSection s, IActivityMonitor monitor, string key, string? a ) where T : struct, Enum
+        static T? TryReadEnum<T>( ImmutableConfigurationSection s, IActivityMonitor monitor, string path, string? a ) where T : struct, Enum
         {
             if( a == null ) return null;
             if( !Enum.TryParse<T>( a, true, out var value ) )
             {
-                return WarnAndIgnore<T>( s, monitor, key, $"a {typeof( T ).Name} value", a );
+                return WarnAndIgnore<T>( s, monitor, path, $"a {typeof( T ).Name} value", a );
             }
             return value;
         }
 
-        static T? WarnOutOfRangeAndIgnore<T>( ImmutableConfigurationSection s, IActivityMonitor monitor, string key, T value, T min, T max )
+        static T? WarnOutOfRangeAndIgnore<T>( ImmutableConfigurationSection s, IActivityMonitor monitor, string path, T value, T min, T max )
         {
-            monitor.Warn( $"Invalid '{s.Path}:{key}': value '{value}' must be between '{min}' and '{max}'. Ignored." );
+            monitor.Warn( $"Invalid '{s.Path}:{path}': value '{value}' must be between '{min}' and '{max}'. Ignored." );
             return default;
         }
 
         static T? WarnAndIgnore<T>( ImmutableConfigurationSection s,
                                     IActivityMonitor monitor,
-                                    string key,
+                                    string path,
                                     string expected,
                                     string? a )
         {
-            monitor.Warn( $"Unable to parse '{s.Path}:{key}' value, expected {expected} but got '{a}'. Ignored." );
+            monitor.Warn( $"Unable to parse '{s.Path}:{path}' value, expected {expected} but got '{a}'. Ignored." );
             return default;
         }
+
+        static T WarnWithDefault<T>( ImmutableConfigurationSection s,
+                                     IActivityMonitor monitor,
+                                     string path,
+                                     string expected,
+                                     T defaultValue,
+                                     string? a )
+        {
+            monitor.Warn( $"Unable to parse '{s.Path}:{path}' value, expected {expected} but got '{a}'. Using default '{defaultValue}'." );
+            return defaultValue;
+        }
+
 
 
         /// <summary>
@@ -351,19 +560,19 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="defaultValue">Returned default value.</param>
         /// <returns>The value.</returns>
         public static bool LookupBooleanValue( this ImmutableConfigurationSection s,
                                                 IActivityMonitor monitor,
-                                                string key,
+                                                string path,
                                                 bool defaultValue = false )
         {
-            var a = s.TryLookupValue( key );
+            var a = s.TryLookupValue( path );
             if( a == null ) return defaultValue;
             if( !bool.TryParse( a, out var value ) )
             {
-                return WarnWithDefault( s, monitor, key, "'true' or 'false'", defaultValue, a );
+                return WarnWithDefault( s, monitor, path, "'true' or 'false'", defaultValue, a );
             }
             return value;
         }
@@ -377,19 +586,19 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="defaultValue">Returned default value.</param>
         /// <returns>The value.</returns>
         public static int LookupIntValue( this ImmutableConfigurationSection s,
                                           IActivityMonitor monitor,
-                                          string key,
+                                          string path,
                                           int defaultValue = 0 )
         {
-            var a = s.TryLookupValue( key );
+            var a = s.TryLookupValue( path );
             if( a == null ) return defaultValue;
             if( !int.TryParse( a, out var value ) )
             {
-                return WarnWithDefault( s, monitor, key, "an integer", defaultValue, a );
+                return WarnWithDefault( s, monitor, path, "an integer", defaultValue, a );
             }
             return value;
         }
@@ -403,19 +612,45 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="defaultValue">Returned default value.</param>
         /// <returns>The value.</returns>
         public static TimeSpan LookupTimeSpanValue( this ImmutableConfigurationSection s,
                                                     IActivityMonitor monitor,
-                                                    string key,
+                                                    string path,
                                                     TimeSpan defaultValue )
         {
-            var a = s.TryLookupValue( key );
+            var a = s.TryLookupValue( path );
             if( a == null ) return defaultValue;
             if( !TimeSpan.TryParse( a, out var value ) )
             {
-                return WarnWithDefault( s, monitor, key, "a TimeSpan", defaultValue, a );
+                return WarnWithDefault( s, monitor, path, "a TimeSpan", defaultValue, a );
+            }
+            return value;
+        }
+
+        /// <summary>
+        /// Lookups a <see cref="DateTime"/> value in this section or above.
+        /// <para>
+        /// This never throws: if the value exists and cannot be parsed, emits a log warning
+        /// and returns the <paramref name="defaultValue"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="s">This section.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="path">The configuration key or a path.</param>
+        /// <param name="defaultValue">Returned default value.</param>
+        /// <returns>The value.</returns>
+        public static DateTime LookupDateTimeValue( this ImmutableConfigurationSection s,
+                                                    IActivityMonitor monitor,
+                                                    string path,
+                                                    DateTime defaultValue )
+        {
+            var a = s.TryLookupValue( path );
+            if( a == null ) return defaultValue;
+            if( !DateTime.TryParse( a, out var value ) )
+            {
+                return WarnWithDefault( s, monitor, path, "a DateTime", defaultValue, a );
             }
             return value;
         }
@@ -429,19 +664,19 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="defaultValue">Returned default value.</param>
         /// <returns>The value.</returns>
         public static double LookupDoubleValue( this ImmutableConfigurationSection s,
                                                 IActivityMonitor monitor,
-                                                string key,
+                                                string path,
                                                 double defaultValue = 0.0 )
         {
-            var a = s.TryLookupValue( key );
+            var a = s.TryLookupValue( path );
             if( a == null ) return defaultValue;
             if( !double.TryParse( a, out var value ) )
             {
-                return WarnWithDefault( s, monitor, key, "a float number", defaultValue, a );
+                return WarnWithDefault( s, monitor, path, "a float number", defaultValue, a );
             }
             return value;
         }
@@ -455,33 +690,22 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <param name="defaultValue">Returned default value.</param>
         /// <returns>The value.</returns>
         public static T? LookupEnumValue<T>( this ImmutableConfigurationSection s,
                                              IActivityMonitor monitor,
-                                             string key,
+                                             string path,
                                              T defaultValue )
               where T : struct, Enum
         {
-            var a = s.TryLookupValue( key );
+            var a = s.TryLookupValue( path );
             if( a == null ) return defaultValue;
             if( !Enum.TryParse<T>( a, true, out var value ) )
             {
-                return WarnWithDefault( s, monitor, key, $"a {typeof( T ).Name} value", defaultValue, a );
+                return WarnWithDefault( s, monitor, path, $"a {typeof( T ).Name} value", defaultValue, a );
             }
             return value;
-        }
-
-        static T WarnWithDefault<T>( ImmutableConfigurationSection s,
-                                     IActivityMonitor monitor,
-                                     string key,
-                                     string expected,
-                                     T defaultValue,
-                                     string? a )
-        {
-            monitor.Warn( $"Unable to parse '{s.Path}:{key}' value, expected {expected} but got '{a}'. Using default '{defaultValue}'." );
-            return defaultValue;
         }
 
         /// <summary>
@@ -491,11 +715,11 @@ namespace CK.Core
         /// </summary>
         /// <param name="s">This section.</param>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="key">The configuration key.</param>
+        /// <param name="path">The configuration key or a path.</param>
         /// <returns>The string array (empty if the key doesn't exist) or null on error.</returns>
-        public static string[]? ReadStringArray( ImmutableConfigurationSection s, IActivityMonitor monitor, string key )
+        public static string[]? ReadStringArray( ImmutableConfigurationSection s, IActivityMonitor monitor, string path )
         {
-            return s.TryGetSection( key ).ReadStringArray( monitor );
+            return s.TryGetSection( path ).ReadStringArray( monitor );
         }
 
         /// <summary>
