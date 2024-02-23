@@ -55,7 +55,7 @@ multiple constructs are handled, **"IsLocked", "Lock" and "Locked"** are synonim
 {
   "Assemblies": {
     "Acme.Corp.Strategies": "A",
-    "Too.Long.To.Repeat.Plugin.Assembly": "B" },
+    "Too.Long.To.Repeat.Plugin.Assembly": "B",
     "Universal.StdPlugins": "C",
     "IsLocked": true
   }
