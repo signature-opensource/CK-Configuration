@@ -9,6 +9,78 @@ namespace CK.Configuration.Tests
     [TestFixture]
     public class AssemblyConfigurationTests
     {
+        private const string WithAQNName = "With AQN type name";
+        private const string WithTypeNameOnly = "With type name only";
+
+        [TestCase( WithAQNName )]
+        [TestCase( WithTypeNameOnly )]
+        public void type_name_only_lookup_use_the_DefaultAssembly( string nameKind )
+        {
+            var m = new MutableConfigurationSection( "A" );
+            m["DefaultAssembly"] = "StrategyPlugin";
+            var c = new ImmutableConfigurationSection( m );
+            var a = AssemblyConfiguration.Create( TestHelper.Monitor, c );
+            Throw.DebugAssert( a != null );
+
+            var typeName = nameKind == WithAQNName
+                            ? typeof( CompositeStrategy ).AssemblyQualifiedName!
+                            : "CompositeStrategy";
+            var t = a.TryResolveType( TestHelper.Monitor,
+                                      typeName,
+                                      typeNamespace: "StrategyPlugin",
+                                      // Below are the default values (here for documentation purposes):
+                                      isOptional: false,
+                                      fallbackAssembly: null,
+                                      allowOtherNamespace: false,
+                                      familyTypeNameSuffix: null,
+                                      typeNameSuffix: "Configuration",
+                                      errorPrefix: null,
+                                      errorSuffix: null );
+            t.Should().NotBeNull();
+        }
+
+        [TestCase( "No DefaultAssembly", WithAQNName )]
+        [TestCase( "No DefaultAssembly", WithTypeNameOnly )]
+        [TestCase( "DefaultAssembly is another one", WithAQNName )]
+        [TestCase( "DefaultAssembly is another one", WithTypeNameOnly )]
+        public void type_name_lookup_can_use_the_fallbackDefaultAssembly_even_when( string cause, string nameKind )
+        {
+            var m = new MutableConfigurationSection( "A" );
+            if( cause == "DefaultAssembly is another one" )
+            {
+                m["DefaultAssembly"] = "ConsumerB.Plugins";
+            }
+
+            var typeName = nameKind == WithAQNName
+                            ? typeof( CompositeStrategy ).AssemblyQualifiedName!
+                            : "CompositeStrategy";
+
+            var c = new ImmutableConfigurationSection( m );
+            var a = AssemblyConfiguration.Create( TestHelper.Monitor, c );
+            Throw.DebugAssert( a != null );
+            var t = a.TryResolveType( TestHelper.Monitor, typeName, typeNamespace: "StrategyPlugin", fallbackAssembly: typeof(IStrategy).Assembly );
+            t.Should().NotBeNull();
+        }
+
+        [TestCase( WithAQNName )]
+        [TestCase( WithTypeNameOnly )]
+        public void type_name_lookup_can_use_the_alias_or_the_assembly_name( string nameKind )
+        {
+            var m = new MutableConfigurationSection( "A" );
+            m["Assemblies:0:Assembly"] = "StrategyPlugin";
+            m["Assemblies:0:Alias"] = "Strat";
+
+            var typeName = nameKind == WithAQNName
+                            ? typeof( CompositeStrategy ).AssemblyQualifiedName!
+                            : "CompositeStrategy, Strat";
+
+            var c = new ImmutableConfigurationSection( m );
+            var a = AssemblyConfiguration.Create( TestHelper.Monitor, c );
+            Throw.DebugAssert( a != null );
+            var t = a.TryResolveType( TestHelper.Monitor, typeName, typeNamespace: "StrategyPlugin", fallbackAssembly: typeof(IStrategy).Assembly );
+            t.Should().NotBeNull();
+        }
+
         [TestCase( false )]
         [TestCase( true )]
         public void AssemblyConfiguration_lock_with_or_without_placeholder( bool usePlaceholder )

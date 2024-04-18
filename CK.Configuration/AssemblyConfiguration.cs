@@ -62,6 +62,60 @@ namespace CK.Core
         public AssemblyConfiguration ParentConfiguration => _parent;
 
         /// <summary>
+        /// Tries to resolve an alias or assembly name from this configuration.
+        /// This reproduces the resolution used while loading type and can be used to preview
+        /// its behavior and anticipate a missing assembly.
+        /// </summary>
+        /// <param name="nameOrAlias">The assembly or alias name. Can be the full assembly name (assembly identity information will be ignored).</param>
+        /// <param name="fallbackAssembly">Optional fallback assembly.</param>
+        /// <param name="isAlias">True if <paramref name="nameOrAlias"/> is an alias to the resulting name.</param>
+        /// <param name="isDefaultAssembly">True if <paramref name="nameOrAlias"/> is the default assembly.</param>
+        /// <returns>The resolved assembly name or null if this name or alias doesn't match a configured assembly.</returns>
+        public string? TryResolveAssemblyName( ReadOnlySpan<char> nameOrAlias,
+                                               Assembly? fallbackAssembly,
+                                               out bool isAlias,
+                                               out bool isDefaultAssembly,
+                                               out bool isFallbackAssembly )
+        {
+            // Removes trailing assembly identity information (consider only the weak assembly name).
+            int idxComma = nameOrAlias.IndexOf( ',' );
+            if( idxComma > 0 ) nameOrAlias = nameOrAlias.Slice( 0, idxComma ).TrimEnd();
+
+            // Before looking up anywher else, check the fallback if any to have a stable
+            // isAliasAssembly output.
+            var fallbackName = fallbackAssembly?.FullName;
+            if( fallbackName != null
+                && fallbackName.Length > nameOrAlias.Length
+                && fallbackName[nameOrAlias.Length] == ','
+                && fallbackName.AsSpan().StartsWith( nameOrAlias ) )
+            {
+                isAlias = false;
+                isDefaultAssembly = false;
+                isFallbackAssembly = true;
+                return nameOrAlias.ToString();
+            }
+            isFallbackAssembly = false;
+            // AsSpan can be called on a null string.
+            if( nameOrAlias.SequenceEqual( _defaultAssemblyName.AsSpan() ) )
+            {
+                isAlias = false;
+                isDefaultAssembly = true;
+                return _defaultAssemblyName;
+            }
+            isDefaultAssembly = false;
+            var alias = nameOrAlias.ToString();
+            if( _assemblies.TryGetValue( alias, out var assemblyName ) )
+            {
+                isAlias = alias != assemblyName;
+                isFallbackAssembly = false;
+                return assemblyName;
+            }
+            // Last chance: lookup the assembly names.
+            isAlias = false;
+            return _assemblies.Values.FirstOrDefault( n => n == alias );
+        }
+
+        /// <summary>
         /// Tries to resolve a type name based on this assembly configuration.
         /// <para>
         /// This never throws: errors are emitted to the monitor.
@@ -84,15 +138,19 @@ namespace CK.Core
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="typeName">The type name to resolve. When empty or whitespace, an error is logged and null is returned.</param>
-        /// <param name="fallbackDefaultAssembly">
-        /// Optional assembly used when a type name without specified assembly is not found in the <see cref="DefaultAssembly"/>
-        /// (or there is no default assembly). 
+        /// <param name="fallbackAssembly">
+        /// Optional assembly from which types can always be loaded regardless of the configuration.
+        /// To be loaded from this assembly, <paramref name="typeName"/> can specify its name or no assembly name at all.
+        /// When no assembly name is specified, the <see cref="DefaultAssembly"/> (if any) and this fallback assembly are considered.
         /// </param>
         /// <param name="typeNamespace">
         /// Required namespace that will be prepended to the <paramref name="typeName"/> if there is no '.' in it.
         /// This must not be empty or whitespace.
         /// </param>
-        /// <param name="isOptional">True to not emit an error if the type is not found. Must be used when an alternative is possible.</param>
+        /// <param name="isOptional">
+        /// True to not emit an error if the type is not found. Must be used when an alternative is possible.
+        /// This doesn't apply to the assembly loading: a non loadable assembly is always an error.
+        /// </param>
         /// <param name="allowOtherNamespace">
         /// True to allow type names in other namespaces than <paramref name="typeNamespace"/>.
         /// </param>
@@ -114,7 +172,7 @@ namespace CK.Core
                                      string typeName,
                                      string typeNamespace,
                                      bool isOptional = false,
-                                     Assembly? fallbackDefaultAssembly = null,
+                                     Assembly? fallbackAssembly = null,
                                      bool allowOtherNamespace = false,
                                      string? familyTypeNameSuffix = null,
                                      string typeNameSuffix = "Configuration",
@@ -128,6 +186,7 @@ namespace CK.Core
             ReadOnlySpan<char> tName = typeName.AsSpan().Trim();
             if( tName.Length == 0 )
             {
+                // Ignores isOptional here: this is a configuration error.
                 monitor.Error( $"{errorPrefix?.Invoke()}Specified type name is invalid ('{typeName}').{errorSuffix?.Invoke()}" );
                 return null;
             }
@@ -135,44 +194,48 @@ namespace CK.Core
             #region Resolving assembly
             Assembly? assembly = null;
             int idxComma = tName.IndexOf( ',' );
-            bool isDefaultAssembly = idxComma < 0;
-            if( isDefaultAssembly )
+            bool isUnnamedAssembly = idxComma < 0;
+            if( isUnnamedAssembly )
             {
                 if( _defaultAssemblyName == null )
                 {
-                    if( fallbackDefaultAssembly == null )
+                    if( fallbackAssembly == null )
                     {
+                        // Ignores isOptional here: this is a configuration error.
                         monitor.Error( $"{errorPrefix?.Invoke()}Type '{typeName}' doesn't specify any assembly and no DefaultAssembly exists.{errorSuffix?.Invoke()}" );
                         return null;
                     }
                 }
                 else
                 {
+                    // This AssemblyConfiguration is just a configuration: it doesn't hold an assembly.
+                    // The Assembly.Load has internal caching anyway.
                     assembly = LoadAssembly( monitor, _defaultAssemblyName, errorPrefix, errorSuffix );
                     if( assembly == null ) return null;
-                    if( assembly == fallbackDefaultAssembly ) fallbackDefaultAssembly = null;
+                    if( assembly == fallbackAssembly ) fallbackAssembly = null;
                 }
             }
             else
             {
-                var alias = tName.Slice( idxComma + 1 ).TrimStart().ToString();
-                string? assemblyName;
-                if( alias == _defaultAssemblyName ) assemblyName = alias;
-                else if( !_assemblies.TryGetValue( alias, out assemblyName ) )
+                var nameOrAlias = tName.Slice( idxComma + 1 ).TrimStart();
+                var assemblyName = TryResolveAssemblyName( nameOrAlias, fallbackAssembly, out _, out _, out var isFallBackAssembly );
+                if( assemblyName == null )
                 {
-                    monitor.Error( $"{errorPrefix?.Invoke()}Type '{typeName}' specifies assembly '{alias}' that doesn't exist. " +
-                                   $"Defined Assemblies are '{_assemblies.Values.Concatenate( "', '" )}'" +
-                                   $"{(_defaultAssemblyName == null ? "" : $", DefaultAssembly is '{_defaultAssemblyName}'.")}{errorSuffix?.Invoke()}" );
+                    monitor.Error( $"{errorPrefix?.Invoke()}Type '{typeName}' specifies assembly '{nameOrAlias}' that doesn't exist. " +
+                                    $"Defined Assemblies are '{_assemblies.Select( kv => kv.Value != kv.Key ? $"{kv.Key} -> {kv.Value}" : kv.Value ).Concatenate( "', '" )}'" +
+                                    $"{(_defaultAssemblyName == null ? "" : $", DefaultAssembly is '{_defaultAssemblyName}'.")}{errorSuffix?.Invoke()}" );
                     return null;
                 }
                 tName = tName.Slice( 0, idxComma ).TrimEnd();
-                assembly = LoadAssembly( monitor, assemblyName, errorPrefix, errorSuffix );
+                assembly = isFallBackAssembly
+                                ? fallbackAssembly
+                                : LoadAssembly( monitor, assemblyName, errorPrefix, errorSuffix );
                 if( assembly == null ) return null;
             }
             #endregion
 
             Throw.DebugAssert( "assembly == null ==> isDefaultAssembly (and there is no default but we have a fallbackDefaultAssembly).",
-                               assembly != null || isDefaultAssembly );
+                               assembly != null || isUnnamedAssembly );
 
             bool hasNamespace = tName.Contains( '.' );
             if( hasNamespace && !allowOtherNamespace
@@ -193,12 +256,12 @@ namespace CK.Core
 
             if( assembly == null )
             {
-                Throw.DebugAssert( isDefaultAssembly && _defaultAssemblyName == null && fallbackDefaultAssembly != null );
-                return LoadType( monitor, fallbackDefaultAssembly, null, finalTypeName, isOptional, errorPrefix, errorSuffix );
+                Throw.DebugAssert( isUnnamedAssembly && _defaultAssemblyName == null && fallbackAssembly != null );
+                return LoadType( monitor, fallbackAssembly, null, finalTypeName, isOptional, errorPrefix, errorSuffix );
             }
-            if( isDefaultAssembly && fallbackDefaultAssembly != null )
+            if( isUnnamedAssembly && fallbackAssembly != null )
             {
-                return LoadType( monitor, assembly, fallbackDefaultAssembly, finalTypeName, isOptional, errorPrefix, errorSuffix );
+                return LoadType( monitor, assembly, fallbackAssembly, finalTypeName, isOptional, errorPrefix, errorSuffix );
             }
             return LoadType( monitor, assembly, null, finalTypeName, isOptional, errorPrefix, errorSuffix );
         }
@@ -327,10 +390,11 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Trie to create a <see cref="AssemblyConfiguration"/> from the given <paramref name="configuration"/> section. 
+        /// Tries to create a <see cref="AssemblyConfiguration"/> from the given <paramref name="configuration"/> section.
+        /// Configurations above the <paramref name="configuration"/> are analyzed (and may have locked any Assembly modification). 
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="configuration">The configuration to analyze.</param>
+        /// <param name="configuration">The configuration to analyze. When null, <see cref="Empty"/> is returned.</param>
         /// <returns>The assembly configuration or null on error.</returns>
         public static AssemblyConfiguration? Create( IActivityMonitor monitor, ImmutableConfigurationSection? configuration )
         {
@@ -531,6 +595,15 @@ namespace CK.Core
                     if( string.IsNullOrWhiteSpace( alias ) )
                     {
                         alias = assembly;
+                    }
+                    else
+                    {
+                        if( alias.Contains( ',' ) )
+                        {
+                            // Don't Error: unreadable configuration are skipped.
+                            monitor.Warn( $"Assembly '{c.Path}:Alias':'{alias}' must not contain a comma." );
+                            return false;
+                        }
                     }
                 }
                 // Allows a "IsLocked: true" to occur.
