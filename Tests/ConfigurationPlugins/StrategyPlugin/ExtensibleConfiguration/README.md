@@ -10,7 +10,7 @@ This pattern offers some strong guaranties:
 - Placeholder replacements works on fully immutable objects, there are no concurrency issues by design.
 - Placeholder replacements can be constrained. For instance an extension may not be allowed to use any
   other plugin assemblies than the ones that have been defined in the context of the Placeholder, by the
-  "host configuration".
+  "host configuration" (by locking the AssemblyConfiguration).
 
 The `ImmutableConfigurationSection` on which any configuration object relies is deeply immutable.
 The configuration objects are also immutable.
@@ -23,7 +23,7 @@ classical pattern with immutable structures).
 ## Implementation
 To support placeholders and configuration extension, a family:
 - Must support the "empty configured object" pattern, either by implementing the [null object pattern](https://en.wikipedia.org/wiki/Null_object_pattern)
-  or by simply allows created configured objects to be null.
+  or by simply allowing created configured objects to be null.
   > This is required because a placeholder must be an "invisible" factory, with no impact, no "production" at all.
 - 
   In this [ExtensibleStrategyConfiguration](ExtensibleStrategyConfiguration.cs) family, a null `IStrategy` is the

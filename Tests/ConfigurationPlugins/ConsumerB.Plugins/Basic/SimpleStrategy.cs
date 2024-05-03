@@ -1,7 +1,6 @@
 using CK.Core;
 using Plugin.Strategy;
 using StrategyPlugin;
-using System.Security.AccessControl;
 
 namespace ConsumerB
 {

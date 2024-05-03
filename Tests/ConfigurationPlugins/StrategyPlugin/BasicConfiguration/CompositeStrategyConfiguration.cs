@@ -5,10 +5,10 @@ using System.Collections.Immutable;
 namespace StrategyPlugin
 {
     /// <summary>
-    /// Typical composite implementation. This shoule be implemented at the abstraction level,
+    /// Typical composite implementation. This should be implemented at the abstraction level,
     /// close to its base <see cref="IStrategyConfiguration"/>.
     /// <para>
-    /// This class is not be abstract: this is the default composite configuration that has no
+    /// This class is not abstract: this is the default, concrete, composite configuration that has no
     /// configuration for itself but nothing prevents other configurations to be more complex
     /// than a simple list of items.
     /// </para>

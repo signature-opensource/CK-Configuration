@@ -34,7 +34,7 @@ namespace CK.Core
         /// <summary>
         /// Initializes a new <see cref="MutableConfigurationSection"/>.
         /// </summary>
-        /// <param name="path">The section path. It must be <see cref="IsValidPath(ReadOnlySpan{char})"/>.</param>
+        /// <param name="path">The section path. It must not be empty. See <see cref="IsValidPath(ReadOnlySpan{char})"/>.</param>
         public MutableConfigurationSection( string path )
         {
             _path = CheckPathArgument( path );
@@ -47,7 +47,7 @@ namespace CK.Core
         /// <see cref="IConfigurationSection.Path"/> that is "<paramref name="parentPath"/>:<paramref name="key"/>".
         /// </summary>
         /// <param name="parentPath">The parent section path. It must be null or empty or <see cref="IsValidPath(ReadOnlySpan{char})"/>.</param>
-        /// <param name="key">The key name. It must be <see cref="IsValidKey(ReadOnlySpan{char})"/>.</param>
+        /// <param name="key">The key name. It must not be empty. See <see cref="IsValidKey(ReadOnlySpan{char})"/>.</param>
         public MutableConfigurationSection( string? parentPath, string key )
         {
             _key = CheckKeyArgument( key );
