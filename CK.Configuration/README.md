@@ -28,7 +28,7 @@ Assemblies and aliases can also be expressed as:
 {
   "Assemblies": {
     "Acme.Corp.Strategies": "A",
-    "Too.Long.To.Repeat.Plugin.Assembly": "B" },
+    "Too.Long.To.Repeat.Plugin.Assembly": "B",
     "Universal.StdPlugins": "C"
   }
 }
@@ -50,12 +50,12 @@ A plugin is typically defined with a simple `Type = "XXX"` configuration:
 
 The `AssemblyConfiguration` can be locked. When locked, subordinated  "DefaultAssembly" and "Assemblies" sections
 are ignored (with a warning). No more external assemblies can enter the game. To lock the configuration,
-multiple constructs are handled, **"IsLocked", "Lock" and "Locked"** are synonims:
+multiple constructs are handled, **"IsLocked", "Lock" and "Locked"** are synonyims:
 ```json
 {
   "Assemblies": {
     "Acme.Corp.Strategies": "A",
-    "Too.Long.To.Repeat.Plugin.Assembly": "B" },
+    "Too.Long.To.Repeat.Plugin.Assembly": "B",
     "Universal.StdPlugins": "C",
     "IsLocked": true
   }
@@ -70,7 +70,7 @@ Or:
 Or:
 ```jsonc
 {
-  "Assemblies": "Assemblies":[ "Locked", "ConsumerA.Strategy" ],
+  "Assemblies": [ "Locked", "ConsumerA.Strategy" ],
 }
 ```
 

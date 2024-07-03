@@ -197,6 +197,60 @@ namespace CK.Configuration.Tests
             s.DoSomething( TestHelper.Monitor, 0 ).Should().Be( 3 );
         }
 
+        [Test]
+        public void composite_at_root_with_sub_composite()
+        {
+            var config = ImmutableConfigurationSection.CreateFromJson( "Root",
+                """
+                {
+                    "Assemblies":
+                    [
+                        { "Assembly": "ConsumerA.Strategy", "Alias":"C1" },
+                        { "Assembly": "ConsumerB.Plugins", "Alias": "C2" }
+                    ],
+                    "Strategies":
+                    [
+                        {
+                            "Type": "Simple, C1",
+                            "Action": "hello World!"
+                        },
+                        {
+                            "Type": "Simple, C2"
+                        },
+                        {
+                            "Strategies":
+                            [
+                                {
+                                    "Type": "Simple, C1",
+                                    "Action": "hello again..."
+                                },
+                                {
+                                    "Type": "Simple, C2"
+                                }
+                            ]
+                        },
+                        {
+                            "Type": "AnotherSimpleStrategyConfiguration, C1"
+                        }
+                    ]
+                }
+                """ );
+            var builder = new TypedConfigurationBuilder();
+            builder.AddResolver( new TypedConfigurationBuilder.StandardTypeResolver(
+                                        baseType: typeof( IStrategyConfiguration ),
+                                        typeNamespace: "Plugin.Strategy",
+                                        allowOtherNamespace: false,
+                                        familyTypeNameSuffix: "Strategy",
+                                        defaultCompositeBaseType: typeof( CompositeStrategyConfiguration ),
+                                        compositeItemsFieldName: "Strategies" ) );
+            var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
+            Throw.DebugAssert( sC != null );
+            var s = sC.CreateStrategy( TestHelper.Monitor );
+            Throw.DebugAssert( s != null );
+            s.DoSomething( TestHelper.Monitor, 0 )
+                .Should().Be( 5, "Each 'Simple' and 'AnotherSimple' increments the value." );
+        }
+
 
         [TestCase( false )]
         [TestCase( true )]

@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="FullSignature">
+  <Class Name="CK.Core.TypedConfigurationBuilder">
+    <Position X="0.5" Y="0.5" Width="10.5" />
+    <Members>
+      <Field Name="_argTypes" Hidden="true" />
+      <Field Name="_assemblyConfiguration" Hidden="true" />
+      <Field Name="_createDepth" Hidden="true" />
+      <Field Name="_factories" Hidden="true" />
+      <Field Name="_hiddenResolvers" Hidden="true" />
+      <Field Name="_resolvers" Hidden="true" />
+      <Method Name="CreateFactory" Hidden="true" />
+      <Method Name="DoCreate" Hidden="true" />
+      <Method Name="DoCreateItems" Hidden="true" />
+      <Method Name="ExtractItemType" Hidden="true" />
+      <Method Name="FindCreate" Hidden="true" />
+      <Method Name="FindCtor" Hidden="true" />
+      <Method Name="FindItemsSectionAndCreateItems" Hidden="true" />
+      <Method Name="FindResolver" Hidden="true" />
+    </Members>
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
+    <NestedTypes>
+      <Class Name="CK.Core.TypedConfigurationBuilder.Factory">
+        <Members>
+          <Field Name="_createMethod" Hidden="true" />
+          <Field Name="_itemsFieldName" Hidden="true" />
+          <Field Name="_itemType" Hidden="true" />
+          <Field Name="_key" Hidden="true" />
+        </Members>
+        <TypeIdentifier>
+          <NewMemberFileName>TypedConfigurationBuilder.InstanceFactory.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="CK.Core.TypedConfigurationBuilder.StandardTypeResolver">
+        <Members>
+          <Method Name="CoreCreate" Hidden="true" />
+        </Members>
+        <TypeIdentifier>
+          <NewMemberFileName>TypedConfigurationBuilder.StandardTypeResolver.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="CK.Core.TypedConfigurationBuilder.TypeResolver">
+        <Members>
+          <Field Name="_baseType" Hidden="true" />
+          <Field Name="_compositeItemsFieldName" Hidden="true" />
+        </Members>
+        <Compartments>
+          <Compartment Name="Fields" Collapsed="true" />
+        </Compartments>
+        <TypeIdentifier>
+          <NewMemberFileName>TypedConfigurationBuilder.TypeResolver.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAIIARACAIgAAAAAAIAJAAAAgKAAEAAAAAAAIQCKgA=</HashCode>
+      <FileName>TypedConfigurationBuilder.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

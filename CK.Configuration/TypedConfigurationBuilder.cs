@@ -233,10 +233,10 @@ namespace CK.Core
         /// </param>
         /// <returns>The resulting list or null if any error occurred.</returns>
         public Array? FindItemsSectionAndCreateItems( IActivityMonitor monitor,
-                                   ImmutableConfigurationSection configuration,
-                                   Type itemType,
-                                   string? overrideItemsFieldName = null,
-                                   bool requiresItemsFieldName = false )
+                                                      ImmutableConfigurationSection configuration,
+                                                      Type itemType,
+                                                      string? overrideItemsFieldName = null,
+                                                      bool requiresItemsFieldName = false )
         {
             Throw.CheckNotNullArgument( configuration );
             TypeResolver? resolver = FindResolver( monitor, itemType );
