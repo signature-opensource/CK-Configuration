@@ -16,8 +16,8 @@ public class TypedConfigurationBuilderTests
     public void simple_configuration_with_DefaultAssembly()
     {
         var config = ImmutableConfigurationSection.CreateFromJson( "Root",
-            $$"""
-            {
+                $$"""
+                {
                     "DefaultAssembly": "ConsumerA.Strategy",
                     "S1": {
                         "Type": "Simple",
@@ -63,8 +63,8 @@ public class TypedConfigurationBuilderTests
     public void simple_configuration_with_multiple_Assemblies( string assemblies )
     {
         var config = ImmutableConfigurationSection.CreateFromJson( "Root",
-            $$"""
-            {
+                $$"""
+                {
                     "Assemblies": {{assemblies}},
                     "S1": {
                         "Type": "Simple, ConsumerA.Strategy",
@@ -120,8 +120,8 @@ public class TypedConfigurationBuilderTests
     public void simple_configuration_with_multiple_Assemblies_and_aliases( string assemblies )
     {
         var config = ImmutableConfigurationSection.CreateFromJson( "Root",
-            $$"""
-            {
+                $$"""
+                {
                     "Assemblies": {{assemblies}},
                     "S1": {
                         "Type": "Simple, C1",
@@ -257,8 +257,8 @@ public class TypedConfigurationBuilderTests
     public void composite_specialized_in_composite( bool halfRun )
     {
         var config = ImmutableConfigurationSection.CreateFromJson( "Root",
-            $$"""
-            {
+                $$"""
+                {
                     "Assemblies":
                     [
                         { "Assembly": "ConsumerA.Strategy", "Alias":"C1" },
