@@ -1,29 +1,28 @@
 using CK.Core;
 using StrategyPlugin;
 
-namespace Plugin.Strategy
+namespace Plugin.Strategy;
+
+public class AnotherSimpleStrategyConfiguration : IStrategyConfiguration
 {
-    public class AnotherSimpleStrategyConfiguration : IStrategyConfiguration
+    readonly ImmutableConfigurationSection _configuration;
+
+    public AnotherSimpleStrategyConfiguration( IActivityMonitor monitor,
+                                               TypedConfigurationBuilder builder,
+                                               ImmutableConfigurationSection configuration )
     {
-        readonly ImmutableConfigurationSection _configuration;
-
-        public AnotherSimpleStrategyConfiguration( IActivityMonitor monitor,
-                                                   TypedConfigurationBuilder builder,
-                                                   ImmutableConfigurationSection configuration )
+        _configuration = configuration;
+        switch( _configuration["ConfigurationAction"] )
         {
-            _configuration = configuration;
-            switch( _configuration["ConfigurationAction"] )
-            {
-                case "Error": monitor.Error( "AnotherSimpleStrategyConfiguration emits an error." ); break;
-                case "Warn": monitor.Error( "AnotherSimpleStrategyConfiguration emits a warning." ); break;
-            }
+            case "Error": monitor.Error( "AnotherSimpleStrategyConfiguration emits an error." ); break;
+            case "Warn": monitor.Error( "AnotherSimpleStrategyConfiguration emits a warning." ); break;
         }
+    }
 
-        public ImmutableConfigurationSection Configuration => _configuration;
+    public ImmutableConfigurationSection Configuration => _configuration;
 
-        public IStrategy CreateStrategy( IActivityMonitor monitor )
-        {
-            return new AnotherSimpleStrategy( this );
-        }
+    public IStrategy CreateStrategy( IActivityMonitor monitor )
+    {
+        return new AnotherSimpleStrategy( this );
     }
 }

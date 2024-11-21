@@ -2,21 +2,20 @@ using CK.Core;
 using Plugin.Strategy;
 using StrategyPlugin;
 
-namespace ConsumerB
+namespace ConsumerB;
+
+public class SimpleStrategy : IStrategy
 {
-    public class SimpleStrategy : IStrategy
+    readonly string _action;
+
+    internal SimpleStrategy( SimpleStrategyConfiguration configuration )
     {
-        readonly string _action;
+        _action = configuration.Action;
+    }
 
-        internal SimpleStrategy( SimpleStrategyConfiguration configuration )
-        {
-            _action = configuration.Action;
-        }
-
-        public int DoSomething( IActivityMonitor monitor, int payload )
-        {
-            monitor.Info( $"Simple processes: {_action}." );
-            return ++payload;
-        }
+    public int DoSomething( IActivityMonitor monitor, int payload )
+    {
+        monitor.Info( $"Simple processes: {_action}." );
+        return ++payload;
     }
 }
