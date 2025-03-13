@@ -332,13 +332,13 @@ public class MutableAndImmutableConfigurationSectionTests
         c["F"].ShouldBe( "True" );
 
         c.AddJson( """{ "N": null }""" );
-        c["N"].ShouldBe( null );
-        c.GetMutableChildren().Single( sub => sub.Key == "N" ).Value.ShouldBe( null );
+        c["N"].ShouldBeNull();
+        c.GetMutableChildren().Single( sub => sub.Key == "N" ).Value.ShouldBeNull();
         c.GetMutableChildren().Single( sub => sub.Key == "N" ).Exists().ShouldBeFalse();
 
         c.AddJson( """{ "EmptyArray": [] }""" );
-        c["EmptyArray"].ShouldBe( null );
-        c.GetMutableChildren().Single( sub => sub.Key == "EmptyArray" ).Value.ShouldBe( null );
+        c["EmptyArray"].ShouldBeNull();
+        c.GetMutableChildren().Single( sub => sub.Key == "EmptyArray" ).Value.ShouldBeNull();
         c.GetMutableChildren().Single( sub => sub.Key == "EmptyArray" ).Exists().ShouldBeFalse();
 
         c.AddJson( """{ "O": { "One": 1, "Two": 2.0, "Three": "trois" } }""" );
@@ -353,7 +353,7 @@ public class MutableAndImmutableConfigurationSectionTests
         c["O:AString:0"].ShouldBe( "a" );
         c["O:AString:1"].ShouldBe( "b" );
         c["O:AString:2"].ShouldBe( "cde" );
-        c["O:AString:3"].ShouldBe( null );
+        c["O:AString:3"].ShouldBeNull();
         c["O:AString:4"].ShouldBe( "12" );
         c["O:AO:0:In"].ShouldBe( "True" );
         c["O:AO:1:Out"].ShouldBe( "3712" );
