@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 using System;
@@ -16,36 +16,36 @@ public class MutableAndImmutableConfigurationSectionTests
     public void GetParentPath_and_IsChildPath()
     {
         var mA = new MutableConfigurationSection( "A" );
-        mA.GetParentPath( -1 ).ToString().Should().Be( "A" );
-        mA.GetParentPath( 0 ).ToString().Should().Be( "A" );
-        mA.GetParentPath().Length.Should().Be( 0 );
-        mA.GetParentPath( 1 ).Length.Should().Be( 0 );
-        mA.GetParentPath( 2 ).Length.Should().Be( 0 );
-        mA.IsChildPath( "" ).Should().BeFalse();
-        mA.IsChildPath( "A" ).Should().BeFalse();
-        mA.IsChildPath( "A:B" ).Should().BeTrue();
-        mA.IsChildPath( "A:B:C" ).Should().BeTrue();
+        mA.GetParentPath( -1 ).ToString().ShouldBe( "A" );
+        mA.GetParentPath( 0 ).ToString().ShouldBe( "A" );
+        mA.GetParentPath().Length.ShouldBe( 0 );
+        mA.GetParentPath( 1 ).Length.ShouldBe( 0 );
+        mA.GetParentPath( 2 ).Length.ShouldBe( 0 );
+        mA.IsChildPath( "" ).ShouldBeFalse();
+        mA.IsChildPath( "A" ).ShouldBeFalse();
+        mA.IsChildPath( "A:B" ).ShouldBeTrue();
+        mA.IsChildPath( "A:B:C" ).ShouldBeTrue();
 
         var mAB = new MutableConfigurationSection( "A:B" );
-        mAB.GetParentPath( -1 ).ToString().Should().Be( "A:B" );
-        mAB.GetParentPath( 0 ).ToString().Should().Be( "A:B" );
-        mAB.GetParentPath().ToString().Should().Be( "A" );
-        mAB.GetParentPath( 1 ).ToString().Should().Be( "A" );
-        mAB.GetParentPath( 2 ).Length.Should().Be( 0 );
-        mAB.GetParentPath( 3 ).Length.Should().Be( 0 );
-        mAB.IsChildPath( "" ).Should().BeFalse();
-        mAB.IsChildPath( "A" ).Should().BeFalse();
-        mAB.IsChildPath( "A:B" ).Should().BeFalse();
-        mAB.IsChildPath( "A:B:C" ).Should().BeTrue();
-        mAB.IsChildPath( "A:B:C:D" ).Should().BeTrue();
+        mAB.GetParentPath( -1 ).ToString().ShouldBe( "A:B" );
+        mAB.GetParentPath( 0 ).ToString().ShouldBe( "A:B" );
+        mAB.GetParentPath().ToString().ShouldBe( "A" );
+        mAB.GetParentPath( 1 ).ToString().ShouldBe( "A" );
+        mAB.GetParentPath( 2 ).Length.ShouldBe( 0 );
+        mAB.GetParentPath( 3 ).Length.ShouldBe( 0 );
+        mAB.IsChildPath( "" ).ShouldBeFalse();
+        mAB.IsChildPath( "A" ).ShouldBeFalse();
+        mAB.IsChildPath( "A:B" ).ShouldBeFalse();
+        mAB.IsChildPath( "A:B:C" ).ShouldBeTrue();
+        mAB.IsChildPath( "A:B:C:D" ).ShouldBeTrue();
 
         var mABC = new MutableConfigurationSection( "A:B", "C" );
-        mABC.GetParentPath( -1 ).ToString().Should().Be( "A:B:C" );
-        mABC.GetParentPath( 0 ).ToString().Should().Be( "A:B:C" );
-        mABC.GetParentPath().ToString().Should().Be( "A:B" );
-        mABC.GetParentPath( 1 ).ToString().Should().Be( "A:B" );
-        mABC.GetParentPath( 2 ).ToString().Should().Be( "A" );
-        mABC.GetParentPath( 3 ).Length.Should().Be( 0 );
+        mABC.GetParentPath( -1 ).ToString().ShouldBe( "A:B:C" );
+        mABC.GetParentPath( 0 ).ToString().ShouldBe( "A:B:C" );
+        mABC.GetParentPath().ToString().ShouldBe( "A:B" );
+        mABC.GetParentPath( 1 ).ToString().ShouldBe( "A:B" );
+        mABC.GetParentPath( 2 ).ToString().ShouldBe( "A" );
+        mABC.GetParentPath( 3 ).Length.ShouldBe( 0 );
     }
 
 
@@ -66,55 +66,59 @@ public class MutableAndImmutableConfigurationSectionTests
 
         // Immutable captures non existing sections (no value and no children).
         var b = immutable.TryGetSection( "Section:B" );
-        b.Should().NotBeNull();
-        b.Exists().Should().BeFalse();
+        b.ShouldNotBeNull();
+        b.Exists().ShouldBeFalse();
 
         static void CheckConfiguration( IConfigurationSection config )
         {
-            config["A"].Should().Be( "a" );
-            config["Nothing"].Should().Be( "" );
-            config["Section"].Should().Be( "Value for Section" );
-            config["Section:A"].Should().Be( "a" );
-            config["Section:B"].Should().BeNull();
-            config["Section:C:More"].Should().Be( "C more" );
+            config["A"].ShouldBe( "a" );
+            config["Nothing"].ShouldBe( "" );
+            config["Section"].ShouldBe( "Value for Section" );
+            config["Section:A"].ShouldBe( "a" );
+            config["Section:B"].ShouldBeNull();
+            config["Section:C:More"].ShouldBe( "C more" );
             var sA = config.GetSection( "A" );
-            sA.Value.Should().Be( "a" );
-            sA.GetChildren().Should().BeEmpty();
+            sA.Value.ShouldBe( "a" );
+            sA.GetChildren().ShouldBeEmpty();
             var sNothing = config.GetSection( "Nothing" );
-            sNothing.Value.Should().Be( "" );
-            sNothing.GetChildren().Should().BeEmpty();
+            sNothing.Value.ShouldBe( "" );
+            sNothing.GetChildren().ShouldBeEmpty();
             var sSection = config.GetSection( "Section" );
-            sSection.Value.Should().Be( "Value for Section" );
-            sSection.GetChildren().Should().HaveCount( 3 );
-            sSection["A"].Should().Be( "a" );
-            sSection["B"].Should().BeNull();
-            sSection["C"].Should().BeNull();
-            sSection["C:More"].Should().Be( "C more" );
+            sSection.Value.ShouldBe( "Value for Section" );
+            sSection.GetChildren().Count().ShouldBe( 3 );
+            sSection["A"].ShouldBe( "a" );
+            sSection["B"].ShouldBeNull();
+            sSection["C"].ShouldBeNull();
+            sSection["C:More"].ShouldBe( "C more" );
+            config["Section:C:More"].ShouldBe( "C more" );
+
             var sSectionC = sSection.GetSection( "C" );
             var sSectionC2 = config.GetSection( "Section:C" );
-            sSectionC.Should().BeEquivalentTo( sSectionC2 );
-            config["Section:C:More"].Should().Be( "C more" );
+            sSectionC.Key.ShouldBe( sSectionC2.Key );
+            sSectionC.Path.ShouldBe( sSectionC2.Path );
+            sSectionC.Value.ShouldBe( sSectionC2.Value );
+            sSectionC.GetChildren().Count().ShouldBe( sSectionC2.GetChildren().Count() );
+
             // Bad key behavior.
+            sSection["::::"].ShouldBeNull();
+            sSection.GetSection( "::::" ).Path.ShouldBe( "X:Section:::::" );
+            sSection.GetSection( "::::" ).Key.ShouldBe( "" );
 
-            sSection["::::"].Should().BeNull();
-            sSection.GetSection( "::::" ).Path.Should().Be( "X:Section:::::" );
-            sSection.GetSection( "::::" ).Key.Should().Be( "" );
+            sSection[":A"].ShouldBeNull();
+            sSection.GetSection( ":A" ).Path.ShouldBe( "X:Section::A" );
+            sSection.GetSection( ":A" ).Key.ShouldBe( "A" );
 
-            sSection[":A"].Should().BeNull();
-            sSection.GetSection( ":A" ).Path.Should().Be( "X:Section::A" );
-            sSection.GetSection( ":A" ).Key.Should().Be( "A" );
+            sSection["A:"].ShouldBeNull();
+            sSection.GetSection( "A:" ).Path.ShouldBe( "X:Section:A:" );
+            sSection.GetSection( "A:" ).Key.ShouldBe( "" );
 
-            sSection["A:"].Should().BeNull();
-            sSection.GetSection( "A:" ).Path.Should().Be( "X:Section:A:" );
-            sSection.GetSection( "A:" ).Key.Should().Be( "" );
+            sSection["NO:WAY"].ShouldBeNull();
+            sSection.GetSection( "NO:WAY" ).Path.ShouldBe( "X:Section:NO:WAY" );
+            sSection.GetSection( "NO:WAY" ).Key.ShouldBe( "WAY" );
 
-            sSection["NO:WAY"].Should().BeNull();
-            sSection.GetSection( "NO:WAY" ).Path.Should().Be( "X:Section:NO:WAY" );
-            sSection.GetSection( "NO:WAY" ).Key.Should().Be( "WAY" );
-
-            sSection["::NO:WAY::"].Should().BeNull();
-            sSection.GetSection( "::NO:WAY::" ).Path.Should().Be( "X:Section:::NO:WAY::" );
-            sSection.GetSection( "::NO:WAY::" ).Key.Should().Be( "" );
+            sSection["::NO:WAY::"].ShouldBeNull();
+            sSection.GetSection( "::NO:WAY::" ).Path.ShouldBe( "X:Section:::NO:WAY::" );
+            sSection.GetSection( "::NO:WAY::" ).Key.ShouldBe( "" );
         }
 
     }
@@ -122,20 +126,20 @@ public class MutableAndImmutableConfigurationSectionTests
     [Test]
     public void MutableConfigurationSection_invalid_parameters_check()
     {
-        FluentActions.Invoking( () => new MutableConfigurationSection( (IConfigurationSection?)null! ) ).Should().Throw<ArgumentNullException>();
-        FluentActions.Invoking( () => new MutableConfigurationSection( (string)null! ) ).Should().Throw<ArgumentNullException>();
-        FluentActions.Invoking( () => new MutableConfigurationSection( "" ) ).Should().Throw<ArgumentException>();
-        FluentActions.Invoking( () => new MutableConfigurationSection( ":" ) ).Should().Throw<ArgumentException>();
-        FluentActions.Invoking( () => new MutableConfigurationSection( "A::B" ) ).Should().Throw<ArgumentException>();
+        Util.Invokable( () => new MutableConfigurationSection( (IConfigurationSection?)null! ) ).ShouldThrow<ArgumentNullException>();
+        Util.Invokable( () => new MutableConfigurationSection( (string)null! ) ).ShouldThrow<ArgumentNullException>();
+        Util.Invokable( () => new MutableConfigurationSection( "" ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => new MutableConfigurationSection( ":" ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => new MutableConfigurationSection( "A::B" ) ).ShouldThrow<ArgumentException>();
 
-        FluentActions.Invoking( () => new MutableConfigurationSection( "A::B", "" ) ).Should().Throw<ArgumentException>();
-        FluentActions.Invoking( () => new MutableConfigurationSection( ":", "A" ) ).Should().Throw<ArgumentException>();
-        FluentActions.Invoking( () => new MutableConfigurationSection( ":A", "A" ) ).Should().Throw<ArgumentException>();
-        FluentActions.Invoking( () => new MutableConfigurationSection( "A:", "A" ) ).Should().Throw<ArgumentException>();
+        Util.Invokable( () => new MutableConfigurationSection( "A::B", "" ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => new MutableConfigurationSection( ":", "A" ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => new MutableConfigurationSection( ":A", "A" ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => new MutableConfigurationSection( "A:", "A" ) ).ShouldThrow<ArgumentException>();
 
-        FluentActions.Invoking( () => new MutableConfigurationSection( "A:B", "" ) ).Should().Throw<ArgumentException>();
-        FluentActions.Invoking( () => new MutableConfigurationSection( "A", "A:" ) ).Should().Throw<ArgumentException>();
-        FluentActions.Invoking( () => new MutableConfigurationSection( "A", "A:B" ) ).Should().Throw<ArgumentException>();
+        Util.Invokable( () => new MutableConfigurationSection( "A:B", "" ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => new MutableConfigurationSection( "A", "A:" ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => new MutableConfigurationSection( "A", "A:B" ) ).ShouldThrow<ArgumentException>();
     }
 
     [Test]
@@ -143,14 +147,14 @@ public class MutableAndImmutableConfigurationSectionTests
     {
         var c = new MutableConfigurationSection( "X" );
         c["Y"] = "Value";
-        c.GetMutableChildren().Should().HaveCount( 1 );
-        c.GetMutableChildren().Single().Path.Should().Be( "X:Y" );
-        c.GetMutableChildren().Single().Value.Should().Be( "Value" );
-        c["Y"].Should().Be( "Value" );
+        c.GetMutableChildren().Count.ShouldBe( 1 );
+        c.GetMutableChildren().Single().Path.ShouldBe( "X:Y" );
+        c.GetMutableChildren().Single().Value.ShouldBe( "Value" );
+        c["Y"].ShouldBe( "Value" );
 
         c["Z:A:B:C"] = "Another Value";
-        c["Z:A:B:C"].Should().Be( "Another Value" );
-        c.GetRequiredSection( "Z" ).GetRequiredSection( "A" ).GetRequiredSection( "B" ).GetRequiredSection( "C" ).Value.Should().Be( "Another Value" );
+        c["Z:A:B:C"].ShouldBe( "Another Value" );
+        c.GetRequiredSection( "Z" ).GetRequiredSection( "A" ).GetRequiredSection( "B" ).GetRequiredSection( "C" ).Value.ShouldBe( "Another Value" );
 
     }
 
@@ -159,12 +163,12 @@ public class MutableAndImmutableConfigurationSectionTests
     {
         var c = new MutableConfigurationSection( "X" );
         c["Z:A:B:C"] = "Another Value";
-        FluentActions.Invoking( () => c["Z:A:B"] = "No way" )
-            .Should().Throw<InvalidOperationException>()
-                     .WithMessage( "Unable to set 'X:Z:A:B' value to 'No way' since at least 'X:Z:A:B:C' (with value 'Another Value') exists below." );
+        Util.Invokable( () => c["Z:A:B"] = "No way" )
+            .ShouldThrow<InvalidOperationException>()
+                     .Message.ShouldBe( "Unable to set 'X:Z:A:B' value to 'No way' since at least 'X:Z:A:B:C' (with value 'Another Value') exists below." );
 
-        FluentActions.Invoking( () => c["Z"] = "No way" )
-                     .Should().Throw<InvalidOperationException>();
+        Util.Invokable( () => c["Z"] = "No way" )
+                     .ShouldThrow<InvalidOperationException>();
     }
 
     [Test]
@@ -172,13 +176,13 @@ public class MutableAndImmutableConfigurationSectionTests
     {
         var c = new MutableConfigurationSection( "Root" );
         c["Z"] = "A top Value";
-        FluentActions.Invoking( () => c["Z:A"] = "No way" )
-            .Should().Throw<InvalidOperationException>()
-                     .WithMessage( "Unable to set 'Root:Z:A' value to 'No way' since 'Root:Z' above has value 'A top Value'." );
+        Util.Invokable( () => c["Z:A"] = "No way" )
+            .ShouldThrow<InvalidOperationException>()
+                     .Message.ShouldBe( "Unable to set 'Root:Z:A' value to 'No way' since 'Root:Z' above has value 'A top Value'." );
 
-        FluentActions.Invoking( () => c["Z:X:Y:Z"] = "No way 2" )
-                     .Should().Throw<InvalidOperationException>()
-                     .WithMessage( "Unable to set 'Root:Z:X:Y:Z' value to 'No way 2' since 'Root:Z' above has value 'A top Value'." );
+        Util.Invokable( () => c["Z:X:Y:Z"] = "No way 2" )
+                     .ShouldThrow<InvalidOperationException>()
+                     .Message.ShouldBe( "Unable to set 'Root:Z:X:Y:Z' value to 'No way 2' since 'Root:Z' above has value 'A top Value'." );
 
         // Free the Z!
         c["Z"] = null;
@@ -196,9 +200,9 @@ public class MutableAndImmutableConfigurationSectionTests
 
         c["A"] = "It works!";
 
-        FluentActions.Invoking( () => empty1.Value = "Pouf" )
-            .Should().Throw<InvalidOperationException>( "Sections MUST remain empty when below a value." )
-            .WithMessage( "Unable to set 'X:A:A:A' value to 'Pouf' since 'X:A' above has value 'It works!'." );
+        Util.Invokable( () => empty1.Value = "Pouf" )
+            .ShouldThrow<InvalidOperationException>( "Sections MUST remain empty when below a value." )
+            .Message.ShouldBe( "Unable to set 'X:A:A:A' value to 'Pouf' since 'X:A' above has value 'It works!'." );
     }
 
     [Test]
@@ -214,7 +218,7 @@ public class MutableAndImmutableConfigurationSectionTests
         var i = new ImmutableConfigurationSection( c );
         var deepest = i.GetSection( "A:A:A:A" );
         deepest.LookupAllSection( "Key" ).Select( s => s.Value ).Concatenate()
-            .Should().Be( "Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
+            .ShouldBe( "Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
     }
 
     [Test]
@@ -230,7 +234,7 @@ public class MutableAndImmutableConfigurationSectionTests
         var i = new ImmutableConfigurationSection( c );
         var deepest = i.GetSection( "A:A:A:A" );
         deepest.LookupAllSection( "In:Key" ).Select( s => s.Value ).Concatenate()
-            .Should().Be( "Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
+            .ShouldBe( "Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
     }
 
     [Test]
@@ -247,7 +251,7 @@ public class MutableAndImmutableConfigurationSectionTests
             var i = new ImmutableConfigurationSection( c );
             var deepest = i.GetSection( "A:Key:A:A:A" );
             deepest.LookupAllSection( "Key" ).Select( s => s.Value ?? s.Path ).Concatenate()
-                .Should().Be( "Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
+                .ShouldBe( "Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
         }
         {
             var c = new MutableConfigurationSection( "X" );
@@ -260,7 +264,7 @@ public class MutableAndImmutableConfigurationSectionTests
             var i = new ImmutableConfigurationSection( c );
             var deepest = i.GetSection( "A:In:Key:A:A:A" );
             deepest.LookupAllSection( "In:Key" ).Select( s => s.Value ?? s.Path ).Concatenate()
-                .Should().Be( "Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
+                .ShouldBe( "Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
         }
     }
 
@@ -278,7 +282,7 @@ public class MutableAndImmutableConfigurationSectionTests
             var i = new ImmutableConfigurationSection( c );
             var deepest = i.GetSection( "A:Key:A:A:A" );
             deepest.LookupAllSection( "Key", skipSectionsOnThisPath: false ).Select( s => s.Value ?? s.Path ).Concatenate()
-                .Should().Be( "Key, X:A:Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
+                .ShouldBe( "Key, X:A:Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
         }
         {
             var c = new MutableConfigurationSection( "X" );
@@ -291,7 +295,7 @@ public class MutableAndImmutableConfigurationSectionTests
             var i = new ImmutableConfigurationSection( c );
             var deepest = i.GetSection( "A:In:Key:A:A:A" );
             deepest.LookupAllSection( "In:Key", skipSectionsOnThisPath: false ).Select( s => s.Value ?? s.Path ).Concatenate()
-                .Should().Be( "Key, X:A:In:Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
+                .ShouldBe( "Key, X:A:In:Key, A-Key, A-A-Key, A-A-A-Key, A-A-A-A-Key" );
         }
     }
 
@@ -299,60 +303,60 @@ public class MutableAndImmutableConfigurationSectionTests
     public void adding_json_configuration()
     {
         var c = new MutableConfigurationSection( "Root" );
-        c.Exists().Should().BeFalse();
+        c.Exists().ShouldBeFalse();
         c.AddJson( "{}" );
-        c.Exists().Should().BeFalse();
+        c.Exists().ShouldBeFalse();
 
-        FluentActions.Invoking( () => c.AddJson( null! ) ).Should().Throw<ArgumentNullException>();
-        FluentActions.Invoking( () => c.AddJson( "" ) ).Should().Throw<JsonException>();
-        FluentActions.Invoking( () => c.AddJson( "e" ) ).Should().Throw<JsonException>();
-        FluentActions.Invoking( () => c.AddJson( "{ " ) ).Should().Throw<JsonException>();
-        c.Exists().Should().BeFalse();
+        Util.Invokable( () => c.AddJson( null! ) ).ShouldThrow<ArgumentNullException>();
+        Util.Invokable( () => c.AddJson( "" ) ).ShouldThrow<JsonException>();
+        Util.Invokable( () => c.AddJson( "e" ) ).ShouldThrow<JsonException>();
+        Util.Invokable( () => c.AddJson( "{ " ) ).ShouldThrow<JsonException>();
+        c.Exists().ShouldBeFalse();
         // The "p" property has bee added...
         // Preventing this wold require to duplicate the whole structure and to wait until
         // the last moment to alter the MutableConfigurationSection. This is costly and we
         // prefer to keep the side effect.
-        FluentActions.Invoking( () => c.AddJson( """{ "p": """ ) ).Should().Throw<JsonException>();
-        c.Exists().Should().BeTrue();
+        Util.Invokable( () => c.AddJson( """{ "p": """ ) ).ShouldThrow<JsonException>();
+        c.Exists().ShouldBeTrue();
 
         c.AddJson( """{ "S": "A" }""" );
-        c["S"].Should().Be( "A" );
+        c["S"].ShouldBe( "A" );
 
         c.AddJson( """{ "Num": 0.258e7 }""" );
-        c["Num"].Should().Be( "0.258e7" );
+        c["Num"].ShouldBe( "0.258e7" );
 
         c.AddJson( """{ "F": false }""" );
-        c["F"].Should().Be( "False" );
+        c["F"].ShouldBe( "False" );
 
         c.AddJson( """{ "F": true }""" );
-        c["F"].Should().Be( "True" );
+        c["F"].ShouldBe( "True" );
 
         c.AddJson( """{ "N": null }""" );
-        c["N"].Should().Be( null );
-        c.GetMutableChildren().Single( sub => sub.Key == "N" ).Value.Should().Be( null );
-        c.GetMutableChildren().Single( sub => sub.Key == "N" ).Exists().Should().BeFalse();
+        c["N"].ShouldBe( null );
+        c.GetMutableChildren().Single( sub => sub.Key == "N" ).Value.ShouldBe( null );
+        c.GetMutableChildren().Single( sub => sub.Key == "N" ).Exists().ShouldBeFalse();
 
         c.AddJson( """{ "EmptyArray": [] }""" );
-        c["EmptyArray"].Should().Be( null );
-        c.GetMutableChildren().Single( sub => sub.Key == "EmptyArray" ).Value.Should().Be( null );
-        c.GetMutableChildren().Single( sub => sub.Key == "EmptyArray" ).Exists().Should().BeFalse();
+        c["EmptyArray"].ShouldBe( null );
+        c.GetMutableChildren().Single( sub => sub.Key == "EmptyArray" ).Value.ShouldBe( null );
+        c.GetMutableChildren().Single( sub => sub.Key == "EmptyArray" ).Exists().ShouldBeFalse();
 
         c.AddJson( """{ "O": { "One": 1, "Two": 2.0, "Three": "trois" } }""" );
-        c["O:One"].Should().Be( "1" );
-        c["O:Two"].Should().Be( "2.0" );
-        c["O:Three"].Should().Be( "trois" );
+        c["O:One"].ShouldBe( "1" );
+        c["O:Two"].ShouldBe( "2.0" );
+        c["O:Three"].ShouldBe( "trois" );
 
         c.AddJson( """{ "O": { "One": "1bis", "Two": 2.1, "Three": "trois.1", "AString": ["a","b", "cde", null, 12], "AO": [{ "In": true }, { "Out": 3712 } ]  } }""" );
-        c["O:One"].Should().Be( "1bis" );
-        c["O:Two"].Should().Be( "2.1" );
-        c["O:Three"].Should().Be( "trois.1" );
-        c["O:AString:0"].Should().Be( "a" );
-        c["O:AString:1"].Should().Be( "b" );
-        c["O:AString:2"].Should().Be( "cde" );
-        c["O:AString:3"].Should().Be( null );
-        c["O:AString:4"].Should().Be( "12" );
-        c["O:AO:0:In"].Should().Be( "True" );
-        c["O:AO:1:Out"].Should().Be( "3712" );
+        c["O:One"].ShouldBe( "1bis" );
+        c["O:Two"].ShouldBe( "2.1" );
+        c["O:Three"].ShouldBe( "trois.1" );
+        c["O:AString:0"].ShouldBe( "a" );
+        c["O:AString:1"].ShouldBe( "b" );
+        c["O:AString:2"].ShouldBe( "cde" );
+        c["O:AString:3"].ShouldBe( null );
+        c["O:AString:4"].ShouldBe( "12" );
+        c["O:AO:0:In"].ShouldBe( "True" );
+        c["O:AO:1:Out"].ShouldBe( "3712" );
     }
 
     [Test]
@@ -369,8 +373,8 @@ public class MutableAndImmutableConfigurationSectionTests
                                                             """ ),
                                     new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow } );
         c.AddJson( ref r );
-        c["A"].Should().Be( "V" );
-        c["B"].Should().Be( "True" );
+        c["A"].ShouldBe( "V" );
+        c["B"].ShouldBe( "True" );
     }
 
     [Test]
@@ -383,13 +387,13 @@ public class MutableAndImmutableConfigurationSectionTests
                             "Unexisting": {},
                           }
                           """ );
-        c.GetMutableChildren().Should().HaveCount( 1 );
-        ((IConfigurationSection)c).GetChildren().Should().HaveCount( 1 );
+        c.GetMutableChildren().Count.ShouldBe( 1 );
+        ((IConfigurationSection)c).GetChildren().Count().ShouldBe( 1 );
 
         var iC = new ImmutableConfigurationSection( c );
 
-        iC.TryGetSection( "Unexisting" ).Should().NotBeNull();
-        iC.TryGetSection( "Unexisting" ).Exists().Should().BeFalse();
+        iC.TryGetSection( "Unexisting" ).ShouldNotBeNull();
+        iC.TryGetSection( "Unexisting" ).Exists().ShouldBeFalse();
     }
 
     [Test]
@@ -407,42 +411,42 @@ public class MutableAndImmutableConfigurationSectionTests
         var iC = new ImmutableConfigurationSection( c );
 
         // Checks correct type inference.
-        c.ShouldApplyConfiguration( "Existing", true, out var interfaceContent ).Should().BeTrue();
-        interfaceContent.Should().BeOfType<MutableConfigurationSection>();
-        iC.ShouldApplyConfiguration( "Existing", true, out var immutableContent ).Should().BeTrue();
-        immutableContent.Should().BeOfType<ImmutableConfigurationSection>();
+        c.ShouldApplyConfiguration( "Existing", true, out var interfaceContent ).ShouldBeTrue();
+        interfaceContent.ShouldBeOfType<MutableConfigurationSection>();
+        iC.ShouldApplyConfiguration( "Existing", true, out var immutableContent ).ShouldBeTrue();
+        immutableContent.ShouldBeOfType<ImmutableConfigurationSection>();
 
-        c.ShouldApplyConfiguration( "Existing", false, out interfaceContent ).Should().BeTrue();
-        interfaceContent.Should().NotBeNull();
-        iC.ShouldApplyConfiguration( "Existing", false, out immutableContent ).Should().BeTrue();
-        immutableContent.Should().NotBeNull();
+        c.ShouldApplyConfiguration( "Existing", false, out interfaceContent ).ShouldBeTrue();
+        interfaceContent.ShouldNotBeNull();
+        iC.ShouldApplyConfiguration( "Existing", false, out immutableContent ).ShouldBeTrue();
+        immutableContent.ShouldNotBeNull();
 
-        c.ShouldApplyConfiguration( "ExplicitTrue", true, out interfaceContent ).Should().BeTrue();
-        interfaceContent.Should().BeNull();
-        iC.ShouldApplyConfiguration( "ExplicitTrue", true, out immutableContent ).Should().BeTrue();
-        immutableContent.Should().BeNull();
-        c.ShouldApplyConfiguration( "ExplicitTrue", false, out interfaceContent ).Should().BeTrue();
-        interfaceContent.Should().BeNull();
-        iC.ShouldApplyConfiguration( "ExplicitTrue", false, out immutableContent ).Should().BeTrue();
-        immutableContent.Should().BeNull();
+        c.ShouldApplyConfiguration( "ExplicitTrue", true, out interfaceContent ).ShouldBeTrue();
+        interfaceContent.ShouldBeNull();
+        iC.ShouldApplyConfiguration( "ExplicitTrue", true, out immutableContent ).ShouldBeTrue();
+        immutableContent.ShouldBeNull();
+        c.ShouldApplyConfiguration( "ExplicitTrue", false, out interfaceContent ).ShouldBeTrue();
+        interfaceContent.ShouldBeNull();
+        iC.ShouldApplyConfiguration( "ExplicitTrue", false, out immutableContent ).ShouldBeTrue();
+        immutableContent.ShouldBeNull();
 
-        c.ShouldApplyConfiguration( "ExplicitFalse", true, out interfaceContent ).Should().BeFalse();
-        interfaceContent.Should().BeNull();
-        iC.ShouldApplyConfiguration( "ExplicitFalse", true, out immutableContent ).Should().BeFalse();
-        immutableContent.Should().BeNull();
-        c.ShouldApplyConfiguration( "ExplicitFalse", false, out interfaceContent ).Should().BeFalse();
-        interfaceContent.Should().BeNull();
-        iC.ShouldApplyConfiguration( "ExplicitFalse", false, out immutableContent ).Should().BeFalse();
-        immutableContent.Should().BeNull();
+        c.ShouldApplyConfiguration( "ExplicitFalse", true, out interfaceContent ).ShouldBeFalse();
+        interfaceContent.ShouldBeNull();
+        iC.ShouldApplyConfiguration( "ExplicitFalse", true, out immutableContent ).ShouldBeFalse();
+        immutableContent.ShouldBeNull();
+        c.ShouldApplyConfiguration( "ExplicitFalse", false, out interfaceContent ).ShouldBeFalse();
+        interfaceContent.ShouldBeNull();
+        iC.ShouldApplyConfiguration( "ExplicitFalse", false, out immutableContent ).ShouldBeFalse();
+        immutableContent.ShouldBeNull();
 
-        c.ShouldApplyConfiguration( "Unexisting", true, out interfaceContent ).Should().BeTrue();
-        interfaceContent.Should().BeNull();
-        iC.ShouldApplyConfiguration( "Unexisting", true, out immutableContent ).Should().BeTrue();
-        immutableContent.Should().BeNull();
-        c.ShouldApplyConfiguration( "Unexisting", false, out interfaceContent ).Should().BeFalse();
-        interfaceContent.Should().BeNull();
-        iC.ShouldApplyConfiguration( "Unexisting", false, out immutableContent ).Should().BeFalse();
-        immutableContent.Should().BeNull();
+        c.ShouldApplyConfiguration( "Unexisting", true, out interfaceContent ).ShouldBeTrue();
+        interfaceContent.ShouldBeNull();
+        iC.ShouldApplyConfiguration( "Unexisting", true, out immutableContent ).ShouldBeTrue();
+        immutableContent.ShouldBeNull();
+        c.ShouldApplyConfiguration( "Unexisting", false, out interfaceContent ).ShouldBeFalse();
+        interfaceContent.ShouldBeNull();
+        iC.ShouldApplyConfiguration( "Unexisting", false, out immutableContent ).ShouldBeFalse();
+        immutableContent.ShouldBeNull();
 
 
 

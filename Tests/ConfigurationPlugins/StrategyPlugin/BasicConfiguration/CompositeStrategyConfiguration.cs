@@ -1,5 +1,4 @@
 using CK.Core;
-using Microsoft.Extensions.Configuration;
 using System.Collections.Immutable;
 
 namespace StrategyPlugin;

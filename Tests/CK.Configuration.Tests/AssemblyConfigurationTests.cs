@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using StrategyPlugin;
 using static CK.Testing.MonitorTestHelper;
@@ -36,7 +36,7 @@ public class AssemblyConfigurationTests
                                   typeNameSuffix: "Configuration",
                                   errorPrefix: null,
                                   errorSuffix: null );
-        t.Should().NotBeNull();
+        t.ShouldNotBeNull();
     }
 
     [TestCase( "No DefaultAssembly", WithAQNName )]
@@ -59,7 +59,7 @@ public class AssemblyConfigurationTests
         var a = AssemblyConfiguration.Create( TestHelper.Monitor, c );
         Throw.DebugAssert( a != null );
         var t = a.TryResolveType( TestHelper.Monitor, typeName, typeNamespace: "StrategyPlugin", fallbackAssembly: typeof( IStrategy ).Assembly );
-        t.Should().NotBeNull();
+        t.ShouldNotBeNull();
     }
 
     [TestCase( WithAQNName )]
@@ -78,7 +78,7 @@ public class AssemblyConfigurationTests
         var a = AssemblyConfiguration.Create( TestHelper.Monitor, c );
         Throw.DebugAssert( a != null );
         var t = a.TryResolveType( TestHelper.Monitor, typeName, typeNamespace: "StrategyPlugin", fallbackAssembly: typeof( IStrategy ).Assembly );
-        t.Should().NotBeNull();
+        t.ShouldNotBeNull();
     }
 
     [TestCase( false )]
@@ -202,8 +202,8 @@ public class AssemblyConfigurationTests
                     sC = sC.SetPlaceholder( TestHelper.Monitor, patch );
                     Throw.DebugAssert( sC != null );
                 }
-                logs.Should().Contain( expectedInfo );
-                logs.Should().Contain( expectedWarn );
+                logs.ShouldContain( expectedInfo );
+                logs.ShouldContain( expectedWarn );
             }
         }
     }
