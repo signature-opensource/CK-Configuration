@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -171,7 +171,7 @@ public class CompositeTests
         var builder = new TypedConfigurationBuilder();
         TestConfigurationBase.AddResolver( builder );
         var e = (DefaultCompositeConfiguration)builder.Create<TestConfigurationBase>( TestHelper.Monitor, config )!;
-        e.Items.Should().BeEmpty();
+        e.Items.ShouldBeEmpty();
     }
 
     [Test]
@@ -195,7 +195,7 @@ public class CompositeTests
         var builder = new TypedConfigurationBuilder();
         TestConfigurationBase.AddResolver( builder );
         var e = (SimpleCollectionConfiguration)builder.Create<TestConfigurationBase>( TestHelper.Monitor, config )!;
-        e.SimpleItems.Should().HaveCount( 2 );
+        e.SimpleItems.Count().ShouldBe( 2 );
     }
 
     [Test]
@@ -236,10 +236,10 @@ public class CompositeTests
         var builder = new TypedConfigurationBuilder();
         TestConfigurationBase.AddResolver( builder );
         var e = (DefaultCompositeConfiguration)builder.Create<TestConfigurationBase>( TestHelper.Monitor, config )!;
-        e.Items.Should().HaveCount( 2 );
-        e.Items[0].Should().BeAssignableTo<MoreComplexConfiguration>();
-        e.Items[1].Should().NotBeAssignableTo<MoreComplexConfiguration>()
-                           .And.BeAssignableTo<DefaultCompositeConfiguration>();
+        e.Items.Count().ShouldBe( 2 );
+        e.Items[0].ShouldBeAssignableTo<MoreComplexConfiguration>();
+        e.Items[1].ShouldNotBeAssignableTo<MoreComplexConfiguration>();
+        e.Items[1].ShouldBeAssignableTo<DefaultCompositeConfiguration>();
     }
 
     [Test]
@@ -265,8 +265,8 @@ public class CompositeTests
         TestConfigurationBase.AddResolver( builder );
         using( TestHelper.Monitor.CollectEntries( out var logs ) )
         {
-            builder.Create<TestConfigurationBase>( TestHelper.Monitor, config ).Should().BeNull();
-            logs.Where( e => e.Exception != null ).Should().BeEmpty();
+            builder.Create<TestConfigurationBase>( TestHelper.Monitor, config ).ShouldBeNull();
+            logs.Where( e => e.Exception != null ).ShouldBeEmpty();
         }
     }
 
@@ -295,8 +295,8 @@ public class CompositeTests
         TestConfigurationBase.AddResolver( builder );
         using( TestHelper.Monitor.CollectEntries( out var logs ) )
         {
-            builder.Create<TestConfigurationBase>( TestHelper.Monitor, config ).Should().BeNull();
-            logs.Where( e => e.Exception != null ).Should().BeEmpty();
+            builder.Create<TestConfigurationBase>( TestHelper.Monitor, config ).ShouldBeNull();
+            logs.Where( e => e.Exception != null ).ShouldBeEmpty();
         }
     }
 

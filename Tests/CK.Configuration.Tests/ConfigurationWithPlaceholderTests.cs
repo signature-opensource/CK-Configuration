@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using StrategyPlugin;
 using static CK.Testing.MonitorTestHelper;
@@ -73,7 +73,7 @@ public class ConfigurationWithPlaceholderTests
             Throw.DebugAssert( sC != null );
             var s = sC.CreateStrategy( TestHelper.Monitor );
             Throw.DebugAssert( s != null );
-            s.DoSomething( TestHelper.Monitor, 0 ).Should().Be( expected );
+            s.DoSomething( TestHelper.Monitor, 0 ).ShouldBe( expected );
             return sC;
         }
     }

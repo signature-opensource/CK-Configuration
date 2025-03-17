@@ -1,9 +1,7 @@
 using CK.Core;
-using Microsoft.Extensions.Configuration;
 using StrategyPlugin;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 
 namespace Plugin.Strategy;
 

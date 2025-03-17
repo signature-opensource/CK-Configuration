@@ -2,7 +2,6 @@ using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System;
 using System.Linq;
-using System.IO;
 
 namespace CK.Core;
 

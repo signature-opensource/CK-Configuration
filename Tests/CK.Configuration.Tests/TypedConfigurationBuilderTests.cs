@@ -1,10 +1,7 @@
 using CK.Core;
-using FluentAssertions;
-using Microsoft.Extensions.Configuration;
+using Shouldly;
 using NUnit.Framework;
 using StrategyPlugin;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Configuration.Tests;
@@ -44,18 +41,18 @@ public class TypedConfigurationBuilderTests
 
         var s1 = s1C.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s1 != null );
-        s1.GetType().FullName.Should().Be( "ConsumerA.SimpleStrategy" );
-        s1.GetType().Assembly.GetName().Name.Should().Be( "ConsumerA.Strategy" );
+        s1.GetType().FullName.ShouldBe( "ConsumerA.SimpleStrategy" );
+        s1.GetType().Assembly.GetName().Name.ShouldBe( "ConsumerA.Strategy" );
 
         var s2 = s2C.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s2 != null );
-        s2.GetType().FullName.Should().Be( "Plugin.Strategy.AnotherSimpleStrategy" );
-        s2.GetType().Assembly.GetName().Name.Should().Be( "ConsumerA.Strategy" );
+        s2.GetType().FullName.ShouldBe( "Plugin.Strategy.AnotherSimpleStrategy" );
+        s2.GetType().Assembly.GetName().Name.ShouldBe( "ConsumerA.Strategy" );
 
         var s3 = s3C.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s3 != null );
-        s3.GetType().FullName.Should().Be( "Plugin.Strategy.AnotherSimpleStrategy" );
-        s3.GetType().Assembly.GetName().Name.Should().Be( "ConsumerA.Strategy" );
+        s3.GetType().FullName.ShouldBe( "Plugin.Strategy.AnotherSimpleStrategy" );
+        s3.GetType().Assembly.GetName().Name.ShouldBe( "ConsumerA.Strategy" );
     }
 
     [TestCase( """["ConsumerA.Strategy", "ConsumerB.Plugins"]""" )]
@@ -91,18 +88,18 @@ public class TypedConfigurationBuilderTests
 
         var s1 = s1C.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s1 != null );
-        s1.GetType().FullName.Should().Be( "ConsumerA.SimpleStrategy" );
-        s1.GetType().Assembly.GetName().Name.Should().Be( "ConsumerA.Strategy" );
+        s1.GetType().FullName.ShouldBe( "ConsumerA.SimpleStrategy" );
+        s1.GetType().Assembly.GetName().Name.ShouldBe( "ConsumerA.Strategy" );
 
         var s2 = s2C.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s2 != null );
-        s2.GetType().FullName.Should().Be( "ConsumerB.SimpleStrategy" );
-        s2.GetType().Assembly.GetName().Name.Should().Be( "ConsumerB.Plugins" );
+        s2.GetType().FullName.ShouldBe( "ConsumerB.SimpleStrategy" );
+        s2.GetType().Assembly.GetName().Name.ShouldBe( "ConsumerB.Plugins" );
 
         var s3 = s3C.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s3 != null );
-        s3.GetType().FullName.Should().Be( "Plugin.Strategy.AnotherSimpleStrategy" );
-        s3.GetType().Assembly.GetName().Name.Should().Be( "ConsumerA.Strategy" );
+        s3.GetType().FullName.ShouldBe( "Plugin.Strategy.AnotherSimpleStrategy" );
+        s3.GetType().Assembly.GetName().Name.ShouldBe( "ConsumerA.Strategy" );
     }
 
     [TestCase( """
@@ -148,18 +145,18 @@ public class TypedConfigurationBuilderTests
 
         var s1 = s1C.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s1 != null );
-        s1.GetType().FullName.Should().Be( "ConsumerA.SimpleStrategy" );
-        s1.GetType().Assembly.GetName().Name.Should().Be( "ConsumerA.Strategy" );
+        s1.GetType().FullName.ShouldBe( "ConsumerA.SimpleStrategy" );
+        s1.GetType().Assembly.GetName().Name.ShouldBe( "ConsumerA.Strategy" );
 
         var s2 = s2C.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s2 != null );
-        s2.GetType().FullName.Should().Be( "ConsumerB.SimpleStrategy" );
-        s2.GetType().Assembly.GetName().Name.Should().Be( "ConsumerB.Plugins" );
+        s2.GetType().FullName.ShouldBe( "ConsumerB.SimpleStrategy" );
+        s2.GetType().Assembly.GetName().Name.ShouldBe( "ConsumerB.Plugins" );
 
         var s3 = s3C.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s3 != null );
-        s3.GetType().FullName.Should().Be( "Plugin.Strategy.AnotherSimpleStrategy" );
-        s3.GetType().Assembly.GetName().Name.Should().Be( "ConsumerA.Strategy" );
+        s3.GetType().FullName.ShouldBe( "Plugin.Strategy.AnotherSimpleStrategy" );
+        s3.GetType().Assembly.GetName().Name.ShouldBe( "ConsumerA.Strategy" );
     }
 
     [Test]
@@ -194,7 +191,7 @@ public class TypedConfigurationBuilderTests
         Throw.DebugAssert( sC != null );
         var s = sC.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s != null );
-        s.DoSomething( TestHelper.Monitor, 0 ).Should().Be( 3 );
+        s.DoSomething( TestHelper.Monitor, 0 ).ShouldBe( 3 );
     }
 
     [Test]
@@ -248,7 +245,7 @@ public class TypedConfigurationBuilderTests
         var s = sC.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s != null );
         s.DoSomething( TestHelper.Monitor, 0 )
-            .Should().Be( 5, "Each 'Simple' and 'AnotherSimple' increments the value." );
+            .ShouldBe( 5, "Each 'Simple' and 'AnotherSimple' increments the value." );
     }
 
 
@@ -300,7 +297,7 @@ public class TypedConfigurationBuilderTests
         Throw.DebugAssert( sC != null );
         var s = sC.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s != null );
-        s.DoSomething( TestHelper.Monitor, 0 ).Should().Be( halfRun ? 4 : 6 );
+        s.DoSomething( TestHelper.Monitor, 0 ).ShouldBe( halfRun ? 4 : 6 );
     }
 
     [Test]
@@ -343,7 +340,7 @@ public class TypedConfigurationBuilderTests
         Throw.DebugAssert( sC != null );
         var s = sC.CreateStrategy( TestHelper.Monitor );
         Throw.DebugAssert( s != null );
-        s.DoSomething( TestHelper.Monitor, 0 ).Should().Be( 5 );
+        s.DoSomething( TestHelper.Monitor, 0 ).ShouldBe( 5 );
     }
 
 
@@ -357,24 +354,24 @@ public class TypedConfigurationBuilderTests
         {
             var config = ImmutableConfigurationSection.CreateFromJson( "Root", "{}" );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
-            sC.Should().BeNull();
-            logs.Should().Contain( "Configuration 'Root' must have children to be considered a default 'CompositeStrategyConfiguration'." );
+            sC.ShouldBeNull();
+            logs.ShouldContain( "Configuration 'Root' must have children to be considered a default 'CompositeStrategyConfiguration'." );
         }
 
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
             var config = ImmutableConfigurationSection.CreateFromJson( "Root", """{ "SomeField": "Val" }""" );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
-            sC.Should().BeNull();
-            logs.Should().Contain( "Unable to create a 'IStrategyConfiguration' from 'Root:SomeField = Val'." );
+            sC.ShouldBeNull();
+            logs.ShouldContain( "Unable to create a 'IStrategyConfiguration' from 'Root:SomeField = Val'." );
         }
 
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
             var config = ImmutableConfigurationSection.CreateFromJson( "Root", """{ "Strategies": [{}] }""" );
             var sC = builder.Create<IStrategyConfiguration>( TestHelper.Monitor, config );
-            sC.Should().BeNull();
-            logs.Should().Contain( "Configuration 'Root:Strategies:0' must have children to be considered a default 'CompositeStrategyConfiguration'." );
+            sC.ShouldBeNull();
+            logs.ShouldContain( "Configuration 'Root:Strategies:0' must have children to be considered a default 'CompositeStrategyConfiguration'." );
         }
     }
 
