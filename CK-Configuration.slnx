@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="appveyor.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="NuGet.config" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/CK.Configuration.Tests/CK.Configuration.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Tests/ConfigurationPlugins/">
+    <Project Path="Tests/ConfigurationPlugins/ConsumerA.Strategy/ConsumerA.Strategy.csproj" />
+    <Project Path="Tests/ConfigurationPlugins/ConsumerB.Plugins/ConsumerB.Plugins.csproj" />
+    <Project Path="Tests/ConfigurationPlugins/StrategyPlugin/StrategyPlugin.csproj" />
+  </Folder>
+  <Project Path="CK.Configuration/CK.Configuration.csproj" />
+</Solution>
