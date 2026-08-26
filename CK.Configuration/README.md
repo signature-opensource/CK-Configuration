@@ -90,7 +90,7 @@ in a "unit of work", a DI Scope.
 The [`TypedConfigurationBuilder`](TypedConfigurationBuilder.cs)
 offers a simple and extensible way to instantiate one (or more) family of "configured objects".
 
-A sample is available in [Tests/ConfigurationPlugins](Tests/ConfigurationPlugins) that demonstrate
+A sample is available in [Tests/ConfigurationPlugins](../Tests/ConfigurationPlugins) that demonstrate
 a simple strategy, its composite, and 2 sets of configuration objects, one of them being "extensible":
 placeholders can be defined and "patched" with "dynamic configurations".
 
