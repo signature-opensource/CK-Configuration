@@ -43,14 +43,14 @@ A plugin is typically defined with a simple `Type = "XXX"` configuration:
 - `Type = "My.Namespace.MyPluginComponentConfiguration"`: Will be searched in the DefaultAssembly if defined
   (or in the assembly that defines the "plugin family" - see the `TypedConfigurationBuilder` for this).
 - `Type = "MyPlugin"`: The TypedConfigurationBuilder introduces a default namespace and
-  automatically suffix the type name with its resolver's configuration.
-- `Type = "MyPlugin, Acme.Corp.Strategies"`: The type will be search in the specified assembly (that must
-  be explicitely allowed). 
-- `Type = "MyPlugin, B"`: The type will be search in the specified assembly alias. 
+  automatically suffixes the type name with its resolver's configuration.
+- `Type = "MyPlugin, Acme.Corp.Strategies"`: The type will be searched in the specified assembly (that must
+  be explicitly allowed). 
+- `Type = "MyPlugin, B"`: The type will be searched in the specified assembly alias. 
 
 The `AssemblyConfiguration` can be locked. When locked, subordinated  "DefaultAssembly" and "Assemblies" sections
 are ignored (with a warning). No more external assemblies can enter the game. To lock the configuration,
-multiple constructs are handled, **"IsLocked", "Lock" and "Locked"** are synonyims:
+multiple constructs are handled, **"IsLocked", "Lock" and "Locked"** are synonyms:
 ```json
 {
   "Assemblies": {
@@ -84,7 +84,7 @@ strategies are powerful tools.
 This library provides a small framework that helps implementing a configuration layer that describes
 "configured objects" (possibly implemented in external assemblies - plugins).
 
-Configured objects are immutable and are the factories of actual objetcs that are typically instantiated
+Configured objects are immutable and are the factories of actual objects that are typically instantiated
 in a "unit of work", a DI Scope.
 
 The [`TypedConfigurationBuilder`](TypedConfigurationBuilder.cs)
@@ -182,7 +182,7 @@ A configuration can contain multiple families simply by registering the family r
 must be handled: families are composable, hence configurations are composable.
 
 
-### Configuration "patching": the substituable placeholder.
+### Configuration "patching": the substitutable placeholder.
 Configurations are immutable by design for safety and security. But sometimes, islands of
 more "dynamic" configurations in a globally immutable and stable configuration are welcome.
 
@@ -190,5 +190,62 @@ The design of a configuration system can introduce such "islands" with dedicated
 Placeholders are extension points that are "empty" but can be substituted by actual configuration
 sections to create a new configuration structure that extends the original one.
 
-The [Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration](../Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration/README.md)
-documents this approach.
+This pattern is optional: a configuration family supports it or not. It offers some strong guarantees:
+- The hosting configuration itself cannot be altered in any way by the subsequent configurations.
+- The placeholders are the only way to "extend" an existing configuration.
+- Placeholder replacements work on fully immutable objects: there are no concurrency issues by design.
+- Placeholder replacements can be constrained. For instance an extension may not be allowed to use any
+  other plugin assemblies than the ones that have been defined in the context of the Placeholder by the
+  "host configuration" (by locking the `AssemblyConfiguration`).
+
+The `ImmutableConfigurationSection` is not changed: the immutable configuration objects built upon it give
+birth to modified versions of themselves where a placeholder has been replaced (this is the classical
+pattern with immutable structures).
+
+#### Supporting placeholders in a family
+The [`ISupportConfigurationPlaceholder<T>`](SupportConfigurationPlaceholder.cs) interface must be implemented
+by the root type of the family, `T` being this root type:
+```csharp
+public interface ISupportConfigurationPlaceholder<T> where T : class
+{
+    T? SetPlaceholder( IActivityMonitor monitor, IConfigurationSection configuration );
+}
+```
+`SetPlaceholder` is a mutator: it returns a new configuration object (or this object if nothing changed) and
+should return null only if an error occurred. The `configuration.Path` must be a direct child of the placeholder
+to replace. To support placeholders, a family:
+- Must support the "empty configured object" pattern, either by implementing the
+  [null object pattern](https://en.wikipedia.org/wiki/Null_object_pattern) or by simply allowing created
+  configured objects to be null: a placeholder must be an "invisible" factory, with no impact, no "production" at all.
+- Implements `SetPlaceholder` on its root type as a virtual method that returns this instance by default.
+- Defines a Placeholder type (the convention is to name it "Placeholder") that captures its own configuration,
+  the assemblies and the resolvers that apply where it is. Its `SetPlaceholder` override checks that the
+  parent path of the proposed section is exactly the placeholder's path and, if it is, builds the configured
+  object from the section with a new `TypedConfigurationBuilder` that uses the captured assemblies and resolvers.
+- Has composites that override `SetPlaceholder` to forward the call to their items and return a new composite
+  if any item changed.
+
+A substituted section can also contain placeholders. In this case, the section name is crucial and must
+uniquely identify the replaced section in its parent so that subsequent replacement paths can be properly resolved.
+
+#### Replacing a placeholder
+The `SupportConfigurationPlaceholderExtension` provides the `TrySetPlaceholder` extension methods to any
+`ISupportConfigurationPlaceholder<T>`:
+```csharp
+public static T? TrySetPlaceholder<T>( this ISupportConfigurationPlaceholder<T> @this,
+                                       IActivityMonitor monitor,
+                                       IConfigurationSection configuration ) where T : class
+
+public static T? TrySetPlaceholder<T>( this ISupportConfigurationPlaceholder<T> @this,
+                                       IActivityMonitor monitor,
+                                       IConfigurationSection configuration,
+                                       out bool builderError ) where T : class
+```
+They call `SetPlaceholder` and return null if an error has been logged while doing so (`builderError` is true)
+or if no placeholder has been replaced: when `SetPlaceholder` returns the same object, an error
+"Unable to set placeholder: '...' doesn't exist or is not a placeholder." is logged (`builderError` is false).
+A null returned by `SetPlaceholder` without any logged error is itself logged as an error.
+
+For an example implementation, see the
+[Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration](../Tests/ConfigurationPlugins/StrategyPlugin/ExtensibleConfiguration/README.md)
+sample.

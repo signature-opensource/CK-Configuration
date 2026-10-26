@@ -1,6 +1,6 @@
 # Mutable & ImmutableConfigurationSection
 
-These 2 helpers implement [IConfigurationSection](https://learn.microsoft.com/fr-fr/dotnet/api/microsoft.extensions.configuration.iconfigurationsection).
+These 2 helpers implement [IConfigurationSection](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.iconfigurationsection).
 
 The [MutableConfigurationSection](MutableConfigurationSection.cs) can be changed and JSON configuration can easily
 be merged. It acts as a builder for immutable configuration.
@@ -10,10 +10,10 @@ other `IConfigurationSection`.
 
 ## The path/key ambiguity.
 We use `path` instead of `key` parameter name to remind you that a relative path
-is always available in the configuration API (like the helpers describe below) to address sub sections.
+is always available in the configuration API (like the helpers described below) to address sub sections.
 
 When `key` is used, it is only a key (no ':' separator in it) like in
-`static bool MutableSection.IsValidKey( ReadOnlySpan<char> sKey )`.
+`static bool MutableConfigurationSection.IsValidKey( ReadOnlySpan<char> sKey )`.
 
 ## The non existing section issue and the "default configuration".
 A configuration section may not `Exists()`: it has no value nor children.
@@ -27,7 +27,7 @@ The `Optional` below doesn't `Exists()`:
   "Optional": {}
 }
 ```
-Moreover, any lookup to a sub section (`c.GetSetion( "Optional" )`) creates a non existing section:
+Moreover, any lookup to a sub section (`c.GetSection( "Optional" )`) creates a non existing section:
 relying on `Exists()` to safely detect an "optional" section requires a more explicit approach.
 
 We must have a way to say "I want to activate this Options with its default configuration".
@@ -44,7 +44,7 @@ We recommend to apply the following pattern:
   - a "true" value applies the defaults.
 
 The `ShouldApplyConfiguration` extension methods (in [ConfigurationSectionExtension](ConfigurationSectionExtension.cs))
-implements this once for all.
+implement this once for all.
 
 ## Reading a ImmutableConfigurationSection.
 
@@ -70,24 +70,24 @@ object? ReadSomeComplexStuff( IActivityMonitor monitor,
     return success ? o : null;
 }
 ```
-This is a obviously more complex than throwing exceptions (and _alea jacta est_) but this is
+This is obviously more complex than throwing exceptions (and _alea jacta est_) but this is
 how we do.
 
 ### The good parts.
 The basic `ImmutableConfigurationSection` methods are:
 - The `IConfigurationSection` inherited methods:
-  - `string? Value { get; }` and `string? this[string path] { get; }` (setter throws
-    an InvalidOperationException).
-  - `IReadOnlyList<ImmutableConfigurationSection> GetChildren() { get; }`
+  - `string? Value { get; }` and `string? this[string path] { get; }` (setters throw
+    a NotSupportedException).
+  - `IReadOnlyList<ImmutableConfigurationSection> GetChildren()`
   - `IConfigurationSection IConfiguration.GetSection( string path )` is explicitly implemented and hidden by
-    `ImmutableConfigurationSection? GetSection( string path )`.
+    `ImmutableConfigurationSection GetSection( string path )`.
 
-    Its contract is to return an empty (useles) section. It is always better to use
+    Its contract is to return an empty (useless) section when the section doesn't exist. It is always better to use
     `ImmutableConfigurationSection? TryGetSection( string path )` that avoids a stupid allocation.
 
- - `ImmutableConfigurationSection? GetRequiredSection( IActivityMonitor monitor, string path )`
-   should be used instead of the `GetRequiredSection( string )` that throws an
-   InvalidOperationException.
+  - The `ImmutableConfigurationSection? GetRequiredSection( IActivityMonitor monitor, string path )` extension method
+    should be used instead of the `GetRequiredSection( string )` that throws an
+    InvalidOperationException.
   
 - Lookup section methods that use the lookup parent to a value or a section "here or above". This allows
   "configuration inheritance" support:
@@ -95,8 +95,8 @@ The basic `ImmutableConfigurationSection` methods are:
   - `string? TryLookupValue( string path, out int distance )`
   - `ImmutableConfigurationSection? TryLookupSection( string path )` 
   - `ImmutableConfigurationSection? TryLookupSection( string path, out int distance )`
-  - `IEnumerable<ImmutableConfigurationSection> LookupAllSection( string path )` 
-  - `IEnumerable<(ImmutableConfigurationSection,int)> LookupAllSectionWithDistance( string path )` 
+  - `IEnumerable<ImmutableConfigurationSection> LookupAllSection( string path, bool skipSectionsOnThisPath = true )`
+  - `IEnumerable<(ImmutableConfigurationSection, int)> LookupAllSectionWithDistance( string path, bool skipSectionsOnThisPath = true )`
 
 ### The bad parts.
 
@@ -110,10 +110,10 @@ Based on the previous "good" methods, extension methods have been defined:
     - `double? TryLookupDoubleValue( IActivityMonitor monitor, string path, double min = 0.0, double max = double.MaxValue )` 
     - `double LookupDoubleValue( IActivityMonitor monitor, string path, double defaultValue = 0.0 )`
 
-    There is too many variations to capture: exist or not, parsable or not, in range (or other constraint) or
+    There are too many variations to capture: exist or not, parsable or not, in range (or other constraint) or
     not, whether a warning or an error should be emitted, etc.
 
-    > This requires more thougths. A less naïve, more explicit and versatile API should be invented
+    > This requires more thoughts. A less naïve, more explicit and versatile API should be invented
       here!
 
 ## Why is there no `IConfigurationSection.ToImmutableConfigurationSection()` extension method?
@@ -122,7 +122,7 @@ Short answer: because of the immutable section's lookup parent.
 Long answer is that even if this extension method seems obvious, it is not.
 
 When an `ImmutableConfigurationSection` is created it can be provided with a "lookup parent". This hidden parent
-section supports `TryLookupXXX` methods that supports an important feature: hierarchical configurations.
+section supports `TryLookupXXX` methods that support an important feature: hierarchical configurations.
 
 Hierarchical configurations is a way to keep a configuration [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself) and understandable.
 Since immutable configurations are immutable, this "parent" is not a true parent, the parent has no knowledge of
@@ -155,7 +155,7 @@ public static ImmutableConfigurationSection ToImmutableConfigurationSection( thi
 }
 ```
 This is obviously broken: as soon as the section is an immutable, the lookup parent will be what it was. This is
-clealrly not what we want. Is the following implementation better?
+clearly not what we want. Is the following implementation better?
 ```csharp
 public static ImmutableConfigurationSection ToImmutableConfigurationSection( this IConfigurationSection section,
                                                                              ImmutableConfigurationSection? lookupParent = null )
@@ -164,7 +164,7 @@ public static ImmutableConfigurationSection ToImmutableConfigurationSection( thi
     {
         return new ImmutableConfigurationSection( section, lookupParent );
     }
-    if( r._internalLookupParent == lookupParent )
+    if( r._lookupParent == lookupParent )
     {
         return r;
     }
