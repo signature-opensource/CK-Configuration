@@ -12,8 +12,8 @@ namespace StrategyPlugin;
 /// the concrete configurations to do this as needed.
 /// </para>
 /// <para>
-/// This base class does't need to be in the "plugin" namespace because, as an abstract class, it cannot be
-/// explicitely targeted.
+/// This base class doesn't need to be in the "plugin" namespace because, as an abstract class, it cannot be
+/// explicitly targeted.
 /// </para>
 /// </summary>
 public abstract class ExtensibleStrategyConfiguration : ISupportConfigurationPlaceholder<ExtensibleStrategyConfiguration>
