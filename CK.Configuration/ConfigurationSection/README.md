@@ -89,14 +89,39 @@ The basic `ImmutableConfigurationSection` methods are:
     should be used instead of the `GetRequiredSection( string )` that throws an
     InvalidOperationException.
   
-- Lookup section methods that use the lookup parent to a value or a section "here or above". This allows
-  "configuration inheritance" support:
-  - `string? TryLookupValue( string path )`  
-  - `string? TryLookupValue( string path, out int distance )`
-  - `ImmutableConfigurationSection? TryLookupSection( string path )` 
-  - `ImmutableConfigurationSection? TryLookupSection( string path, out int distance )`
-  - `IEnumerable<ImmutableConfigurationSection> LookupAllSection( string path, bool skipSectionsOnThisPath = true )`
-  - `IEnumerable<(ImmutableConfigurationSection, int)> LookupAllSectionWithDistance( string path, bool skipSectionsOnThisPath = true )`
+- The enumeration of the sections "above": `LookupAllSection( string path, bool skipSectionsOnThisPath = true )` and
+  `LookupAllSectionWithDistance( ... )` enumerate the `path` child of each ancestor (following the lookup parents),
+  from the root down, and finally this section's own child.
+
+### The "Defaults" sections.
+
+A configuration value is never implicitly inherited from the sections above: default values are explicit, in
+`"Defaults"` sections (`ConfigurationSectionExtension.DefaultsKey`) that can appear at any level and apply to the
+sections below them:
+
+```jsonc
+{
+  "Defaults": { "Timeout": "00:00:10" },
+  "Group": {
+    "Defaults": { "Timeout": "00:00:20" },
+    "A": { },                       // Timeout: 00:00:20 (the nearest "Defaults").
+    "B": { "Timeout": "00:00:01" }  // Timeout: 00:00:01 (its own key).
+  }
+}
+```
+
+The extension methods resolve a path: the section's own key, otherwise the `"Defaults"` section of the nearest
+ancestor that has it. The keys of the ancestors themselves are never used. A section's own `"Defaults"` is for the
+sections below it, and a section inside a `"Defaults"` doesn't use this `"Defaults"`.
+  - `ImmutableConfigurationSection? TryResolveSection( string path )` (and with an `out int distance`: 0 for the own key,
+    otherwise the distance to the ancestor whose `"Defaults"` has it);
+  - `string? TryResolveValue( string path )` (and with an `out int distance`);
+  - `ResolveAllSection( string path )` and `ResolveAllSectionWithDistance( string path )`: the `path` of the
+    `"Defaults"` above, from the root down, then the own key: for the values that combine instead of replacing each
+    other (like the assemblies).
+
+The `TryLookupValue` and `TryLookupSection` methods (and the typed `TryLookupXxxValue` / `LookupXxxValue` extensions)
+look up the keys of the ancestors themselves (an implicit scope inheritance): they are obsolete.
 
 ### The bad parts.
 
@@ -107,8 +132,8 @@ Based on the previous "good" methods, extension methods have been defined:
 
   Current helpers are not good enough. Below are the double helpers.
     - `double? TryGetDoubleValue( IActivityMonitor monitor, string path, double min = 0.0, double max = double.MaxValue )`
-    - `double? TryLookupDoubleValue( IActivityMonitor monitor, string path, double min = 0.0, double max = double.MaxValue )` 
-    - `double LookupDoubleValue( IActivityMonitor monitor, string path, double defaultValue = 0.0 )`
+    - `double? TryResolveDoubleValue( IActivityMonitor monitor, string path, double min = 0.0, double max = double.MaxValue )` 
+    - `double ResolveDoubleValue( IActivityMonitor monitor, string path, double defaultValue = 0.0 )`
 
     There are too many variations to capture: exist or not, parsable or not, in range (or other constraint) or
     not, whether a warning or an error should be emitted, etc.

@@ -8,7 +8,10 @@ that provide the basic mechanisms.
 ## AssemblyConfiguration
 Handles "DefaultAssembly" and "Assemblies" sections. These configurations can appear
 at different levels and are combined to provide a list of assemblies that typically
-contain "plugins".
+contain "plugins": `AssemblyConfiguration.Resolve` combines the ones of the
+[`"Defaults"` sections](ConfigurationSection/README.md#the-defaults-sections) above a section and its own ones
+(`AssemblyConfiguration.Create`, that combines the "DefaultAssembly" and "Assemblies" of the sections above, is obsolete),
+and `Apply` applies the ones of a subordinated section (the `TypedConfigurationBuilder` does this).
 
 Assemblies can be aliased:
 

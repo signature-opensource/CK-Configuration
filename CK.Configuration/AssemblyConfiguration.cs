@@ -388,12 +388,61 @@ public sealed class AssemblyConfiguration
     }
 
     /// <summary>
+    /// Tries to resolve a <see cref="AssemblyConfiguration"/> for the given <paramref name="configuration"/> section: the
+    /// "Assemblies" and "DefaultAssembly" of the "Defaults" sections above it (from the root down) and its own ones
+    /// (see <see cref="ConfigurationSectionExtension.ResolveAllSectionWithDistance(ImmutableConfigurationSection, string)"/>).
+    /// An "Assemblies" that locks the assemblies (<c>"IsLocked"</c>, <c>"Locked"</c> or <c>"Lock"</c>) ignores (with a
+    /// warning) the "Assemblies" and "DefaultAssembly" below it.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="configuration">The configuration to analyze. When null, <see cref="Empty"/> is returned.</param>
+    /// <returns>The assembly configuration or null on error.</returns>
+    public static AssemblyConfiguration? Resolve( IActivityMonitor monitor, ImmutableConfigurationSection? configuration )
+    {
+        Throw.CheckNotNullArgument( monitor );
+        if( configuration == null ) return Empty;
+        bool isLocked = false;
+        Dictionary<string, string>? assemblies = null;
+        int lockedDistance = -1;
+        bool success = true;
+        using( monitor.OnError( () => success = false ) )
+        {
+            foreach( var (c, d) in configuration.ResolveAllSectionWithDistance( "Assemblies" ) )
+            {
+                var currentAssemblies = Empty._assemblies;
+                HandleAssemblies( monitor, ref assemblies, c, ref isLocked, ref currentAssemblies );
+                if( isLocked && lockedDistance < 0 ) lockedDistance = d;
+                // When isLocked is true, continue so that warning can be emitted on skipped "Assemblies".
+            }
+        }
+        if( !success )
+        {
+            return null;
+        }
+        // The nearest "DefaultAssembly", at or above the locking "Assemblies" if any.
+        string? defaultAssembly = null;
+        foreach( var (c, d) in configuration.ResolveAllSectionWithDistance( "DefaultAssembly" ) )
+        {
+            if( lockedDistance >= 0 && d < lockedDistance )
+            {
+                WarnOnLocked( monitor, c.Path );
+            }
+            else
+            {
+                defaultAssembly = c.Value;
+            }
+        }
+        return new AssemblyConfiguration( Empty, defaultAssembly, assemblies ?? Empty._assemblies, isLocked );
+    }
+
+    /// <summary>
     /// Tries to create a <see cref="AssemblyConfiguration"/> from the given <paramref name="configuration"/> section.
     /// Configurations above the <paramref name="configuration"/> are analyzed (and may have locked any Assembly modification). 
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="configuration">The configuration to analyze. When null, <see cref="Empty"/> is returned.</param>
     /// <returns>The assembly configuration or null on error.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use Resolve (the \"Defaults\" sections above)." )]
     public static AssemblyConfiguration? Create( IActivityMonitor monitor, ImmutableConfigurationSection? configuration )
     {
         Throw.CheckNotNullArgument( monitor );

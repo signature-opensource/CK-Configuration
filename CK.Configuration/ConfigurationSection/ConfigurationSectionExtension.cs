@@ -8,7 +8,7 @@ namespace CK.Core;
 /// <summary>
 /// Extends configuration objects.
 /// </summary>
-public static class ConfigurationSectionExtension
+public static partial class ConfigurationSectionExtension
 {
     /// <summary>
     /// Gentle <see cref="ImmutableConfigurationSection.GetRequiredSection(string)"/> that emits an error and returns null if the
@@ -199,6 +199,7 @@ public static class ConfigurationSectionExtension
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="path">The configuration key or a path.</param>
     /// <returns>The value or null.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use TryResolveBooleanValue (this section, then the \"Defaults\" sections above)." )]
     public static bool? TryLookupBooleanValue( this ImmutableConfigurationSection s,
                                                IActivityMonitor monitor,
                                                string path )
@@ -248,6 +249,7 @@ public static class ConfigurationSectionExtension
     /// <param name="min">The minimal value to accept.</param>
     /// <param name="max">The maximal value to accept.</param>
     /// <returns>The value or null.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use TryResolveIntValue (this section, then the \"Defaults\" sections above)." )]
     public static int? TryLookupIntValue( this ImmutableConfigurationSection s,
                                           IActivityMonitor monitor,
                                           string path,
@@ -308,6 +310,7 @@ public static class ConfigurationSectionExtension
     /// <param name="min">The minimal value to accept.</param>
     /// <param name="max">The maximal value to accept.</param>
     /// <returns>The value or null.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use TryResolveTimeSpanValue (this section, then the \"Defaults\" sections above)." )]
     public static TimeSpan? TryLookupTimeSpanValue( this ImmutableConfigurationSection s,
                                                     IActivityMonitor monitor,
                                                     string path,
@@ -368,6 +371,7 @@ public static class ConfigurationSectionExtension
     /// <param name="min">The minimal value to accept.</param>
     /// <param name="max">The maximal value to accept.</param>
     /// <returns>The value or null.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use TryResolveDateTimeValue (this section, then the \"Defaults\" sections above)." )]
     public static DateTime? TryLookupDateTimeValue( this ImmutableConfigurationSection s,
                                                     IActivityMonitor monitor,
                                                     string path,
@@ -428,6 +432,7 @@ public static class ConfigurationSectionExtension
     /// <param name="min">The minimal value to accept.</param>
     /// <param name="max">The maximal value to accept.</param>
     /// <returns>The value or null.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use TryResolveDoubleValue (this section, then the \"Defaults\" sections above)." )]
     public static double? TryLookupDoubleValue( this ImmutableConfigurationSection s,
                                                 IActivityMonitor monitor,
                                                 string path,
@@ -485,6 +490,7 @@ public static class ConfigurationSectionExtension
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="path">The configuration key or a path.</param>
     /// <returns>The value or null.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use TryResolveEnumValue (this section, then the \"Defaults\" sections above)." )]
     public static T? TryLookupEnumValue<T>( this ImmutableConfigurationSection s,
                                             IActivityMonitor monitor,
                                             string path )
@@ -562,6 +568,7 @@ public static class ConfigurationSectionExtension
     /// <param name="path">The configuration key or a path.</param>
     /// <param name="defaultValue">Returned default value.</param>
     /// <returns>The value.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use ResolveBooleanValue (this section, then the \"Defaults\" sections above)." )]
     public static bool LookupBooleanValue( this ImmutableConfigurationSection s,
                                             IActivityMonitor monitor,
                                             string path,
@@ -588,6 +595,7 @@ public static class ConfigurationSectionExtension
     /// <param name="path">The configuration key or a path.</param>
     /// <param name="defaultValue">Returned default value.</param>
     /// <returns>The value.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use ResolveIntValue (this section, then the \"Defaults\" sections above)." )]
     public static int LookupIntValue( this ImmutableConfigurationSection s,
                                       IActivityMonitor monitor,
                                       string path,
@@ -614,6 +622,7 @@ public static class ConfigurationSectionExtension
     /// <param name="path">The configuration key or a path.</param>
     /// <param name="defaultValue">Returned default value.</param>
     /// <returns>The value.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use ResolveTimeSpanValue (this section, then the \"Defaults\" sections above)." )]
     public static TimeSpan LookupTimeSpanValue( this ImmutableConfigurationSection s,
                                                 IActivityMonitor monitor,
                                                 string path,
@@ -640,6 +649,7 @@ public static class ConfigurationSectionExtension
     /// <param name="path">The configuration key or a path.</param>
     /// <param name="defaultValue">Returned default value.</param>
     /// <returns>The value.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use ResolveDateTimeValue (this section, then the \"Defaults\" sections above)." )]
     public static DateTime LookupDateTimeValue( this ImmutableConfigurationSection s,
                                                 IActivityMonitor monitor,
                                                 string path,
@@ -666,6 +676,7 @@ public static class ConfigurationSectionExtension
     /// <param name="path">The configuration key or a path.</param>
     /// <param name="defaultValue">Returned default value.</param>
     /// <returns>The value.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use ResolveDoubleValue (this section, then the \"Defaults\" sections above)." )]
     public static double LookupDoubleValue( this ImmutableConfigurationSection s,
                                             IActivityMonitor monitor,
                                             string path,
@@ -692,6 +703,7 @@ public static class ConfigurationSectionExtension
     /// <param name="path">The configuration key or a path.</param>
     /// <param name="defaultValue">Returned default value.</param>
     /// <returns>The value.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use ResolveEnumValue (this section, then the \"Defaults\" sections above)." )]
     public static T? LookupEnumValue<T>( this ImmutableConfigurationSection s,
                                          IActivityMonitor monitor,
                                          string path,

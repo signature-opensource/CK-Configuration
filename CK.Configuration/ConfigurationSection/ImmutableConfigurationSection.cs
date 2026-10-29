@@ -158,6 +158,7 @@ public sealed class ImmutableConfigurationSection : IConfigurationSection
     /// </summary>
     /// <param name="path">The configuration key or a path to a subordinated key.</param>
     /// <returns>The non null value if found.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use the TryResolveValue extension method (this section, then the \"Defaults\" sections above)." )]
     public string? TryLookupValue( string path ) => TryLookupSection( path )?.Value;
 
     /// <summary>
@@ -168,6 +169,7 @@ public sealed class ImmutableConfigurationSection : IConfigurationSection
     /// <param name="path">The configuration key or a path to a subordinated key.</param>
     /// <param name="distance">Outputs the distance from this section to the section that carries the entry.</param>
     /// <returns>The non null value if found.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use the TryResolveValue extension method (this section, then the \"Defaults\" sections above)." )]
     public string? TryLookupValue( string path, out int distance ) => TryLookupSection( path, out distance )?.Value;
 
     /// <summary>
@@ -175,6 +177,7 @@ public sealed class ImmutableConfigurationSection : IConfigurationSection
     /// </summary>
     /// <param name="path">The configuration key or a path to a subordinated key.</param>
     /// <returns>The non null section if found.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use the TryResolveSection extension method (this section, then the \"Defaults\" sections above)." )]
     public ImmutableConfigurationSection? TryLookupSection( string path ) => TryLookupSection( path, out var _ );
 
     /// <summary>
@@ -183,6 +186,7 @@ public sealed class ImmutableConfigurationSection : IConfigurationSection
     /// <param name="path">The configuration key or a path to a subordinated key.</param>
     /// <param name="distance">Outputs the distance from this section to the returned section.</param>
     /// <returns>The non null section if found.</returns>
+    [Obsolete( "The implicit scope inheritance is deprecated: use the TryResolveSection extension method (this section, then the \"Defaults\" sections above)." )]
     public ImmutableConfigurationSection? TryLookupSection( string path, out int distance )
     {
         MutableConfigurationSection.CheckPathArgument( path );
