@@ -716,7 +716,7 @@ public static class ConfigurationSectionExtension
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="path">The configuration key or a path.</param>
     /// <returns>The string array (empty if the key doesn't exist) or null on error.</returns>
-    public static string[]? ReadStringArray( ImmutableConfigurationSection s, IActivityMonitor monitor, string path )
+    public static string[]? ReadStringArray( this ImmutableConfigurationSection s, IActivityMonitor monitor, string path )
     {
         return s.TryGetSection( path ).ReadStringArray( monitor );
     }
@@ -724,6 +724,7 @@ public static class ConfigurationSectionExtension
     /// <summary>
     /// Helper that reads a string array from a string value, a comma separated string, or children
     /// sections (with string value or comma separated string) that must have integer keys ("0", "1",...).
+    /// The strings are trimmed and the empty ones are skipped.
     /// Returns null on error (and the error is logged).
     /// </summary>
     /// <param name="s">This section.</param>
@@ -735,7 +736,7 @@ public static class ConfigurationSectionExtension
         {
             if( s.Value != null )
             {
-                return s.Value.Split( ',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.RemoveEmptyEntries );
+                return s.Value.Split( ',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
             }
             var result = new List<string>();
             foreach( var o in s.GetChildren() )
@@ -747,7 +748,7 @@ public static class ConfigurationSectionExtension
                     return null;
                 }
                 if( string.IsNullOrEmpty( value ) ) continue;
-                if( value.Contains( ',' ) ) result.AddRangeArray( value.Split( ',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.RemoveEmptyEntries ) );
+                if( value.Contains( ',' ) ) result.AddRangeArray( value.Split( ',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries ) );
                 else
                 {
                     value = value.Trim();
