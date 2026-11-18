@@ -42,6 +42,10 @@ Closed: its instances are the configured ones only.
 - `ConfigurationTemplate.TryMatchIndex` finds the index of the instance whose resolved pattern is a value (`"$Worker-3"`
   is the instance 3 of `"$Worker-{Name}"`), and `ConfigurationTemplateInstances.MatchDynamic` does it within the bound:
   this is how a party recognizes a dynamic instance by its name.
+- A dynamic instance may also have a free name, given by the one that creates it (`CreateDynamic( 3, "Acme" )`): its
+  index is not derived from its name, its creator keeps it. The name must be a valid instance name
+  (`ConfigurationTemplate.IsValidInstanceName`, the rule of `"Instances"`) and not the name of a configured instance
+  (`ConfigurationTemplateInstances.IsConfiguredName`).
 
 ## AssemblyConfiguration
 Handles "DefaultAssembly" and "Assemblies" sections. These configurations can appear

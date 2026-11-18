@@ -107,6 +107,37 @@ public class ConfigurationTemplateTests
         instances.Find( "3" ).ShouldNotBeNull().Name.ShouldBe( "3" );
     }
 
+    [Test]
+    public void a_dynamic_instance_may_have_a_free_name()
+    {
+        var c = Json( """{ "Instances": [ "Top", "Red" ], "MaxInstanceCount": 4 }""" );
+        ConfigurationTemplate.TryReadInstances( TestHelper.Monitor, c, "Tenant", out var instances ).ShouldBeTrue();
+        Throw.DebugAssert( instances != null );
+        var acme = instances.CreateDynamic( 3, "Acme" );
+        (acme.Index, acme.Name, acme.TemplateName).ShouldBe( (3, "Acme", "Tenant") );
+        instances.IsConfiguredName( "red" ).ShouldBeTrue();
+        instances.IsConfiguredName( "Acme" ).ShouldBeFalse();
+        // The index must be a dynamic one, the name a valid one that is not configured.
+        Should.Throw<System.ArgumentException>( () => instances.CreateDynamic( 2, "Acme" ) );
+        Should.Throw<System.ArgumentException>( () => instances.CreateDynamic( 5, "Acme" ) );
+        Should.Throw<System.ArgumentException>( () => instances.CreateDynamic( 3, "RED" ) );
+        Should.Throw<System.ArgumentException>( () => instances.CreateDynamic( 3, "3" ) );
+        Should.Throw<System.ArgumentException>( () => instances.CreateDynamic( 3, "$Acme" ) );
+        Should.Throw<System.ArgumentException>( () => instances.CreateDynamic( 3, "A B" ) );
+    }
+
+    [TestCase( "Acme", true )]
+    [TestCase( "Acme-2_b", true )]
+    [TestCase( "3", false )]
+    [TestCase( "3Acme", false )]
+    [TestCase( "$Acme", false )]
+    [TestCase( "-Acme", false )]
+    [TestCase( "A B", false )]
+    public void IsValidInstanceName_is_the_rule_of_the_Instances( string name, bool expected )
+    {
+        ConfigurationTemplate.IsValidInstanceName( name ).ShouldBe( expected );
+    }
+
     [TestCase( "$Worker-{Name}", "$Worker-3", 3 )]
     [TestCase( "$Worker-{Name}", "$WORKER-4", 4 )]
     [TestCase( "$Worker-{Index}", "$Worker-3", 3 )]

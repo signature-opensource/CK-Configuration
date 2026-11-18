@@ -9,7 +9,9 @@ namespace CK.Core;
 /// <summary>
 /// The configured instances of a template (see <see cref="ConfigurationTemplate.TryReadInstances"/>) and, when the
 /// template is Opened (it has a <see cref="MaxInstanceCount"/>), the bound of its dynamic instances: the dynamic
-/// instances are numbered after the configured ones, up to <see cref="MaxInstanceCount"/>, and named by their index.
+/// instances are numbered after the configured ones, up to <see cref="MaxInstanceCount"/>. A dynamic instance is named by
+/// its index (<see cref="CreateDynamic(int)"/>: the instance names itself by its index, as a fleet's), or has a free name
+/// given by its creator (<see cref="CreateDynamic(int, string)"/>: its index is then stored with it, as a tenant's).
 /// </summary>
 public sealed class ConfigurationTemplateInstances : IReadOnlyList<ConfigurationInstance>
 {
@@ -55,6 +57,36 @@ public sealed class ConfigurationTemplateInstances : IReadOnlyList<Configuration
     {
         Throw.CheckArgument( IsDynamicIndex( index ) );
         return new ConfigurationInstance( _templateName, index, index.ToString( CultureInfo.InvariantCulture ) );
+    }
+
+    /// <summary>
+    /// Creates a dynamic instance with a free name: the name of a dynamic instance created by a third party (its index is
+    /// not derived from its name: the creator keeps it).
+    /// </summary>
+    /// <param name="index">The index. It must satisfy <see cref="IsDynamicIndex(int)"/>.</param>
+    /// <param name="name">
+    /// The name. It must be a valid instance name (<see cref="ConfigurationTemplate.IsValidInstanceName"/>) and not the name
+    /// of a configured instance (<see cref="IsConfiguredName"/>).
+    /// </param>
+    /// <returns>The instance.</returns>
+    public ConfigurationInstance CreateDynamic( int index, string name )
+    {
+        Throw.CheckArgument( IsDynamicIndex( index ) );
+        Throw.CheckNotNullArgument( name );
+        Throw.CheckArgument( "Invalid instance name.", ConfigurationTemplate.IsValidInstanceName( name ) );
+        Throw.CheckArgument( "The name is the one of a configured instance.", !IsConfiguredName( name ) );
+        return new ConfigurationInstance( _templateName, index, name );
+    }
+
+    /// <summary>
+    /// Gets whether a name is the name of a configured instance (case insensitive).
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>True when a configured instance has this name.</returns>
+    public bool IsConfiguredName( string name )
+    {
+        Throw.CheckNotNullArgument( name );
+        return _configured.Any( i => i.Name.Equals( name, StringComparison.OrdinalIgnoreCase ) );
     }
 
     /// <summary>

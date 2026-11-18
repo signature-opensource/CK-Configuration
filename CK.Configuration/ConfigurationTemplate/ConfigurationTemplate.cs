@@ -126,7 +126,7 @@ public static class ConfigurationTemplate
             {
                 var name = c.Value!.Trim();
                 ++index;
-                if( !CoreApplicationIdentity.IsValidPartyName( name ) || name.StartsWith( '$' ) )
+                if( !IsValidInstanceName( name ) )
                 {
                     monitor.Error( $"Invalid instance name '{c.Value}' in \"{names.Path}\": a name is made of letters, digits, '-' and '_' (and doesn't start with a digit, '-' or '_')." );
                     success = false;
@@ -147,6 +147,19 @@ public static class ConfigurationTemplate
         }
         instances = new ConfigurationTemplateInstances( result, templateName, maxInstanceCount );
         return true;
+    }
+
+    /// <summary>
+    /// Gets whether a name can be the name of an instance: a valid party name part (letters, digits, '-' and '_', that
+    /// doesn't start with a digit, '-', '_' or '$'). A name never starts with a digit: it can't be the name of a dynamic
+    /// instance named by its index.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>True for a valid instance name.</returns>
+    public static bool IsValidInstanceName( string name )
+    {
+        Throw.CheckNotNullArgument( name );
+        return CoreApplicationIdentity.IsValidPartyName( name ) && !name.StartsWith( '$' );
     }
 
     /// <summary>
