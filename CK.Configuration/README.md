@@ -23,7 +23,25 @@ A configuration template is a section described once and instantiated several ti
   qualified placeholders of the outer ones.
 - **The placeholders are in the values only,** never in the keys. A `{...}` that is none of these forms is left as is.
 - `ConfigurationTemplate.TryReadInstances` reads and checks the instances (a name is made of letters, digits, `-` and
-  `_`; the names are unique, case insensitive), `ConfigurationTemplate.FindInstance` finds one by its name or its index.
+  `_`, and doesn't start with a digit; the names are unique, case insensitive) into a `ConfigurationTemplateInstances`:
+  `ConfigurationTemplateInstances.Find` finds one by its name or its index.
+
+### Opened templates
+
+With `"MaxInstanceCount": m`, a template is Opened: besides its configured instances (`"InstanceCount"` may then be 0
+or missing), dynamic instances may exist, numbered after the configured ones up to `m` and named by their index (a
+configured name never starts with a digit: it can't be the name of a dynamic instance). A template without it is
+Closed: its instances are the configured ones only.
+
+```json
+{ "InstanceCount": 2, "MaxInstanceCount": 4, "PartyName": "$Worker-{Name}", "Address": "tcp:10.0.0.1:{37300+Index}" }
+```
+
+- `ConfigurationTemplateInstances.Find` also accepts the index of a dynamic instance (`"3"` above), and
+  `ConfigurationTemplateInstances.IsDynamicIndex` tells whether an index is one.
+- `ConfigurationTemplate.TryMatchIndex` finds the index of the instance whose resolved pattern is a value (`"$Worker-3"`
+  is the instance 3 of `"$Worker-{Name}"`), and `ConfigurationTemplateInstances.MatchDynamic` does it within the bound:
+  this is how a party recognizes a dynamic instance by its name.
 
 ## AssemblyConfiguration
 Handles "DefaultAssembly" and "Assemblies" sections. These configurations can appear

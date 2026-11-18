@@ -28,9 +28,11 @@ public class ConfigurationTemplateTests
         var c = Json( """{ "Instances": [ "Top", "Bottom", "Red" ] }""" );
         ConfigurationTemplate.TryReadInstances( TestHelper.Monitor, c, null, out var instances ).ShouldBeTrue();
         instances.ShouldNotBeNull().Select( i => (i.Index, i.Name) ).ShouldBe( new[] { (1, "Top"), (2, "Bottom"), (3, "Red") } );
-        ConfigurationTemplate.FindInstance( instances, "red" ).ShouldBeSameAs( instances[2] );
-        ConfigurationTemplate.FindInstance( instances, "2" ).ShouldBeSameAs( instances[1] );
-        ConfigurationTemplate.FindInstance( instances, "Blue" ).ShouldBeNull();
+        instances.Find( "red" ).ShouldBeSameAs( instances[2] );
+        instances.Find( "2" ).ShouldBeSameAs( instances[1] );
+        instances.Find( "Blue" ).ShouldBeNull();
+        instances.Find( "4" ).ShouldBeNull();
+        instances.IsOpened.ShouldBeFalse();
     }
 
     [Test]
@@ -49,6 +51,12 @@ public class ConfigurationTemplateTests
     [TestCase( """{ "Instances": [ "A", "a" ] }""", "Duplicate instance name 'a'" )]
     [TestCase( """{ "Instances": [ "A B" ] }""", "Invalid instance name 'A B'" )]
     [TestCase( """{ "Instances": [ "$A" ] }""", "Invalid instance name '$A'" )]
+    [TestCase( """{ "Instances": [ "3" ] }""", "Invalid instance name '3'" )]
+    [TestCase( """{ "MaxInstanceCount": 0 }""", "A positive integer is expected" )]
+    [TestCase( """{ "InstanceCount": 0, "MaxInstanceCount": "many" }""", "A positive integer is expected" )]
+    [TestCase( """{ "InstanceCount": -1, "MaxInstanceCount": 3 }""", "A positive integer or 0 is expected" )]
+    [TestCase( """{ "InstanceCount": 3, "MaxInstanceCount": 2 }""", "2 is lower than the 3 configured instance(s)" )]
+    [TestCase( """{ "Instances": [ "A", "B" ], "MaxInstanceCount": 1 }""", "1 is lower than the 2 configured instance(s)" )]
     public void invalid_instances_are_errors( string json, string expected )
     {
         using( TestHelper.Monitor.CollectTexts( out var texts ) )
@@ -57,6 +65,85 @@ public class ConfigurationTemplateTests
             instances.ShouldBeNull();
             texts.ShouldContain( t => t.Contains( expected ), $"Expected: {expected}" );
         }
+    }
+
+    [Test]
+    public void MaxInstanceCount_opens_a_template()
+    {
+        var c = Json( """{ "InstanceCount": 2, "MaxInstanceCount": 4 }""" );
+        ConfigurationTemplate.TryReadInstances( TestHelper.Monitor, c, "Worker", out var instances ).ShouldBeTrue();
+        instances.ShouldNotBeNull().Count.ShouldBe( 2 );
+        instances.IsOpened.ShouldBeTrue();
+        instances.MaxInstanceCount.ShouldBe( 4 );
+        instances.IsDynamicIndex( 2 ).ShouldBeFalse();
+        instances.IsDynamicIndex( 3 ).ShouldBeTrue();
+        instances.IsDynamicIndex( 5 ).ShouldBeFalse();
+        instances.Find( "2" ).ShouldBeSameAs( instances[1] );
+        var third = instances.Find( "3" ).ShouldNotBeNull();
+        (third.Index, third.Name, third.TemplateName).ShouldBe( (3, "3", "Worker") );
+        instances.Find( "5" ).ShouldBeNull();
+        instances.Find( "0" ).ShouldBeNull();
+    }
+
+    [TestCase( """{ "InstanceCount": 0, "MaxInstanceCount": 3 }""" )]
+    [TestCase( """{ "MaxInstanceCount": 3 }""" )]
+    public void an_Opened_template_may_have_no_configured_instance( string json )
+    {
+        var c = Json( json );
+        ConfigurationTemplate.IsTemplate( c ).ShouldBeTrue();
+        ConfigurationTemplate.TryReadInstances( TestHelper.Monitor, c, null, out var instances ).ShouldBeTrue();
+        instances.ShouldNotBeNull().Count.ShouldBe( 0 );
+        instances.Find( "1" ).ShouldNotBeNull().Name.ShouldBe( "1" );
+        instances.Find( "3" ).ShouldNotBeNull();
+        instances.Find( "4" ).ShouldBeNull();
+    }
+
+    [Test]
+    public void dynamic_indices_follow_the_named_instances()
+    {
+        var c = Json( """{ "Instances": [ "Top", "Red" ], "MaxInstanceCount": 4 }""" );
+        ConfigurationTemplate.TryReadInstances( TestHelper.Monitor, c, null, out var instances ).ShouldBeTrue();
+        instances.ShouldNotBeNull().Find( "2" ).ShouldBeSameAs( instances[1] );
+        instances.Find( "3" ).ShouldNotBeNull().Name.ShouldBe( "3" );
+    }
+
+    [TestCase( "$Worker-{Name}", "$Worker-3", 3 )]
+    [TestCase( "$Worker-{Name}", "$WORKER-4", 4 )]
+    [TestCase( "$Worker-{Index}", "$Worker-3", 3 )]
+    [TestCase( "tcp:127.0.0.1:{37300+Index}", "tcp:127.0.0.1:37303", 3 )]
+    [TestCase( "$W{Name}-{10+Index}", "$W3-13", 3 )]
+    [TestCase( "$W{Name}-{10+Index}", "$W3-14", 0 )]
+    [TestCase( "$Worker-{Name}", "$Worker-03", 0 )]
+    [TestCase( "$Worker-{Name}", "$Worker-0", 0 )]
+    [TestCase( "$Worker-{Name}", "$Worker-Top", 0 )]
+    [TestCase( "$Worker-{Name}", "$Worker-3x", 0 )]
+    [TestCase( "$Worker", "$Worker", 0 )]
+    [TestCase( "$Worker-{Fleet.Name}", "$Worker-3", 0 )]
+    public void TryMatchIndex_finds_a_dynamic_instance( string pattern, string value, int expected )
+    {
+        ConfigurationTemplate.TryMatchIndex( pattern, value, out var index ).ShouldBe( expected != 0 );
+        index.ShouldBe( expected );
+    }
+
+    [Test]
+    public void MatchDynamic_is_bound()
+    {
+        var c = Json( """{ "InstanceCount": 2, "MaxInstanceCount": 4 }""" );
+        ConfigurationTemplate.TryReadInstances( TestHelper.Monitor, c, null, out var instances ).ShouldBeTrue();
+        instances.ShouldNotBeNull().MatchDynamic( "$Worker-{Name}", "$Worker-2" ).ShouldBeNull();
+        instances.MatchDynamic( "$Worker-{Name}", "$Worker-3" ).ShouldNotBeNull().Index.ShouldBe( 3 );
+        instances.MatchDynamic( "$Worker-{Name}", "$Worker-5" ).ShouldBeNull();
+        ConfigurationTemplate.TryReadInstances( TestHelper.Monitor, Json( """{ "InstanceCount": 2 }""" ), null, out var closed ).ShouldBeTrue();
+        closed.ShouldNotBeNull().MatchDynamic( "$Worker-{Name}", "$Worker-3" ).ShouldBeNull();
+    }
+
+    [TestCase( "$Worker-{Name}", true )]
+    [TestCase( "{5400+Index}", true )]
+    [TestCase( "$Worker-{Fleet.Name}", false )]
+    [TestCase( "$Worker", false )]
+    public void HasPlaceholder_ignores_the_qualified_ones( string value, bool expected )
+    {
+        ConfigurationTemplate.HasPlaceholder( value ).ShouldBe( expected );
     }
 
     [TestCase( "http://localhost:{5400+Index}", "http://localhost:5403" )]
@@ -125,7 +212,7 @@ public class ConfigurationTemplateTests
         var root = Json( """
             {
               "Defaults": { "Retry": 3 },
-              "Parties": [ { "Instances": [ "Paris", "Lyon" ], "PartyName": "$Shop-{Name}", "Local": { "Port": "{6000+Index}" } } ]
+              "Parties": [ { "Instances": [ "Paris", "Lyon" ], "MaxInstanceCount": 5, "PartyName": "$Shop-{Name}", "Local": { "Port": "{6000+Index}" } } ]
             }
             """ );
         var parties = root.GetRequiredSection( "Parties" );

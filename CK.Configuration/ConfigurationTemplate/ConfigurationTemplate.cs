@@ -9,7 +9,9 @@ namespace CK.Core;
 
 /// <summary>
 /// A configuration template is a section with <c>"InstanceCount": n</c> or <c>"Instances": [ "Top", "Red" ]</c>: it is
-/// described once and instantiated for each of its instances (<see cref="ConfigurationInstance"/>). Its values may
+/// described once and instantiated for each of its instances (<see cref="ConfigurationInstance"/>). With
+/// <c>"MaxInstanceCount": m</c>, it is Opened: dynamic instances may exist after the configured ones, up to <c>m</c>
+/// (<see cref="ConfigurationTemplateInstances"/>); <c>"InstanceCount"</c> may then be 0 (or missing). Its values may
 /// contain the placeholders of the instance:
 /// <list type="bullet">
 ///   <item><c>{Index}</c> (1-based), <c>{Name}</c> and <c>{n+Index}</c> (an integer plus the index: <c>{5400+Index}</c>);</item>
@@ -31,19 +33,30 @@ public static class ConfigurationTemplate
     /// </summary>
     public const string InstancesKey = "Instances";
 
+    /// <summary>
+    /// The key of the maximal number of instances of an Opened template: "MaxInstanceCount".
+    /// </summary>
+    public const string MaxInstanceCountKey = "MaxInstanceCount";
+
     static readonly Regex _placeholder = new Regex( @"\{(?:(?<n>-?\d+)\+)?(?:(?<q>[A-Za-z_][\w.\-]*)\.)?(?<k>Index|Name)\}",
                                                     RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Compiled );
 
     /// <summary>
-    /// Gets whether a section is a template: it has "InstanceCount" or "Instances".
+    /// Gets whether a section is a template: it has "InstanceCount", "Instances" or "MaxInstanceCount".
     /// </summary>
     /// <param name="section">The section.</param>
     /// <returns>True if the section is a template.</returns>
     public static bool IsTemplate( IConfigurationSection section )
     {
         Throw.CheckNotNullArgument( section );
-        return section.GetSection( InstanceCountKey ).Exists() || section.GetSection( InstancesKey ).Exists();
+        return section.GetSection( InstanceCountKey ).Exists()
+               || section.GetSection( InstancesKey ).Exists()
+               || section.GetSection( MaxInstanceCountKey ).Exists();
     }
+
+    static bool IsTemplateKey( string key ) => key.Equals( InstanceCountKey, StringComparison.OrdinalIgnoreCase )
+                                               || key.Equals( InstancesKey, StringComparison.OrdinalIgnoreCase )
+                                               || key.Equals( MaxInstanceCountKey, StringComparison.OrdinalIgnoreCase );
 
     /// <summary>
     /// Reads the instances of a template section.
@@ -51,35 +64,53 @@ public static class ConfigurationTemplate
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="section">The section.</param>
     /// <param name="templateName">The name of the template (the qualifier of its placeholders), or null.</param>
-    /// <param name="instances">The instances, null if the section is not a template (or on error).</param>
+    /// <param name="instances">
+    /// The configured instances (empty for an Opened template without them), null if the section is not a template (or on error).
+    /// </param>
     /// <returns>True on success (a template or not), false on error.</returns>
     public static bool TryReadInstances( IActivityMonitor monitor,
                                          IConfigurationSection section,
                                          string? templateName,
-                                         out IReadOnlyList<ConfigurationInstance>? instances )
+                                         out ConfigurationTemplateInstances? instances )
     {
         Throw.CheckNotNullArgument( monitor );
         Throw.CheckNotNullArgument( section );
         instances = null;
         var count = section.GetSection( InstanceCountKey );
         var names = section.GetSection( InstancesKey );
-        if( !count.Exists() && !names.Exists() ) return true;
+        var max = section.GetSection( MaxInstanceCountKey );
+        if( !count.Exists() && !names.Exists() && !max.Exists() ) return true;
         if( count.Exists() && names.Exists() )
         {
             monitor.Error( $"\"{section.Path}\" has \"{InstanceCountKey}\" and \"{InstancesKey}\": a template has one of them." );
             return false;
         }
+        int? maxInstanceCount = null;
+        if( max.Exists() )
+        {
+            if( max.Value == null || !int.TryParse( max.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var m ) || m <= 0 )
+            {
+                monitor.Error( $"Invalid \"{max.Path}\": '{max.Value}'. A positive integer is expected." );
+                return false;
+            }
+            maxInstanceCount = m;
+        }
         var result = new List<ConfigurationInstance>();
         if( count.Exists() )
         {
-            if( count.Value == null || !int.TryParse( count.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var n ) || n <= 0 )
+            // An Opened template may have no configured instance.
+            if( count.Value == null
+                || !int.TryParse( count.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var n )
+                || (n == 0 && maxInstanceCount == null) )
             {
-                monitor.Error( $"Invalid \"{count.Path}\": '{count.Value}'. A positive integer is expected." );
+                monitor.Error( maxInstanceCount == null
+                                ? $"Invalid \"{count.Path}\": '{count.Value}'. A positive integer is expected."
+                                : $"Invalid \"{count.Path}\": '{count.Value}'. A positive integer or 0 is expected." );
                 return false;
             }
             for( int i = 1; i <= n; ++i ) result.Add( new ConfigurationInstance( templateName, i, i.ToString( CultureInfo.InvariantCulture ) ) );
         }
-        else
+        else if( names.Exists() )
         {
             var items = names.GetChildren().ToList();
             if( names.Value != null || items.Count == 0 || items.Any( c => c.Value == null ) )
@@ -109,25 +140,68 @@ public static class ConfigurationTemplate
             }
             if( !success ) return false;
         }
-        instances = result;
+        if( maxInstanceCount < result.Count )
+        {
+            monitor.Error( $"Invalid \"{max.Path}\": {maxInstanceCount} is lower than the {result.Count} configured instance(s)." );
+            return false;
+        }
+        instances = new ConfigurationTemplateInstances( result, templateName, maxInstanceCount );
         return true;
     }
 
     /// <summary>
-    /// Finds an instance by its name (case insensitive) or by its index.
+    /// Gets whether a value has an unqualified placeholder (<c>{Index}</c>, <c>{Name}</c> or <c>{n+Index}</c>): its
+    /// instances have distinct values.
     /// </summary>
-    /// <param name="instances">The instances.</param>
-    /// <param name="key">The name or the index.</param>
-    /// <returns>The instance or null.</returns>
-    public static ConfigurationInstance? FindInstance( IReadOnlyList<ConfigurationInstance> instances, string key )
+    /// <param name="value">The value.</param>
+    /// <returns>True if the value has an unqualified placeholder.</returns>
+    public static bool HasPlaceholder( string value )
     {
-        Throw.CheckNotNullArgument( instances );
-        Throw.CheckNotNullArgument( key );
-        key = key.Trim();
-        return instances.FirstOrDefault( i => i.Name.Equals( key, StringComparison.OrdinalIgnoreCase ) )
-               ?? (int.TryParse( key, NumberStyles.None, CultureInfo.InvariantCulture, out var index )
-                    ? instances.FirstOrDefault( i => i.Index == index )
-                    : null);
+        Throw.CheckNotNullArgument( value );
+        return _placeholder.Matches( value ).Any( m => !m.Groups["q"].Success );
+    }
+
+    /// <summary>
+    /// Finds the index of the dynamic instance whose resolved <paramref name="pattern"/> is <paramref name="value"/>
+    /// (case insensitive). A dynamic instance is named by its index: <c>{Name}</c> and <c>{Index}</c> match the index,
+    /// <c>{n+Index}</c> the index plus n. The pattern must have at least one placeholder and no qualified one (the
+    /// enclosing templates are resolved), and all its placeholders must give the same index.
+    /// </summary>
+    /// <param name="pattern">The value of the template, with its placeholders.</param>
+    /// <param name="value">The resolved value.</param>
+    /// <param name="index">The index (positive) on success.</param>
+    /// <returns>True if the value is the pattern resolved by a dynamic instance.</returns>
+    public static bool TryMatchIndex( string pattern, string value, out int index )
+    {
+        Throw.CheckNotNullArgument( pattern );
+        Throw.CheckNotNullArgument( value );
+        index = 0;
+        var placeholders = _placeholder.Matches( pattern );
+        if( placeholders.Count == 0 || placeholders.Any( m => m.Groups["q"].Success ) ) return false;
+        var regex = new System.Text.StringBuilder( "^" );
+        int last = 0;
+        foreach( Match p in placeholders )
+        {
+            regex.Append( Regex.Escape( pattern.Substring( last, p.Index - last ) ) ).Append( @"(-?\d+)" );
+            last = p.Index + p.Length;
+        }
+        regex.Append( Regex.Escape( pattern.Substring( last ) ) ).Append( '$' );
+        var match = Regex.Match( value, regex.ToString(), RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
+        if( !match.Success ) return false;
+        int found = 0;
+        for( int i = 0; i < placeholders.Count; ++i )
+        {
+            var text = match.Groups[i + 1].Value;
+            if( !long.TryParse( text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var v ) ) return false;
+            var n = placeholders[i].Groups["n"];
+            long candidate = v - (n.Success ? long.Parse( n.Value, CultureInfo.InvariantCulture ) : 0);
+            // The value must be exactly what the resolution gives (no leading zeros, no explicit '+').
+            if( candidate <= 0 || candidate > int.MaxValue || v.ToString( CultureInfo.InvariantCulture ) != text ) return false;
+            if( found != 0 && found != candidate ) return false;
+            found = (int)candidate;
+        }
+        index = found;
+        return true;
     }
 
     /// <summary>
@@ -194,8 +268,8 @@ public static class ConfigurationTemplate
     }
 
     /// <summary>
-    /// Creates the section of an instance of a template: the same path and content, without its "InstanceCount" and
-    /// "Instances", its placeholders resolved (see <see cref="ResolveSection"/>).
+    /// Creates the section of an instance of a template: the same path and content, without its "InstanceCount",
+    /// "Instances" and "MaxInstanceCount", its placeholders resolved (see <see cref="ResolveSection"/>).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="template">The template section.</param>
@@ -215,11 +289,7 @@ public static class ConfigurationTemplate
         var m = new MutableConfigurationSection( template.Path );
         foreach( var c in template.GetChildren() )
         {
-            if( c.Key.Equals( InstanceCountKey, StringComparison.OrdinalIgnoreCase )
-                || c.Key.Equals( InstancesKey, StringComparison.OrdinalIgnoreCase ) )
-            {
-                continue;
-            }
+            if( IsTemplateKey( c.Key ) ) continue;
             Copy( m, c );
         }
         return new ImmutableConfigurationSection( m, lookupParent );
@@ -235,8 +305,8 @@ public static class ConfigurationTemplate
     /// <summary>
     /// Resolves the placeholders of all the values below a section for an instance: the unqualified ones with the
     /// <paramref name="instance"/>, except in an inner template (a sub section that is a template: only its qualified
-    /// placeholders are resolved). The "InstanceCount" and "Instances" of the section itself are not values to
-    /// resolve.
+    /// placeholders are resolved). The "InstanceCount", "Instances" and "MaxInstanceCount" of the section itself are not
+    /// values to resolve.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="section">The template section (or the root of the configuration).</param>
@@ -256,11 +326,7 @@ public static class ConfigurationTemplate
         bool success = true;
         foreach( var c in section.GetChildren() )
         {
-            if( c.Key.Equals( InstanceCountKey, StringComparison.OrdinalIgnoreCase )
-                || c.Key.Equals( InstancesKey, StringComparison.OrdinalIgnoreCase ) )
-            {
-                continue;
-            }
+            if( IsTemplateKey( c.Key ) ) continue;
             success &= Walk( monitor, c, instance, enclosing, result );
         }
         return success ? result : null;
