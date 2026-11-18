@@ -5,6 +5,26 @@ Provides extensions and helpers to manipulate .NET configuration sections.
 First, please read [MutableConfigurationSection and ImmutableConfigurationSection](ConfigurationSection/README.md)
 that provide the basic mechanisms.
 
+## ConfigurationTemplate
+
+A configuration template is a section described once and instantiated several times: it has `"InstanceCount": n` or
+`"Instances": [ "Top", "Red" ]`. Each `ConfigurationInstance` has a 1-based `Index` and a `Name` (the item of
+`"Instances"`, or the index as a string). Its values can use the placeholders of the instance:
+
+| Placeholder | Value |
+|---|---|
+| `{Index}` | The 1-based index. |
+| `{Name}` | The name. |
+| `{n+Index}` | An integer plus the index: `"http://localhost:{5400+Index}"`. |
+| `{Trolley.Index}`, `{Trolley.Name}`, `{n+Trolley.Index}` | The same, for the enclosing template named `Trolley`, in an inner template. |
+
+- **The innermost template wins:** a sub section that is a template is an inner scope, `{Index}` there is its own.
+  `ConfigurationTemplate.ResolveSection` resolves a section for an instance: inside an inner template, only the
+  qualified placeholders of the outer ones.
+- **The placeholders are in the values only,** never in the keys. A `{...}` that is none of these forms is left as is.
+- `ConfigurationTemplate.TryReadInstances` reads and checks the instances (a name is made of letters, digits, `-` and
+  `_`; the names are unique, case insensitive), `ConfigurationTemplate.FindInstance` finds one by its name or its index.
+
 ## AssemblyConfiguration
 Handles "DefaultAssembly" and "Assemblies" sections. These configurations can appear
 at different levels and are combined to provide a list of assemblies that typically
