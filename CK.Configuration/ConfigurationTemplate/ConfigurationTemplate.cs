@@ -194,6 +194,45 @@ public static class ConfigurationTemplate
     }
 
     /// <summary>
+    /// Creates the section of an instance of a template: the same path and content, without its "InstanceCount" and
+    /// "Instances", its placeholders resolved (see <see cref="ResolveSection"/>).
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="template">The template section.</param>
+    /// <param name="instance">The instance.</param>
+    /// <param name="lookupParent">The lookup parent of the new section (see <see cref="ImmutableConfigurationSection(IConfigurationSection, ImmutableConfigurationSection?)"/>).</param>
+    /// <param name="enclosing">The instances of the enclosing templates, if any.</param>
+    /// <returns>The section of the instance, or null on error.</returns>
+    public static ImmutableConfigurationSection? Instantiate( IActivityMonitor monitor,
+                                                              IConfigurationSection template,
+                                                              ConfigurationInstance instance,
+                                                              ImmutableConfigurationSection? lookupParent = null,
+                                                              IReadOnlyList<ConfigurationInstance>? enclosing = null )
+    {
+        var changes = ResolveSection( monitor, template, instance, enclosing );
+        if( changes == null ) return null;
+        var resolved = changes.ToDictionary( kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase );
+        var m = new MutableConfigurationSection( template.Path );
+        foreach( var c in template.GetChildren() )
+        {
+            if( c.Key.Equals( InstanceCountKey, StringComparison.OrdinalIgnoreCase )
+                || c.Key.Equals( InstancesKey, StringComparison.OrdinalIgnoreCase ) )
+            {
+                continue;
+            }
+            Copy( m, c );
+        }
+        return new ImmutableConfigurationSection( m, lookupParent );
+
+        void Copy( MutableConfigurationSection target, IConfigurationSection s )
+        {
+            var t = target.GetMutableSection( s.Key );
+            if( s.Value != null ) t.Value = resolved.TryGetValue( s.Path, out var r ) ? r : s.Value;
+            foreach( var c in s.GetChildren() ) Copy( t, c );
+        }
+    }
+
+    /// <summary>
     /// Resolves the placeholders of all the values below a section for an instance: the unqualified ones with the
     /// <paramref name="instance"/>, except in an inner template (a sub section that is a template: only its qualified
     /// placeholders are resolved). The "InstanceCount" and "Instances" of the section itself are not values to

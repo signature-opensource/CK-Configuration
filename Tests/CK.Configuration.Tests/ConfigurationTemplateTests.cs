@@ -118,4 +118,25 @@ public class ConfigurationTemplateTests
         lyon["Root:FullName"].ShouldBe( "Shops/$Shop-Lyon-of-2" );
         lyon["Root:Port"].ShouldBe( "6002" );
     }
+
+    [Test]
+    public void Instantiate_creates_the_section_of_an_instance_with_its_lookup_parent()
+    {
+        var root = Json( """
+            {
+              "Defaults": { "Retry": 3 },
+              "Parties": [ { "Instances": [ "Paris", "Lyon" ], "PartyName": "$Shop-{Name}", "Local": { "Port": "{6000+Index}" } } ]
+            }
+            """ );
+        var parties = root.GetRequiredSection( "Parties" );
+        var template = parties.GetRequiredSection( "0" );
+        ConfigurationTemplate.TryReadInstances( TestHelper.Monitor, template, null, out var shops ).ShouldBeTrue();
+        var lyon = ConfigurationTemplate.Instantiate( TestHelper.Monitor, template, shops![1], parties ).ShouldNotBeNull();
+        lyon.Path.ShouldBe( "Root:Parties:0" );
+        lyon.GetChildren().Select( c => c.Key ).ShouldBe( new[] { "PartyName", "Local" } );
+        lyon["PartyName"].ShouldBe( "$Shop-Lyon" );
+        lyon["Local:Port"].ShouldBe( "6002" );
+        // The inherited values are still found through the lookup parent.
+        lyon.TryLookupValue( "Defaults:Retry" ).ShouldBe( "3" );
+    }
 }
