@@ -47,6 +47,26 @@ Closed: its instances are the configured ones only.
   (`ConfigurationTemplate.IsValidInstanceName`, the rule of `"Instances"`) and not the name of a configured instance
   (`ConfigurationTemplateInstances.IsConfiguredName`).
 
+## Configuration options
+
+An `IConfigurationOption` is an option that the configuration section of its owner switches: its `Name` is its key in
+that section, `IsEnabledByDefault` makes it opt-out (opt-in otherwise), `IsRequired` makes it always enabled, and
+`Requires` names the options without which it can't be enabled.
+
+`ConfigurationOptionSelector.TrySelect` selects the enabled options of an owner, in their order, each with its section
+(`SelectedConfigurationOption<T>`):
+
+```jsonc
+"Owner": {
+  "Main": { "Level": 3 },   // A section (or true) enables an option explicitly.
+  "Header": false           // false disables it (an error for a required option).
+}                           // Nothing: its default.
+```
+
+A redundant `true` or `false` is a warning. An option enabled explicitly (or required) that requires a disabled one is
+an error; an option enabled by default that requires a disabled one is disabled with it. The selection is a pure
+function of the options and of the configuration: the owner creates the options it selected.
+
 ## AssemblyConfiguration
 Handles "DefaultAssembly" and "Assemblies" sections. These configurations can appear
 at different levels and are combined to provide a list of assemblies that typically
