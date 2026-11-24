@@ -111,4 +111,28 @@ public class ConfigurationOptionSelectorTests
         ConfigurationOptionSelector.TrySelect( TestHelper.Monitor, options, Section( """{ "A": true }""" ), out var all ).ShouldBeTrue();
         all.Select( s => s.Option.Name ).ShouldBe( new[] { "A", "B", "C" } );
     }
+
+    [Test]
+    public void a_requirement_outside_the_options_of_the_owner_is_only_with_it()
+    {
+        // "Lost" requires the feature "MailSender" of the owner's party (outside the options of its owner).
+        var options = new[] { Option.ByDefault( "Password" ), Option.ByDefault( "Lost", "Password" ) };
+        static string? MailSenderOff( Option o ) => o.Name == "Lost" ? "the party feature 'MailSender'" : null;
+        using( TestHelper.Monitor.CollectTexts( out var texts ) )
+        {
+            // Enabled by default: disabled with its requirement.
+            ConfigurationOptionSelector.TrySelect( TestHelper.Monitor, options, (ImmutableConfigurationSection?)null, out var selected, MailSenderOff ).ShouldBeTrue();
+            selected.Select( s => s.Option.Name ).ShouldBe( new[] { "Password" } );
+            texts.ShouldContain( "The option 'Lost' (enabled by default) is disabled: it requires the party feature 'MailSender' that is disabled." );
+        }
+        using( TestHelper.Monitor.CollectTexts( out var texts ) )
+        {
+            // Explicit: an error.
+            ConfigurationOptionSelector.TrySelect( TestHelper.Monitor, options, Section( """{ "Lost": true }""" ), out _, MailSenderOff ).ShouldBeFalse();
+            texts.ShouldContain( "The option 'Lost' requires the party feature 'MailSender' that is disabled." );
+        }
+        // Met: selected.
+        ConfigurationOptionSelector.TrySelect( TestHelper.Monitor, options, Section( """{ "Lost": true }""" ), out var all, o => null ).ShouldBeTrue();
+        all.Select( s => s.Option.Name ).ShouldBe( new[] { "Password", "Lost" } );
+    }
 }

@@ -14,8 +14,10 @@ namespace CK.Core;
 /// </list>
 /// A redundant <c>true</c> (an option enabled by default) or <c>false</c> (an opt-in one) is a warning. A required
 /// option is always enabled. An option enabled explicitly (or required) that requires a disabled one is an error. An
-/// option enabled by default that requires a disabled one is disabled with it (an information is logged). This is a pure
-/// function of the options and of the configuration.
+/// option enabled by default that requires a disabled one is disabled with it (an information is logged). The same
+/// "only with it" rule applies to the requirements of an option outside the options of its owner (a feature that its
+/// owner's level knows: see the <c>findMissingRequirement</c> parameter). This is a pure function of the options, of the
+/// configuration and of these requirements.
 /// </summary>
 public static class ConfigurationOptionSelector
 {
@@ -27,14 +29,19 @@ public static class ConfigurationOptionSelector
     /// <param name="options">The ordered options of the owner.</param>
     /// <param name="ownerSection">The configuration section of the owner. Null when the owner has none.</param>
     /// <param name="selected">The selected options, in their order.</param>
+    /// <param name="findMissingRequirement">
+    /// Optional: names the first requirement of an option outside the options of its owner that is not met (for the
+    /// messages: <c>"the party feature 'MailSender'"</c>), null when they are all met.
+    /// </param>
     /// <returns>True on success, false on error (errors are logged).</returns>
     public static bool TrySelect<T>( IActivityMonitor monitor,
                                      IReadOnlyList<T> options,
                                      ImmutableConfigurationSection? ownerSection,
-                                     out IReadOnlyList<SelectedConfigurationOption<T>> selected )
+                                     out IReadOnlyList<SelectedConfigurationOption<T>> selected,
+                                     Func<T, string?>? findMissingRequirement = null )
         where T : IConfigurationOption
     {
-        return TrySelect( monitor, options, name => ownerSection?.TryGetSection( name ), out selected );
+        return TrySelect( monitor, options, name => ownerSection?.TryGetSection( name ), out selected, findMissingRequirement );
     }
 
     /// <summary>
@@ -47,11 +54,16 @@ public static class ConfigurationOptionSelector
     /// <param name="options">The ordered options of the owner.</param>
     /// <param name="findOption">Finds the configuration of an option by its name. Null when not configured.</param>
     /// <param name="selected">The selected options, in their order.</param>
+    /// <param name="findMissingRequirement">
+    /// Optional: names the first requirement of an option outside the options of its owner that is not met (for the
+    /// messages: <c>"the party feature 'MailSender'"</c>), null when they are all met.
+    /// </param>
     /// <returns>True on success, false on error (errors are logged).</returns>
     public static bool TrySelect<T>( IActivityMonitor monitor,
                                      IReadOnlyList<T> options,
                                      Func<string, ImmutableConfigurationSection?> findOption,
-                                     out IReadOnlyList<SelectedConfigurationOption<T>> selected )
+                                     out IReadOnlyList<SelectedConfigurationOption<T>> selected,
+                                     Func<T, string?>? findMissingRequirement = null )
         where T : IConfigurationOption
     {
         Throw.CheckNotNullArgument( monitor );
@@ -101,23 +113,24 @@ public static class ConfigurationOptionSelector
             }
         }
         if( !success ) return false;
-        // The closure: an option needs the options it requires.
+        // The closure: an option needs the options it requires (and its requirements outside its owner's options).
         bool changed;
         do
         {
             changed = false;
             foreach( var (name, e) in enabled.ToList() )
             {
-                var missing = e.Option.Requires.FirstOrDefault( r => !enabled.ContainsKey( r ) );
+                var missingOption = e.Option.Requires.FirstOrDefault( r => !enabled.ContainsKey( r ) );
+                var missing = missingOption != null ? $"the option '{missingOption}'" : findMissingRequirement?.Invoke( e.Option );
                 if( missing == null ) continue;
                 if( e.IsExplicit )
                 {
-                    monitor.Error( $"The option '{name}' requires the option '{missing}' that is disabled." );
+                    monitor.Error( $"The option '{name}' requires {missing} that is disabled." );
                     success = false;
                 }
                 else
                 {
-                    monitor.Info( $"The option '{name}' (enabled by default) is disabled: it requires the option '{missing}' that is disabled." );
+                    monitor.Info( $"The option '{name}' (enabled by default) is disabled: it requires {missing} that is disabled." );
                 }
                 enabled.Remove( name );
                 changed = true;
